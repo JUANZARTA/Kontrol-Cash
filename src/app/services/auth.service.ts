@@ -9,6 +9,8 @@ export interface Notificacion {
   mensaje: string;
   leido: boolean;
   fecha: string;
+  tipo?: string; // Para identificar el tipo de notificación
+  idUnico?: string; // Para evitar duplicados por día
 }
 
 @Injectable({
@@ -118,8 +120,55 @@ export class AuthService {
     return this.http.put(url, true);
   }
 
-  // método: Agregar nueva notificación (máximo 20, elimina la más vieja si excede)
-  addNotification(uid: string, mensaje: string): Observable<any> {
+  // método: Eliminar una notificación específica
+  deleteNotification(uid: string, notifId: string): Observable<any> {
+    const url = `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones/${notifId}.json`;
+    return this.http.delete(url);
+  }
+
+  // método: Eliminar todas las notificaciones del usuario
+  deleteAllNotifications(uid: string): Observable<any> {
+    const url = `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones.json`;
+    return this.http.delete(url);
+  }
+
+  // método: Verificar si ya existe una notificación del mismo tipo hoy
+  checkNotificationExists(uid: string, tipo: string): Observable<boolean> {
+    return this.getUserNotifications(uid).pipe(
+      map((data) => {
+        if (!data) return false;
+        
+        const today = new Date().toISOString().split('T')[0];
+        return Object.values(data).some((notif: any) => {
+          const notifDate = new Date(notif.fecha).toISOString().split('T')[0];
+          return notif.tipo === tipo && notifDate === today;
+        });
+      })
+    );
+  }
+
+  // método: Agregar nueva notificación con control de duplicados
+  addNotification(uid: string, mensaje: string, tipo?: string): Observable<any> {
+    const notificacionesUrl = `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones.json`;
+
+    // Si se especifica un tipo, verificar si ya existe hoy
+    if (tipo) {
+      return this.checkNotificationExists(uid, tipo).pipe(
+        switchMap((exists) => {
+          if (exists) {
+            // Ya existe una notificación de este tipo hoy, no agregar
+            return of(null);
+          }
+          return this.addNotificationInternal(uid, mensaje, tipo);
+        })
+      );
+    }
+    
+    return this.addNotificationInternal(uid, mensaje, tipo);
+  }
+
+  // método interno para agregar notificación
+  private addNotificationInternal(uid: string, mensaje: string, tipo?: string): Observable<any> {
     const notificacionesUrl = `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones.json`;
 
     return this.getUserNotifications(uid).pipe(
@@ -142,6 +191,8 @@ export class AuthService {
                 mensaje,
                 leido: false,
                 fecha: new Date().toLocaleString(),
+                tipo: tipo || 'general',
+                idUnico: tipo ? `${tipo}_${new Date().toISOString().split('T')[0]}` : undefined
               });
             })
           );
@@ -150,6 +201,8 @@ export class AuthService {
             mensaje,
             leido: false,
             fecha: new Date().toLocaleString(),
+            tipo: tipo || 'general',
+            idUnico: tipo ? `${tipo}_${new Date().toISOString().split('T')[0]}` : undefined
           });
         }
       })
@@ -200,7 +253,7 @@ export class AuthService {
         
         window.location.href = `${document.baseURI}login`;
 
-      }, 2 * 60 * 1000); // 2 minutos
+      }, 5 * 60 * 1000); // 2 minutos
     };
 
     window.addEventListener('mousemove', resetTimer);

@@ -88,7 +88,11 @@ newValue: number = 0;
           // ✅ Notificación: no has ahorrado este mes
           if (this.savings.length === 0) {
             this.authService
-              .addNotification(this.userId, 'No has ahorrado este mes')
+              .addNotification(
+                this.userId, 
+                'No has ahorrado este mes',
+                'sin_ahorro_mes'
+              )
               .subscribe();
           }
         },

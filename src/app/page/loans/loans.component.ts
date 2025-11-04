@@ -106,16 +106,18 @@ newValue: number = 0;
                 this.authService
                   .addNotification(
                     this.userId,
-                    `Venció el préstamo a ${loan.deudor}`
+                    `Venció el préstamo a ${loan.deudor}`,
+                    `prestamo_vencido_${loan.id}`
                   )
                   .subscribe();
               }
 
-              // ✅ Recordatorio de cobro
+              // ✅ Recordatorio de cobro (solo una vez por día)
               this.authService
                 .addNotification(
                   this.userId,
-                  `Recordá que ${loan.deudor} te debe $${loan.valor}`
+                  `Recordá que ${loan.deudor} te debe $${loan.valor}`,
+                  `recordatorio_prestamo_${loan.id}`
                 )
                 .subscribe();
             }

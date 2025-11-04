@@ -1,10 +1,4 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  Inject,
-  PLATFORM_ID,
-} from '@angular/core';
+import {Component,OnInit,OnDestroy,Inject,PLATFORM_ID,} from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { Subscription, forkJoin } from 'rxjs';
@@ -23,15 +17,14 @@ import { CategoriaGasto, Expense } from '../../models/expense.model';
 import { Income } from '../../models/income.model';
 import { FinanzasService } from '../../services/finanzas.service';
 
-import { FormsModule } from '@angular/forms'; // IMPORTANTE
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { inject } from '@angular/core';
-
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule], // <--- AÑADE FormsModule
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
 })
@@ -104,6 +97,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
         }
       }
     );
+
     this.finanzasService.mostrarEstadoFinanciero(
       this,
       this.currentUser,
@@ -268,13 +262,16 @@ export default class HomeComponent implements OnInit, OnDestroy {
       maximumFractionDigits: 0,
     }).format(value);
   }
+
   abrirModalCuenta() {
     this.isModalCuentaOpen = true;
     this.nuevaCuenta = new WalletAccount('', 0);
   }
+
   cerrarModalCuenta() {
     this.isModalCuentaOpen = false;
   }
+
   guardarCuentaDesdeHome() {
     if (!this.nuevaCuenta.tipo || this.nuevaCuenta.valor <= 0) {
       alert('Por favor completa todos los campos.');
@@ -304,9 +301,11 @@ export default class HomeComponent implements OnInit, OnDestroy {
     this.isModalDeudaOpen = true;
     this.nuevaDeuda = new Debt('', '', '', 0, 'Pendiente');
   }
+
   cerrarModalDeuda() {
     this.isModalDeudaOpen = false;
   }
+
   guardarDeudaDesdeHome() {
     if (
       !this.nuevaDeuda.acreedor ||
@@ -341,9 +340,11 @@ export default class HomeComponent implements OnInit, OnDestroy {
     this.isModalPrestamoOpen = true;
     this.nuevoPrestamo = new Loan('', '', '', 0, 'Pendiente');
   }
+
   cerrarModalPrestamo() {
     this.isModalPrestamoOpen = false;
   }
+
   guardarPrestamoDesdeHome() {
     if (
       !this.nuevoPrestamo.deudor ||

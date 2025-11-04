@@ -2,6 +2,7 @@ import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, combineLatest, map } from 'rxjs';
 import { HttpClient } from '@angular/common/http'; // ✅ nuevo
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +14,8 @@ export class DateService {
 
   constructor(
     @Inject(PLATFORM_ID) platformId: Object,
-    private http: HttpClient // ✅ nuevo
+    private http: HttpClient, // ✅ nuevo
+    private authService: AuthService
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
 
@@ -93,15 +95,9 @@ export class DateService {
   notifyMonthChange(uid: string, year: string, month: string): void {
     const mes = this.getMonthName(month);
     const mensaje = `Nuevo mes detectado: ${mes} ${year}`;
-    const url = `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones.json`;
-
-    const body = {
-      mensaje,
-      leido: false,
-      fecha: new Date().toLocaleString()
-    };
-
-    this.http.post(url, body).subscribe();
+    
+    // Usar el nuevo sistema de notificaciones con tipo
+    this.authService.addNotification(uid, mensaje, 'cambio_mes').subscribe();
   }
 
   // método: Obtener nombre del mes en español

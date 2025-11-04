@@ -30,85 +30,76 @@
 
   <!-- Totales -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-    <div class="bg-gradient-to-t from-sky-800 to-sky-800 text-white p-4 rounded-lg shadow-md">
+    <div class="bg-sky-800 text-white p-4 rounded-lg shadow-md">
       <h3 class="text-lg font-semibold">Total en Cartera</h3>
       <p class="text-2xl font-bold">{{ totalWallet | currency }}</p>
     </div>
-    <div class="bg-gradient-to-t from-sky-800 to-sky-800 text-white p-4 rounded-lg shadow-md">
+    <div class="bg-sky-800 text-white p-4 rounded-lg shadow-md">
       <h3 class="text-lg font-semibold">Total Deudas Pendientes</h3>
       <p class="text-2xl font-bold">{{ totalPendingDebts | currency }}</p>
     </div>
-    <div class="bg-gradient-to-t from-sky-800 to-sky-800 text-white p-4 rounded-lg shadow-md">
+    <div class="bg-sky-800 text-white p-4 rounded-lg shadow-md">
       <h3 class="text-lg font-semibold">Total Préstamos Pendientes</h3>
       <p class="text-2xl font-bold">{{ totalPendingLoans | currency }}</p>
     </div>
   </div>
 
-<!-- CONTENEDOR FLEXIBLE -->
-<div class="mt-6 w-full max-w-5xl mx-auto flex flex-col xl:flex-row gap-6">
+  <!-- CONTENEDOR FLEXIBLE EN TARJETAS -->
+  <div class="mt-6 w-full max-w-5xl mx-auto flex flex-col xl:flex-row gap-6">
 
-  <!-- Tabla: Gastos Reales -->
-  <div class="flex-1 border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-    <table class="w-full text-sm text-left">
-      <thead class="bg-gradient-to-t from-sky-800 to-sky-700 text-gray-100 font-semibold">
-        <tr>
-          <th class="px-4 py-3">Gastos Reales</th>
-          <th class="px-4 py-3 text-right">Valor</th>
-        </tr>
-      </thead>
-      <tbody class="text-gray-800">
-        <tr class="border-t">
-          <td class="px-4 py-2">Gastos realizados en el mes</td>
-          <td class="px-4 py-2 text-right">{{ formatCurrency(gastadoActualmente) }}</td>
-        </tr>
-        <tr class="border-t">
-          <td class="px-4 py-2">Saldo actual en cartera</td>
-          <td class="px-4 py-2 text-right">{{ formatCurrency(restanteActualmente) }}</td>
-        </tr>
-        <tr class="border-t bg-orange-50">
-          <td class="px-4 py-2 font-bold">Gastaste de más</td>
-          <td class="px-4 py-2 font-bold text-right">{{ formatCurrency(diferenciaSaldo) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- 🔹 Tarjeta: Gastos Reales -->
+    <div class="flex-1 rounded-lg shadow border border-gray-200 bg-white ">
+      <div
+        class="bg-sky-800 text-gray-100 font-semibold px-4 py-3 rounded-t-lg">
+        Gastos Reales
+      </div>
+      <div class="divide-y divide-gray-200 text-sm text-gray-800">
+        <div class="flex justify-between px-4 py-3">
+          <span>Gastos realizados en el mes</span>
+          <span class="text-right font-medium">{{ formatCurrency(gastadoActualmente) }}</span>
+        </div>
+        <div class="flex justify-between px-4 py-3">
+          <span>Saldo actual en cartera</span>
+          <span class="text-right font-medium">{{ formatCurrency(restanteActualmente) }}</span>
+        </div>
+        <div class="flex justify-between px-4 py-3 bg-orange-50 font-bold">
+          <span>Gastaste de más</span>
+          <span class="text-right">{{ formatCurrency(diferenciaSaldo) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🔹 Tarjeta: Estimaciones -->
+    <div class="flex-1 rounded-lg shadow border border-gray-200 bg-white ">
+      <div
+        class="bg-sky-800 text-gray-100 font-semibold px-4 py-3 rounded-t-lg">
+        Estimaciones
+      </div>
+      <div class="divide-y divide-gray-200  text-sm text-gray-800 ">
+        <div class="flex justify-between px-4 py-3">
+          <span>Total disponible (cartera + préstamos)</span>
+          <span class="text-right font-medium">{{ formatCurrency(restanteTotal) }}</span>
+        </div>
+        <div class="flex justify-between px-4 py-3">
+          <span>Gastos planificados para el mes</span>
+          <span class="text-right font-medium">{{ formatCurrency(estimacionGastosMes) }}</span>
+        </div>
+        <div class="flex justify-between px-4 py-3 bg-sky-50 font-bold">
+          <span>Saldo estimado al final del mes</span>
+          <span class="text-right">{{ formatCurrency(estimacionDineroRestanteMes) }}</span>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Tabla: Estimaciones -->
-  <div class="flex-1 border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-    <table class="w-full text-sm text-left">
-      <thead class="bg-gradient-to-t from-sky-800 to-sky-700 text-gray-100 font-semibold">
-        <tr>
-          <th class="px-4 py-3">Estimaciones</th>
-          <th class="px-4 py-3 text-right">Valor</th>
-        </tr>
-      </thead>
-      <tbody class="text-gray-800">
-        <tr class="border-t">
-          <td class="px-4 py-2">Total disponible (cartera + préstamos)</td>
-          <td class="px-4 py-2 text-right">{{ formatCurrency(restanteTotal) }}</td>
-        </tr>
-        <tr class="border-t">
-          <td class="px-4 py-2">Gastos planificados para el mes</td>
-          <td class="px-4 py-2 text-right">{{ formatCurrency(estimacionGastosMes) }}</td>
-        </tr>
-        <tr class="border-t bg-sky-50">
-          <td class="px-4 py-2 font-bold">Saldo estimado al final del mes</td>
-          <td class="px-4 py-2 font-bold text-right">{{ formatCurrency(estimacionDineroRestanteMes) }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-</div>
-
-
-  <!-- Tablas: Cartera, Deudas, Préstamos -->
+  <!-- Tarjetas: Cartera, Deudas, Préstamos estilo tabla -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-    <!-- Cartera -->
-    <details open class="bg-white rounded-lg shadow-lg border border-gray-200">
+    <!-- Componente: Cartera -->
+    <details open class="bg-white border border-gray-200  rounded-lg shadow">
       <summary
-        class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-sky-700 to-sky-700 text-white rounded-t-lg cursor-pointer select-none">
+        class="flex items-center justify-between px-4 py-3 bg-sky-700 text-white rounded-t-lg cursor-pointer select-none">
         <div>
           <h3 class="text-base md:text-lg font-semibold">Cartera</h3>
           <p class="text-xs opacity-90">Estado Actual ({{ wallet.length }} cuentas)</p>
@@ -118,92 +109,74 @@
           + Agregar
         </button>
       </summary>
-      <div class="p-4 overflow-x-auto">
-        <table class="w-full min-w-[640px] border-collapse text-sm">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="p-2 text-left">Dinero en</th>
-              <th class="p-2 text-right">Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of wallet" class="border-b">
-              <td class="p-2">{{ item.tipo }}</td>
-              <td class="p-2 text-right">{{ item.valor | currency }}</td>
-            </tr>
-            <tr *ngIf="wallet.length === 0" class="text-center text-gray-400">
-              <td colspan="2" class="py-3">Sin registros</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="p-4">
+        <div *ngIf="wallet.length > 0" class="divide-y divide-gray-200">
+          <div *ngFor="let item of wallet" class="py-2 flex justify-between text-sm">
+            <span class="font-medium text-gray-700">{{ item.tipo }}</span>
+            <span class="text-right font-semibold text-gray-900 ">{{ item.valor | currency }}</span>
+          </div>
+        </div>
+        <div *ngIf="wallet.length === 0" class="text-center text-gray-400  py-6">
+          Sin registros
+        </div>
       </div>
     </details>
 
-    <!-- Deudas -->
-    <details open class="bg-white rounded-lg shadow-lg border border-gray-200">
+    <!-- Componente: Deudas -->
+    <details open class="bg-white border border-gray-200 rounded-lg shadow">
       <summary
-        class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-sky-700 to-sky-700 text-white rounded-t-lg cursor-pointer select-none">
+        class="flex items-center justify-between px-4 py-3 bg-sky-700 text-white rounded-t-lg cursor-pointer select-none">
         <div>
           <h3 class="text-base md:text-lg font-semibold">Deudas</h3>
           <p class="text-xs opacity-90">Estado Actual ({{ debts.length }} deudas)</p>
         </div>
         <button (click)="abrirModalDeuda(); $event.stopPropagation()"
-          class="bg-white text-sky-700 font-semibold px-3 py-1 rounded-md shadow-sm hover:bg-blue-100 transition text-sm">
+          class="bg-white text-sky-700 font-semibold px-3 py-1 rounded-md shadow-sm hover:bg-blue-100  transition text-sm">
           + Agregar
         </button>
       </summary>
-      <div class="p-4 overflow-x-auto">
-        <table class="w-full min-w-[640px] border-collapse text-sm">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="p-2 text-left">Nombre Deuda</th>
-              <th class="p-2 text-center">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let debt of debts" class="border-b">
-              <td class="p-2">{{ debt.acreedor }}</td>
-              <td class="p-2 text-center">{{ debt.estado }}</td>
-            </tr>
-            <tr *ngIf="debts.length === 0" class="text-center text-gray-400">
-              <td colspan="2" class="py-3">Sin registros</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="p-4">
+        <div *ngIf="debts.length > 0" class="divide-y divide-gray-200 ">
+          <div *ngFor="let debt of debts" class="py-2 flex justify-between text-sm">
+            <span class="font-medium text-gray-700 ">{{ debt.acreedor }}</span>
+            <span [ngClass]="{
+            'text-green-600 ': debt.estado === 'Pagado',
+            'text-red-600 ': debt.estado === 'Pendiente'
+          }" class="text-right font-semibold">{{ debt.estado }}</span>
+          </div>
+        </div>
+        <div *ngIf="debts.length === 0" class="text-center text-gray-400 py-6">
+          Sin registros
+        </div>
       </div>
     </details>
 
-    <!-- Préstamos -->
-    <details open class="bg-white rounded-lg shadow-lg border border-gray-200">
+    <!-- Componente: Préstamos -->
+    <details open class="bg-white  border border-gray-200  rounded-lg shadow">
       <summary
-        class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-sky-700 to-sky-700 text-white rounded-t-lg cursor-pointer select-none">
+        class="flex items-center justify-between px-4 py-3 bg-sky-700 text-white rounded-t-lg cursor-pointer select-none">
         <div>
           <h3 class="text-base md:text-lg font-semibold">Préstamos</h3>
           <p class="text-xs opacity-90">Estado Actual ({{ loans.length }} préstamos)</p>
         </div>
         <button (click)="abrirModalPrestamo(); $event.stopPropagation()"
-          class="bg-white text-sky-700 font-semibold px-3 py-1 rounded-md shadow-sm hover:bg-blue-100 transition text-sm">
+          class="bg-white text-sky-700 font-semibold px-3 py-1 rounded-md shadow-sm hover:bg-blue-100  transition text-sm">
           + Agregar
         </button>
       </summary>
-      <div class="p-4 overflow-x-auto">
-        <table class="w-full min-w-[640px] border-collapse text-sm">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="p-2 text-left">Nombre Deudor</th>
-              <th class="p-2 text-center">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let loan of loans" class="border-b">
-              <td class="p-2">{{ loan.deudor }}</td>
-              <td class="p-2 text-center">{{ loan.estado }}</td>
-            </tr>
-            <tr *ngIf="loans.length === 0" class="text-center text-gray-400">
-              <td colspan="2" class="py-3">Sin registros</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="p-4">
+        <div *ngIf="loans.length > 0" class="divide-y divide-gray-200 ">
+          <div *ngFor="let loan of loans" class="py-2 flex justify-between text-sm">
+            <span class="font-medium text-gray-700 ">{{ loan.deudor }}</span>
+            <span [ngClass]="{
+            'text-green-600 ': loan.estado === 'Pagado',
+            'text-red-600 ': loan.estado === 'Pendiente'
+          }" class="text-right font-semibold">{{ loan.estado }}</span>
+          </div>
+        </div>
+        <div *ngIf="loans.length === 0" class="text-center text-gray-400 ">
+          Sin registros
+        </div>
       </div>
     </details>
 
@@ -211,100 +184,108 @@
 
   <!-- Modal: Agregar Cuenta a Cartera desde Home -->
   <div *ngIf="isModalCuentaOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg shadow-xl w-96">
-      <h2 class="text-xl font-bold mb-4 text-gray-800">Agregar Cuenta</h2>
+    <div class="bg-white p-6 rounded-lg shadow-xl w-96 text-gray-800 ">
+      <h2 class="text-xl font-bold mb-4">Agregar Cuenta</h2>
 
       <label class="block text-sm mb-1">Nombre / Tipo:</label>
-      <input type="text" [(ngModel)]="nuevaCuenta.tipo" class="w-full p-2 border border-gray-300 rounded mb-3"
+      <input type="text" [(ngModel)]="nuevaCuenta.tipo"
+        class="w-full p-2 border border-gray-300  rounded mb-3 bg-white text-sm"
         placeholder="Ej: Nequi, Efectivo" />
 
       <label class="block text-sm mb-1">Valor:</label>
       <input type="text" [value]="nuevaCuenta.valor ? nuevaCuenta.valor.toLocaleString('es-CO') : ''"
-        (input)="formatearInputMoneda($event, 'cuenta')" placeholder="Ej: 1.000.000"
-        class="w-full p-2 border rounded-md mb-3" />
+        (input)="formatearInputMoneda($event, 'cuenta')"
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white  text-sm"
+        placeholder="Ej: 1.000.000" />
 
-
-      <div class="flex justify-end gap-2">
-        <button (click)="cerrarModalCuenta()" class="px-4 py-2 border rounded-md">Cancelar</button>
+      <div class="flex justify-end gap-2 pt-2">
+        <button (click)="cerrarModalCuenta()"
+          class="px-4 py-2 border rounded-md hover:bg-gray-100 ">Cancelar</button>
         <button (click)="guardarCuentaDesdeHome()"
-          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-          Guardar
-        </button>
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Guardar</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Agregar Deuda desde Home -->
   <div *ngIf="isModalDeudaOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+    <div class="bg-white  p-6 rounded-lg shadow-xl w-96 text-gray-800 ">
       <h2 class="text-xl font-bold mb-4">Agregar Nueva Deuda</h2>
 
-      <label class="block mb-2">Nombre Deuda:</label>
-      <input type="text" [(ngModel)]="nuevaDeuda.acreedor" placeholder="Ejm: Banco Pichincha"
-        class="w-full p-2 border rounded-md mb-3" />
+      <label class="block text-sm mb-1">Nombre Deuda:</label>
+      <input type="text" [(ngModel)]="nuevaDeuda.acreedor"
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white "
+        placeholder="Ejm: Banco Pichincha" />
 
-      <label class="block mb-2">Fecha de Deuda:</label>
-      <input type="date" [(ngModel)]="nuevaDeuda.fecha_deuda" class="w-full p-2 border rounded-md mb-3" />
+      <label class="block text-sm mb-1">Fecha de Deuda:</label>
+      <input type="date" [(ngModel)]="nuevaDeuda.fecha_deuda"
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " />
 
-      <label class="block mb-2">Fecha de Pago:</label>
-      <input type="date" [(ngModel)]="nuevaDeuda.fecha_pago" class="w-full p-2 border rounded-md mb-3" />
+      <label class="block text-sm mb-1">Fecha de Pago:</label>
+      <input type="date" [(ngModel)]="nuevaDeuda.fecha_pago"
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " />
 
-      <label class="block mb-2">Valor:</label>
+      <label class="block text-sm mb-1">Valor:</label>
       <input type="text" [value]="nuevaDeuda.valor ? nuevaDeuda.valor.toLocaleString('es-CO') : ''"
-        (input)="formatearInputMoneda($event, 'deuda')" placeholder="Ej: 35.000"
-        class="w-full p-2 border rounded-md mb-3" />
+        (input)="formatearInputMoneda($event, 'deuda')"
+        class="w-full p-2 border border-gray-300  rounded mb-3 bg-white "
+        placeholder="Ej: 35.000" />
 
-
-      <label class="block mb-2">Estado:</label>
-      <select [(ngModel)]="nuevaDeuda.estado" class="w-full p-2 border rounded-md mb-4">
+      <label class="block text-sm mb-1">Estado:</label>
+      <select [(ngModel)]="nuevaDeuda.estado"
+        class="w-full p-2 border border-gray-300 rounded mb-4 bg-white ">
         <option value="Pendiente">Pendiente</option>
         <option value="Pagado">Pagado</option>
       </select>
 
-      <div class="flex justify-end gap-2">
-        <button (click)="cerrarModalDeuda()" class="px-4 py-2 border rounded-md">Cancelar</button>
-        <button (click)="guardarDeudaDesdeHome()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-          Agregar
-        </button>
+      <div class="flex justify-end gap-2 pt-2">
+        <button (click)="cerrarModalDeuda()"
+          class="px-4 py-2 border rounded-md hover:bg-gray-100 ">Cancelar</button>
+        <button (click)="guardarDeudaDesdeHome()"
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Agregar</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Agregar Préstamo desde Home -->
   <div *ngIf="isModalPrestamoOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-96 text-gray-800 ">
       <h2 class="text-xl font-bold mb-4">Agregar Préstamo</h2>
 
-      <label class="block mb-2">Nombre del Deudor:</label>
-      <input type="text" [(ngModel)]="nuevoPrestamo.deudor" placeholder="Ej: Juan Pérez"
-        class="w-full p-2 border rounded-md mb-3" />
+      <label class="block text-sm mb-1">Nombre del Deudor:</label>
+      <input type="text" [(ngModel)]="nuevoPrestamo.deudor"
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white"
+        placeholder="Ej: Juan Pérez" />
 
-      <label class="block mb-2">Fecha de Préstamo:</label>
-      <input type="date" [(ngModel)]="nuevoPrestamo.fecha_prestamo" class="w-full p-2 border rounded-md mb-3" />
+      <label class="block text-sm mb-1">Fecha de Préstamo:</label>
+      <input type="date" [(ngModel)]="nuevoPrestamo.fecha_prestamo"
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " />
 
-      <label class="block mb-2">Fecha de Pago:</label>
-      <input type="date" [(ngModel)]="nuevoPrestamo.fecha_pago" class="w-full p-2 border rounded-md mb-3" />
+      <label class="block text-sm mb-1">Fecha de Pago:</label>
+      <input type="date" [(ngModel)]="nuevoPrestamo.fecha_pago"
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white" />
 
-      <label class="block mb-2">Valor:</label>
+      <label class="block text-sm mb-1">Valor:</label>
       <input type="text" [value]="nuevoPrestamo.valor ? nuevoPrestamo.valor.toLocaleString('es-CO') : ''"
-        (input)="formatearInputMoneda($event, 'prestamo')" placeholder="Ej: 250.000"
-        class="w-full p-2 border rounded-md mb-3" />
+        (input)="formatearInputMoneda($event, 'prestamo')"
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white"
+        placeholder="Ej: 250.000" />
 
-
-      <label class="block mb-2">Estado:</label>
-      <select [(ngModel)]="nuevoPrestamo.estado" class="w-full p-2 border rounded-md mb-4">
+      <label class="block text-sm mb-1">Estado:</label>
+      <select [(ngModel)]="nuevoPrestamo.estado"
+        class="w-full p-2 border border-gray-300 rounded mb-4 bg-white">
         <option value="Pendiente">Pendiente</option>
         <option value="Pagado">Pagado</option>
       </select>
 
-      <div class="flex justify-end gap-2">
-        <button (click)="cerrarModalPrestamo()" class="px-4 py-2 border rounded-md">Cancelar</button>
+      <div class="flex justify-end gap-2 pt-2">
+        <button (click)="cerrarModalPrestamo()"
+          class="px-4 py-2 border rounded-md hover:bg-gray-100">Cancelar</button>
         <button (click)="guardarPrestamoDesdeHome()"
-          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-          Agregar
-        </button>
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Agregar</button>
       </div>
     </div>
   </div>
+
 
 </div>

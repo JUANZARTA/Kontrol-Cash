@@ -1,7 +1,14 @@
-<div class="flex justify-center items-center h-screen w-screen bg-gradient-to-r from-purple-900 to-sky-900">
+<div class="flex justify-center items-center h-screen w-screen bg-sky-900">
   <div class="bg-white p-10 rounded-lg shadow-lg w-full max-w-md">
 
-    <h2 class="text-center text-3xl font-bold text-gray-700 mb-6">Iniciar Sesión</h2>
+    <div class="flex justify-center mb-6">
+      <img
+        src="assets/img/logoIcono.png"
+        alt="Kronely Task Logo"
+        class="h-20 w-auto"
+      />
+    </div>
+    <h2 class="text-center text-xl font-bold text-gray-700 mb-6">Iniciar Sesión</h2>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
 
@@ -32,7 +39,7 @@
 
       <!-- Botón de Iniciar Sesión -->
       <button type="submit" [disabled]="loginForm.invalid"
-        class="w-full bg-blue-500 text-white py-3 rounded-lg shadow-md hover:bg-blue-600 transition disabled:opacity-50">
+        class="w-full bg-sky-500 text-white py-3 rounded-lg shadow-md hover:bg-sky-700 transition disabled:opacity-50">
         Iniciar Sesión
       </button>
 

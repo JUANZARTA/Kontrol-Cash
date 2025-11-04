@@ -111,7 +111,8 @@ export default class DebtsComponent implements OnInit, OnDestroy {
                 this.authService
                   .addNotification(
                     this.userId,
-                    `Tienes una deuda que vence hoy con ${debt.acreedor}`
+                    `Tienes una deuda que vence hoy con ${debt.acreedor}`,
+                    `deuda_vence_hoy_${debt.id}`
                   )
                   .subscribe();
               }
@@ -121,7 +122,8 @@ export default class DebtsComponent implements OnInit, OnDestroy {
                 this.authService
                   .addNotification(
                     this.userId,
-                    `Tienes una deuda vencida con ${debt.acreedor}`
+                    `Tienes una deuda vencida con ${debt.acreedor}`,
+                    `deuda_vencida_${debt.id}`
                   )
                   .subscribe();
               }

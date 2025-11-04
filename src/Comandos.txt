@@ -8,3 +8,6 @@ ng build --configuration production
 
 # Publica el contenido de 'dist/miCartera' directamente al branch 'gh-pages' de GitHub
 npx angular-cli-ghpages --dir=dist/miCartera
+
+
+la seccion de la cuenta debe durar abierta 10 minutos, despues de 10 minutso aparece una ventana emergente, diciendo que la session expiro, con un boton de aceptar, al presionar el aceptar me lanza al login par ainiciar secion denuevo, ahora, eso si no hay ninunga actividad dentro de esos 10 minutos,  con la ventana emergente del mismo diseño que las demas, otra cosa para depurar no haremos 10 minutos lo haremos de 10 segundo a ver si funciona.

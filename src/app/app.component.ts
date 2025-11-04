@@ -9,7 +9,7 @@ import { RouterOutlet, Router } from '@angular/router';
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
-  title = 'ng-menu-dashboard';
+  title = 'Mi Cartera';
 
   constructor(private router: Router) {}
 

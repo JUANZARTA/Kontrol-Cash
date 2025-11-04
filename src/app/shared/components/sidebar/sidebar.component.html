@@ -7,8 +7,8 @@
   </svg>
 </button>
 <!-- SIDEBAR -->
-<aside [class.hidden]="!isSidebarOpen && isMobile()" class="bg-gradient-to-br from-slate-800 to-slate-900 fixed inset-0 z-50 my-4 ml-4 h-[calc(100vh-32px)] w-72
-    rounded-xl transition-transform duration-300 md:translate-x-0">
+<aside [class.hidden]="!isSidebarOpen && isMobile()" class="bg-slate-800 fixed inset-0 z-50 my-4 ml-4 h-[calc(100vh-32px)] w-72
+  rounded-xl transition-all duration-300 ease-in-out shadow-xl">
   <div class="relative border-b border-white/20">
     <!-- Header -->
     <a class="flex items-center gap-4 py-6 px-8">
@@ -39,7 +39,7 @@
       <li>
         <a routerLink="/app/home" (click)="closeSidebar()">
           <button
-            routerLinkActive="bg-gradient-to-tr from-sky-700 to-cyan-400 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
+            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
             class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
             type="button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
@@ -60,7 +60,7 @@
       <li>
         <a routerLink="/app/expense" (click)="closeSidebar()">
           <button
-            routerLinkActive="bg-gradient-to-tr from-sky-700 to-cyan-400 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
+            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
             class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
             type="button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
@@ -76,7 +76,7 @@
       <li>
         <a routerLink="/app/income" (click)="closeSidebar()">
           <button
-            routerLinkActive="bg-gradient-to-tr from-sky-700 to-cyan-400 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
+            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
             class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
             type="button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
@@ -93,7 +93,7 @@
       <li>
         <a routerLink="/app/wallet" (click)="closeSidebar()">
           <button
-            routerLinkActive="bg-gradient-to-tr from-sky-700 to-cyan-400 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
+            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
             class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
             type="button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
@@ -110,7 +110,7 @@
       <li>
         <a routerLink="/app/saving" (click)="closeSidebar()">
           <button
-            routerLinkActive="bg-gradient-to-tr from-sky-700 to-cyan-400 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
+            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
             class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
             type="button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
@@ -127,7 +127,7 @@
       <li>
         <a routerLink="/app/loan" (click)="closeSidebar()">
           <button
-            routerLinkActive="bg-gradient-to-tr from-sky-700 to-cyan-400 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
+            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
             class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
             type="button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
@@ -143,7 +143,7 @@
       <li>
         <a routerLink="/app/debt" (click)="closeSidebar()">
           <button
-            routerLinkActive="bg-gradient-to-tr from-sky-700 to-cyan-400 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
+            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
             class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
             type="button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
