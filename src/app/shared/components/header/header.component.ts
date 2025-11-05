@@ -32,7 +32,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   unreadCount: number = 0;
   showNotifications: boolean = false;
   isLoadingNotifications: boolean = false;
-  
+
   // Modales de confirmación
   showMarkAllReadModal: boolean = false;
   showDeleteAllModal: boolean = false;
@@ -93,7 +93,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     });
 
     this.loadNotifications();
-    
+
     // Limpiar notificaciones antiguas cada hora
     setInterval(() => {
       this.cleanOldNotifications();
@@ -194,7 +194,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (!uid) return;
 
     this.isLoadingNotifications = true;
-    
+
     this.authService.getUserNotifications(uid).subscribe({
       next: (data) => {
         if (data) {
@@ -231,7 +231,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   markAllAsRead(): void {
     const unreadNotifications = this.notifications.filter(n => !n.leido);
     if (unreadNotifications.length === 0) return;
-    
+
     this.showMarkAllReadModal = true;
   }
 
@@ -242,7 +242,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (!uid) return;
 
     const unreadNotifications = this.notifications.filter(n => !n.leido);
-    const markAsReadPromises = unreadNotifications.map(notif => 
+    const markAsReadPromises = unreadNotifications.map(notif =>
       this.authService.markNotificationAsRead(uid, notif.id)
     );
 
@@ -258,7 +258,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   deleteNotification(notifId: string): void {
     const notification = this.notifications.find(n => n.id === notifId);
     if (!notification) return;
-    
+
     this.notificationToDelete = notification;
     this.showDeleteSingleModal = true;
   }
@@ -312,11 +312,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event): void {
     const target = event.target as HTMLElement;
-    
+
     // Cerrar dropdown de notificaciones
     const notificationButton = document.querySelector('[data-notification-button]');
     const notificationDropdown = document.querySelector('[data-notification-dropdown]');
-    
+
     if (notificationButton && notificationDropdown) {
       if (!notificationButton.contains(target) && !notificationDropdown.contains(target)) {
         this.showNotifications = false;
@@ -327,7 +327,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     const modals = document.querySelectorAll('[data-modal]');
     modals.forEach(modal => {
       if (modal.contains(target)) return;
-      
+
       if (this.showMarkAllReadModal && modal.getAttribute('data-modal') === 'mark-all-read') {
         this.closeMarkAllReadModal();
       }
@@ -372,4 +372,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.showDeleteSingleModal = false;
     this.notificationToDelete = null;
   }
+  
+  getRowAnimationDelay(notif: any, index?: number): string {
+  // Usa el índice si viene de *ngFor, o lo calcula desde el array
+  const i = index ?? this.notifications.indexOf(notif);
+  // Retorna un delay progresivo: 0.1s, 0.15s, 0.2s, etc.
+  return `${0.1 + i * 0.05}s`;
+}
+
 }

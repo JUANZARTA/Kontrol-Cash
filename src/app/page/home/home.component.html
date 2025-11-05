@@ -1,4 +1,4 @@
-<div class="p-6 space-y-6">
+
 
   <!-- 🗓 Encabezado con mes y año seleccionados -->
   <h2 class="text-xl font-bold text-gray-700 text-center">
@@ -49,8 +49,7 @@
 
     <!-- 🔹 Tarjeta: Gastos Reales -->
     <div class="flex-1 rounded-lg shadow border border-gray-200 bg-white ">
-      <div
-        class="bg-sky-800 text-gray-100 font-semibold px-4 py-3 rounded-t-lg">
+      <div class="bg-sky-800 text-gray-100 font-semibold px-4 py-3 rounded-t-lg">
         Gastos Reales
       </div>
       <div class="divide-y divide-gray-200 text-sm text-gray-800">
@@ -71,8 +70,7 @@
 
     <!-- 🔹 Tarjeta: Estimaciones -->
     <div class="flex-1 rounded-lg shadow border border-gray-200 bg-white ">
-      <div
-        class="bg-sky-800 text-gray-100 font-semibold px-4 py-3 rounded-t-lg">
+      <div class="bg-sky-800 text-gray-100 font-semibold px-4 py-3 rounded-t-lg">
         Estimaciones
       </div>
       <div class="divide-y divide-gray-200  text-sm text-gray-800 ">
@@ -189,18 +187,15 @@
 
       <label class="block text-sm mb-1">Nombre / Tipo:</label>
       <input type="text" [(ngModel)]="nuevaCuenta.tipo"
-        class="w-full p-2 border border-gray-300  rounded mb-3 bg-white text-sm"
-        placeholder="Ej: Nequi, Efectivo" />
+        class="w-full p-2 border border-gray-300  rounded mb-3 bg-white text-sm" placeholder="Ej: Nequi, Efectivo" />
 
       <label class="block text-sm mb-1">Valor:</label>
       <input type="text" [value]="nuevaCuenta.valor ? nuevaCuenta.valor.toLocaleString('es-CO') : ''"
         (input)="formatearInputMoneda($event, 'cuenta')"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white  text-sm"
-        placeholder="Ej: 1.000.000" />
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white  text-sm" placeholder="Ej: 1.000.000" />
 
       <div class="flex justify-end gap-2 pt-2">
-        <button (click)="cerrarModalCuenta()"
-          class="px-4 py-2 border rounded-md hover:bg-gray-100 ">Cancelar</button>
+        <button (click)="cerrarModalCuenta()" class="px-4 py-2 border rounded-md hover:bg-gray-100 ">Cancelar</button>
         <button (click)="guardarCuentaDesdeHome()"
           class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Guardar</button>
       </div>
@@ -214,8 +209,7 @@
 
       <label class="block text-sm mb-1">Nombre Deuda:</label>
       <input type="text" [(ngModel)]="nuevaDeuda.acreedor"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white "
-        placeholder="Ejm: Banco Pichincha" />
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " placeholder="Ejm: Banco Pichincha" />
 
       <label class="block text-sm mb-1">Fecha de Deuda:</label>
       <input type="date" [(ngModel)]="nuevaDeuda.fecha_deuda"
@@ -228,19 +222,16 @@
       <label class="block text-sm mb-1">Valor:</label>
       <input type="text" [value]="nuevaDeuda.valor ? nuevaDeuda.valor.toLocaleString('es-CO') : ''"
         (input)="formatearInputMoneda($event, 'deuda')"
-        class="w-full p-2 border border-gray-300  rounded mb-3 bg-white "
-        placeholder="Ej: 35.000" />
+        class="w-full p-2 border border-gray-300  rounded mb-3 bg-white " placeholder="Ej: 35.000" />
 
       <label class="block text-sm mb-1">Estado:</label>
-      <select [(ngModel)]="nuevaDeuda.estado"
-        class="w-full p-2 border border-gray-300 rounded mb-4 bg-white ">
+      <select [(ngModel)]="nuevaDeuda.estado" class="w-full p-2 border border-gray-300 rounded mb-4 bg-white ">
         <option value="Pendiente">Pendiente</option>
         <option value="Pagado">Pagado</option>
       </select>
 
       <div class="flex justify-end gap-2 pt-2">
-        <button (click)="cerrarModalDeuda()"
-          class="px-4 py-2 border rounded-md hover:bg-gray-100 ">Cancelar</button>
+        <button (click)="cerrarModalDeuda()" class="px-4 py-2 border rounded-md hover:bg-gray-100 ">Cancelar</button>
         <button (click)="guardarDeudaDesdeHome()"
           class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Agregar</button>
       </div>
@@ -254,8 +245,7 @@
 
       <label class="block text-sm mb-1">Nombre del Deudor:</label>
       <input type="text" [(ngModel)]="nuevoPrestamo.deudor"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white"
-        placeholder="Ej: Juan Pérez" />
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white" placeholder="Ej: Juan Pérez" />
 
       <label class="block text-sm mb-1">Fecha de Préstamo:</label>
       <input type="date" [(ngModel)]="nuevoPrestamo.fecha_prestamo"
@@ -268,19 +258,16 @@
       <label class="block text-sm mb-1">Valor:</label>
       <input type="text" [value]="nuevoPrestamo.valor ? nuevoPrestamo.valor.toLocaleString('es-CO') : ''"
         (input)="formatearInputMoneda($event, 'prestamo')"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white"
-        placeholder="Ej: 250.000" />
+        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white" placeholder="Ej: 250.000" />
 
       <label class="block text-sm mb-1">Estado:</label>
-      <select [(ngModel)]="nuevoPrestamo.estado"
-        class="w-full p-2 border border-gray-300 rounded mb-4 bg-white">
+      <select [(ngModel)]="nuevoPrestamo.estado" class="w-full p-2 border border-gray-300 rounded mb-4 bg-white">
         <option value="Pendiente">Pendiente</option>
         <option value="Pagado">Pagado</option>
       </select>
 
       <div class="flex justify-end gap-2 pt-2">
-        <button (click)="cerrarModalPrestamo()"
-          class="px-4 py-2 border rounded-md hover:bg-gray-100">Cancelar</button>
+        <button (click)="cerrarModalPrestamo()" class="px-4 py-2 border rounded-md hover:bg-gray-100">Cancelar</button>
         <button (click)="guardarPrestamoDesdeHome()"
           class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Agregar</button>
       </div>
@@ -288,4 +275,3 @@
   </div>
 
 
-</div>
