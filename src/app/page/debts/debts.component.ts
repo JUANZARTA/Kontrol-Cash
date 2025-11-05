@@ -187,7 +187,7 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   saveNewValue() {
     if (!this.selectedDebtId) return;
 
-    const debt = this.debts.find(d => d.id === this.selectedDebtId);
+    const debt = this.debts.find((d) => d.id === this.selectedDebtId);
     if (!debt) return;
 
     const updatedValue = debt.valor + this.newValue;
@@ -200,21 +200,23 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       estado: debt.estado,
     };
 
-    this.debtService.updateDebt(
-      this.userId,
-      this.currentYear,
-      this.currentMonth,
-      debt.id,
-      updatedDebt
-    ).subscribe({
-      next: () => {
-        this.loadDebts();
-        this.closeAddValueModal();
-      },
-      error: (err) => {
-        console.error('Error al actualizar valor de deuda:', err);
-      }
-    });
+    this.debtService
+      .updateDebt(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        debt.id,
+        updatedDebt
+      )
+      .subscribe({
+        next: () => {
+          this.loadDebts();
+          this.closeAddValueModal();
+        },
+        error: (err) => {
+          console.error('Error al actualizar valor de deuda:', err);
+        },
+      });
   }
 
   // ======================
@@ -390,7 +392,7 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   applyValue(action: 'add' | 'subtract') {
     if (!this.selectedDebtId) return;
 
-    const debt = this.debts.find(d => d.id === this.selectedDebtId);
+    const debt = this.debts.find((d) => d.id === this.selectedDebtId);
     if (!debt) return;
 
     let finalValue = this.newValue;
@@ -411,21 +413,28 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       estado: debt.estado,
     };
 
-    this.debtService.updateDebt(
-      this.userId,
-      this.currentYear,
-      this.currentMonth,
-      debt.id,
-      updatedDebt
-    ).subscribe({
-      next: () => {
-        this.loadDebts();
-        this.closeAddValueModal();
-      },
-      error: (err) => {
-        console.error('Error al actualizar deuda:', err);
-      }
-    });
+    this.debtService
+      .updateDebt(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        debt.id,
+        updatedDebt
+      )
+      .subscribe({
+        next: () => {
+          this.loadDebts();
+          this.closeAddValueModal();
+        },
+        error: (err) => {
+          console.error('Error al actualizar deuda:', err);
+        },
+      });
   }
-
+  getRowAnimationDelay(item: any, index?: number): string {
+    // Si pasas el index desde *ngFor, úsalo directamente
+    const i = index ?? this.debts.indexOf(item);
+    // Retorna un delay incremental: 0.1s, 0.15s, 0.2s, ...
+    return `${0.1 + i * 0.05}s`;
+  }
 }

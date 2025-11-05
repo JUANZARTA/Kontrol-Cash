@@ -28,12 +28,12 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   private dateService = inject(DateService);
   private authService = inject(AuthService);
   private finanzasService = inject(FinanzasService);
-// Variables para modales de agregar valor y eliminar
-isAddValueModalOpen: boolean = false;
-isDeleteModalOpen: boolean = false;
-selectedSavingId: string | null = null;
-savingToDeleteId: string | null = null;
-newValue: number = 0;
+  // Variables para modales de agregar valor y eliminar
+  isAddValueModalOpen: boolean = false;
+  isDeleteModalOpen: boolean = false;
+  selectedSavingId: string | null = null;
+  savingToDeleteId: string | null = null;
+  newValue: number = 0;
 
   // Datos
   savings: SavingWithId[] = [];
@@ -70,8 +70,13 @@ newValue: number = 0;
         this.currentMonth = date.month;
         this.loadSavings();
       }
-    });this.finanzasService.mostrarEstadoFinanciero(this, this.userId, this.currentYear, this.currentMonth);
-
+    });
+    this.finanzasService.mostrarEstadoFinanciero(
+      this,
+      this.userId,
+      this.currentYear,
+      this.currentMonth
+    );
   }
 
   ngOnDestroy(): void {
@@ -100,166 +105,180 @@ newValue: number = 0;
         error: (err) => {
           console.error('Error al cargar ahorros:', err);
         },
-      });this.finanzasService.mostrarEstadoFinanciero(this, this.userId, this.currentYear, this.currentMonth);
-
+      });
+    this.finanzasService.mostrarEstadoFinanciero(
+      this,
+      this.userId,
+      this.currentYear,
+      this.currentMonth
+    );
   }
 
   // ======================
-// Modal: Agregar Ahorro
-// ======================
-openModal() {
-  this.isModalOpen = true;
-}
-
-closeModal() {
-  this.isModalOpen = false;
-  this.newSaving = new Saving('', 0);
-}
-
-addSaving() {
-  if (!this.newSaving.tipo) {
-    alert('Por favor completa todos los campos.');
-    return;
+  // Modal: Agregar Ahorro
+  // ======================
+  openModal() {
+    this.isModalOpen = true;
   }
 
-  this.savingsService.addSaving(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.newSaving
-  ).subscribe({
-    next: () => {
-      this.loadSavings();
-      this.closeModal();
-      this.authService.addNotification(this.userId, 'Has agregado dinero a tus ahorros').subscribe();
-    },
-    error: (err) => {
-      console.error('Error al agregar ahorro:', err);
-    }
-  });
-}
-
-// ======================
-// Modal: Agregar Valor en Ahorro
-// ======================
-openAddModal(id: string) {
-  this.selectedSavingId = id;
-  this.isAddValueModalOpen = true;
-}
-
-closeAddValueModal() {
-  this.isAddValueModalOpen = false;
-  this.newValue = 0;
-}
-
-applyValue(action: 'add' | 'subtract') {
-  if (!this.selectedSavingId) return;
-
-  const saving = this.savings.find(s => s.id === this.selectedSavingId);
-  if (!saving) return;
-
-  let finalValue = this.newValue;
-
-  if (action === 'subtract') {
-    finalValue = -Math.abs(this.newValue);
-  } else {
-    finalValue = Math.abs(this.newValue);
+  closeModal() {
+    this.isModalOpen = false;
+    this.newSaving = new Saving('', 0);
   }
 
-  const updatedValue = saving.valor + finalValue;
-
-  const updatedSaving: Saving = {
-    tipo: saving.tipo,
-    valor: updatedValue
-  };
-
-  this.savingsService.updateSaving(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    saving.id,
-    updatedSaving
-  ).subscribe({
-    next: () => {
-      this.loadSavings();
-      this.closeAddValueModal();
-    },
-    error: (err) => {
-      console.error('Error al actualizar ahorro:', err);
+  addSaving() {
+    if (!this.newSaving.tipo) {
+      alert('Por favor completa todos los campos.');
+      return;
     }
-  });
-}
 
-// ======================
-// Modal: Editar Ahorro
-// ======================
-openEditModal(id: string) {
-  const original = this.savings.find(s => s.id === id);
-  if (!original) return;
+    this.savingsService
+      .addSaving(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.newSaving
+      )
+      .subscribe({
+        next: () => {
+          this.loadSavings();
+          this.closeModal();
+          this.authService
+            .addNotification(this.userId, 'Has agregado dinero a tus ahorros')
+            .subscribe();
+        },
+        error: (err) => {
+          console.error('Error al agregar ahorro:', err);
+        },
+      });
+  }
 
-  this.editedSaving = new Saving(original.tipo, original.valor);
-  this.editedId = id;
-  this.isEditModalOpen = true;
-}
+  // ======================
+  // Modal: Agregar Valor en Ahorro
+  // ======================
+  openAddModal(id: string) {
+    this.selectedSavingId = id;
+    this.isAddValueModalOpen = true;
+  }
 
-closeEditModal() {
-  this.isEditModalOpen = false;
-  this.editedSaving = new Saving('', 0);
-  this.editedId = null;
-}
+  closeAddValueModal() {
+    this.isAddValueModalOpen = false;
+    this.newValue = 0;
+  }
 
-saveEditedSaving() {
-  if (!this.editedId) return;
+  applyValue(action: 'add' | 'subtract') {
+    if (!this.selectedSavingId) return;
 
-  this.savingsService.updateSaving(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.editedId,
-    this.editedSaving
-  ).subscribe({
-    next: () => {
-      this.loadSavings();
-      this.closeEditModal();
-    },
-    error: (err) => {
-      console.error('Error al actualizar ahorro:', err);
+    const saving = this.savings.find((s) => s.id === this.selectedSavingId);
+    if (!saving) return;
+
+    let finalValue = this.newValue;
+
+    if (action === 'subtract') {
+      finalValue = -Math.abs(this.newValue);
+    } else {
+      finalValue = Math.abs(this.newValue);
     }
-  });
-}
 
-// ======================
-// Modal: Eliminar Ahorro
-// ======================
-openDeleteModal(id: string) {
-  this.isDeleteModalOpen = true;
-  this.savingToDeleteId = id;
-}
+    const updatedValue = saving.valor + finalValue;
 
-closeDeleteModal() {
-  this.isDeleteModalOpen = false;
-  this.savingToDeleteId = null;
-}
+    const updatedSaving: Saving = {
+      tipo: saving.tipo,
+      valor: updatedValue,
+    };
 
-confirmDeleteSaving() {
-  if (!this.savingToDeleteId) return;
+    this.savingsService
+      .updateSaving(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        saving.id,
+        updatedSaving
+      )
+      .subscribe({
+        next: () => {
+          this.loadSavings();
+          this.closeAddValueModal();
+        },
+        error: (err) => {
+          console.error('Error al actualizar ahorro:', err);
+        },
+      });
+  }
 
-  this.savingsService.deleteSaving(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.savingToDeleteId
-  ).subscribe({
-    next: () => {
-      this.loadSavings();
-      this.closeDeleteModal();
-    },
-    error: (err) => {
-      console.error('Error al eliminar ahorro:', err);
-    }
-  });
-}
+  // ======================
+  // Modal: Editar Ahorro
+  // ======================
+  openEditModal(id: string) {
+    const original = this.savings.find((s) => s.id === id);
+    if (!original) return;
 
+    this.editedSaving = new Saving(original.tipo, original.valor);
+    this.editedId = id;
+    this.isEditModalOpen = true;
+  }
+
+  closeEditModal() {
+    this.isEditModalOpen = false;
+    this.editedSaving = new Saving('', 0);
+    this.editedId = null;
+  }
+
+  saveEditedSaving() {
+    if (!this.editedId) return;
+
+    this.savingsService
+      .updateSaving(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.editedId,
+        this.editedSaving
+      )
+      .subscribe({
+        next: () => {
+          this.loadSavings();
+          this.closeEditModal();
+        },
+        error: (err) => {
+          console.error('Error al actualizar ahorro:', err);
+        },
+      });
+  }
+
+  // ======================
+  // Modal: Eliminar Ahorro
+  // ======================
+  openDeleteModal(id: string) {
+    this.isDeleteModalOpen = true;
+    this.savingToDeleteId = id;
+  }
+
+  closeDeleteModal() {
+    this.isDeleteModalOpen = false;
+    this.savingToDeleteId = null;
+  }
+
+  confirmDeleteSaving() {
+    if (!this.savingToDeleteId) return;
+
+    this.savingsService
+      .deleteSaving(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.savingToDeleteId
+      )
+      .subscribe({
+        next: () => {
+          this.loadSavings();
+          this.closeDeleteModal();
+        },
+        error: (err) => {
+          console.error('Error al eliminar ahorro:', err);
+        },
+      });
+  }
 
   getTotalSavings(): number {
     return this.savings.reduce((sum, e) => sum + Number(e.valor), 0);
@@ -290,5 +309,10 @@ confirmDeleteSaving() {
     this.editedSaving.valor = value;
     input.value = this.formatCurrency(value);
   }
-
+  getRowAnimationDelay(saving: any, index?: number): string {
+    // Si pasas el index desde *ngFor, úsalo directamente
+    const i = index ?? this.savings.indexOf(saving);
+    // Retorna un delay incremental: 0.1s, 0.15s, 0.2s, ...
+    return `${0.1 + i * 0.05}s`;
+  }
 }

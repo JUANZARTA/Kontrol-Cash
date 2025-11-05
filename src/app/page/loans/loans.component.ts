@@ -30,11 +30,11 @@ export default class LoansComponent implements OnInit, OnDestroy {
   private finanzasService = inject(FinanzasService);
 
   // Variables para modales de agregar valor y eliminar
-isAddValueModalOpen: boolean = false;
-isDeleteModalOpen: boolean = false;
-selectedLoanId: string | null = null;
-loanToDeleteId: string | null = null;
-newValue: number = 0;
+  isAddValueModalOpen: boolean = false;
+  isDeleteModalOpen: boolean = false;
+  selectedLoanId: string | null = null;
+  loanToDeleteId: string | null = null;
+  newValue: number = 0;
 
   // Datos
   incomes: any[] = [];
@@ -136,169 +136,176 @@ newValue: number = 0;
   }
 
   // ======================
-// Modal: Agregar Préstamo
-// ======================
-openModal() {
-  this.isModalOpen = true;
-}
-
-closeModal() {
-  this.isModalOpen = false;
-  this.newLoan = new Loan('', '', '', 0, 'Pendiente');
-}
-
-addLoan() {
-  if (!this.newLoan.deudor || !this.newLoan.fecha_prestamo || !this.newLoan.fecha_pago || this.newLoan.valor <= 0) {
-    alert('Por favor completa todos los campos.');
-    return;
+  // Modal: Agregar Préstamo
+  // ======================
+  openModal() {
+    this.isModalOpen = true;
   }
 
-  this.loanService.addLoan(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.newLoan
-  ).subscribe({
-    next: () => {
-      this.loadLoans();
-      this.closeModal();
-    },
-    error: (err) => {
-      console.error('Error al agregar préstamo:', err);
-    }
-  });
-}
-
-// ======================
-// Modal: Agregar Valor en Préstamo
-// ======================
-openAddModal(id: string) {
-  this.selectedLoanId = id;
-  this.isAddValueModalOpen = true;
-}
-
-closeAddValueModal() {
-  this.isAddValueModalOpen = false;
-  this.newValue = 0;
-}
-
-applyValue(action: 'add' | 'subtract') {
-  if (!this.selectedLoanId) return;
-
-  const loan = this.loans.find(l => l.id === this.selectedLoanId);
-  if (!loan) return;
-
-  let finalValue = this.newValue;
-
-  if (action === 'subtract') {
-    finalValue = -Math.abs(this.newValue);
-  } else {
-    finalValue = Math.abs(this.newValue);
+  closeModal() {
+    this.isModalOpen = false;
+    this.newLoan = new Loan('', '', '', 0, 'Pendiente');
   }
 
-  const updatedValue = loan.valor + finalValue;
-
-  const updatedLoan: Loan = {
-    deudor: loan.deudor,
-    fecha_prestamo: loan.fecha_prestamo,
-    fecha_pago: loan.fecha_pago,
-    valor: updatedValue,
-    estado: loan.estado
-  };
-
-  this.loanService.updateLoan(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    loan.id,
-    updatedLoan
-  ).subscribe({
-    next: () => {
-      this.loadLoans();
-      this.closeAddValueModal();
-    },
-    error: (err) => {
-      console.error('Error al actualizar préstamo:', err);
+  addLoan() {
+    if (
+      !this.newLoan.deudor ||
+      !this.newLoan.fecha_prestamo ||
+      !this.newLoan.fecha_pago ||
+      this.newLoan.valor <= 0
+    ) {
+      alert('Por favor completa todos los campos.');
+      return;
     }
-  });
-}
 
-// ======================
-// Modal: Editar Préstamo
-// ======================
-openEditModal(id: string) {
-  const original = this.loans.find(l => l.id === id);
-  if (!original) return;
+    this.loanService
+      .addLoan(this.userId, this.currentYear, this.currentMonth, this.newLoan)
+      .subscribe({
+        next: () => {
+          this.loadLoans();
+          this.closeModal();
+        },
+        error: (err) => {
+          console.error('Error al agregar préstamo:', err);
+        },
+      });
+  }
 
-  this.editedLoan = new Loan(
-    original.deudor,
-    original.fecha_prestamo,
-    original.fecha_pago,
-    original.valor,
-    original.estado
-  );
-  this.editedId = id;
-  this.isEditModalOpen = true;
-}
+  // ======================
+  // Modal: Agregar Valor en Préstamo
+  // ======================
+  openAddModal(id: string) {
+    this.selectedLoanId = id;
+    this.isAddValueModalOpen = true;
+  }
 
-closeEditModal() {
-  this.isEditModalOpen = false;
-  this.editedLoan = new Loan('', '', '', 0, 'Pendiente');
-  this.editedId = null;
-}
+  closeAddValueModal() {
+    this.isAddValueModalOpen = false;
+    this.newValue = 0;
+  }
 
-saveEditedLoan() {
-  if (!this.editedId) return;
+  applyValue(action: 'add' | 'subtract') {
+    if (!this.selectedLoanId) return;
 
-  this.loanService.updateLoan(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.editedId,
-    this.editedLoan
-  ).subscribe({
-    next: () => {
-      this.loadLoans();
-      this.closeEditModal();
-    },
-    error: (err) => {
-      console.error('Error al actualizar préstamo:', err);
+    const loan = this.loans.find((l) => l.id === this.selectedLoanId);
+    if (!loan) return;
+
+    let finalValue = this.newValue;
+
+    if (action === 'subtract') {
+      finalValue = -Math.abs(this.newValue);
+    } else {
+      finalValue = Math.abs(this.newValue);
     }
-  });
-}
 
-// ======================
-// Modal: Eliminar Préstamo
-// ======================
-openDeleteModal(id: string) {
-  this.isDeleteModalOpen = true;
-  this.loanToDeleteId = id;
-}
+    const updatedValue = loan.valor + finalValue;
 
-closeDeleteModal() {
-  this.isDeleteModalOpen = false;
-  this.loanToDeleteId = null;
-}
+    const updatedLoan: Loan = {
+      deudor: loan.deudor,
+      fecha_prestamo: loan.fecha_prestamo,
+      fecha_pago: loan.fecha_pago,
+      valor: updatedValue,
+      estado: loan.estado,
+    };
 
-confirmDeleteLoan() {
-  if (!this.loanToDeleteId) return;
+    this.loanService
+      .updateLoan(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        loan.id,
+        updatedLoan
+      )
+      .subscribe({
+        next: () => {
+          this.loadLoans();
+          this.closeAddValueModal();
+        },
+        error: (err) => {
+          console.error('Error al actualizar préstamo:', err);
+        },
+      });
+  }
 
-  this.loanService.deleteLoan(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.loanToDeleteId
-  ).subscribe({
-    next: () => {
-      this.loadLoans();
-      this.closeDeleteModal();
-    },
-    error: (err) => {
-      console.error('Error al eliminar préstamo:', err);
-    }
-  });
-}
+  // ======================
+  // Modal: Editar Préstamo
+  // ======================
+  openEditModal(id: string) {
+    const original = this.loans.find((l) => l.id === id);
+    if (!original) return;
 
+    this.editedLoan = new Loan(
+      original.deudor,
+      original.fecha_prestamo,
+      original.fecha_pago,
+      original.valor,
+      original.estado
+    );
+    this.editedId = id;
+    this.isEditModalOpen = true;
+  }
+
+  closeEditModal() {
+    this.isEditModalOpen = false;
+    this.editedLoan = new Loan('', '', '', 0, 'Pendiente');
+    this.editedId = null;
+  }
+
+  saveEditedLoan() {
+    if (!this.editedId) return;
+
+    this.loanService
+      .updateLoan(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.editedId,
+        this.editedLoan
+      )
+      .subscribe({
+        next: () => {
+          this.loadLoans();
+          this.closeEditModal();
+        },
+        error: (err) => {
+          console.error('Error al actualizar préstamo:', err);
+        },
+      });
+  }
+
+  // ======================
+  // Modal: Eliminar Préstamo
+  // ======================
+  openDeleteModal(id: string) {
+    this.isDeleteModalOpen = true;
+    this.loanToDeleteId = id;
+  }
+
+  closeDeleteModal() {
+    this.isDeleteModalOpen = false;
+    this.loanToDeleteId = null;
+  }
+
+  confirmDeleteLoan() {
+    if (!this.loanToDeleteId) return;
+
+    this.loanService
+      .deleteLoan(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.loanToDeleteId
+      )
+      .subscribe({
+        next: () => {
+          this.loadLoans();
+          this.closeDeleteModal();
+        },
+        error: (err) => {
+          console.error('Error al eliminar préstamo:', err);
+        },
+      });
+  }
 
   // Método para cambiar el estado de un préstamo
   togglePaymentStatus(loan: LoanWithId) {
@@ -367,4 +374,11 @@ confirmDeleteLoan() {
     input.value = this.formatCurrency(value);
   }
 
+  // loans.component.ts (o el componente donde tienes la tabla)
+  getRowAnimationDelay(loan: any, index?: number): string {
+    // Si pasas el index desde *ngFor, úsalo directamente
+    const i = index ?? this.loans.indexOf(loan);
+    // Retorna un delay incremental: 0.1s, 0.2s, 0.3s, ...
+    return `${0.1 + i * 0.05}s`;
+  }
 }

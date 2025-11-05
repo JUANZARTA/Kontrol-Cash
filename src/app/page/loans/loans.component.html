@@ -9,45 +9,50 @@
   </span>
 </div>
 
-<!-- Encabezado -->
-<div class="flex items-center justify-between p-6 bg-sky-800 text-white rounded-t-xl shadow-md animate-fadeSlideDown">
+<!-- Encabezado con botón -->
+<div class="flex items-center justify-between p-4 opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
   <div>
-    <h6 class="text-xl font-bold tracking-wide">Préstamos</h6>
+    <h6 class="text-lg font-semibold text-white">Préstamos</h6>
     <p class="text-sm flex items-center gap-2 opacity-90">
       <strong>Estado de Préstamos</strong>
     </p>
   </div>
+  <button (click)="openModal()"
+    class="bg-sky-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-slate-700 transition">
+    Agregar Préstamo +
+  </button>
 </div>
 
-<!-- Tabla -->
-<div class="overflow-x-auto animate-fadeSlideDown">
-  <table class="w-full min-w-[640px] border-collapse">
-    <thead class="bg-gray-100">
-      <tr class="border-b">
-        <th class="py-4 px-6 text-left text-xs font-semibold uppercase text-gray-600">Nombre Deudor</th>
-        <th class="py-4 px-6 text-center text-xs font-semibold uppercase text-gray-600">Fecha de Préstamo</th>
-        <th class="py-4 px-6 text-center text-xs font-semibold uppercase text-gray-600">Fecha de Pago</th>
-        <th class="py-4 px-6 text-right text-xs font-semibold uppercase text-gray-600">Valor</th>
-        <th class="py-4 px-6 text-center text-xs font-semibold uppercase text-gray-600">Estado</th>
-        <th class="py-4 px-6 text-center text-xs font-semibold uppercase text-gray-600">Acciones</th>
+<!-- Tabla de Préstamos -->
+<div class="overflow-x-auto">
+  <table class="w-full min-w-[640px] border-collapse text-sm">
+    <thead class="bg-sky-200 border-b">
+      <tr>
+        <th class="text-left py-2 px-3 sm:px-4">Nombre Deudor</th>
+        <th class="text-center py-2 px-3 sm:px-4">Fecha de Préstamo</th>
+        <th class="text-center py-2 px-3 sm:px-4">Fecha de Pago</th>
+        <th class="text-right py-2 px-3 sm:px-4">Valor</th>
+        <th class="text-center py-2 px-3 sm:px-4">Estado</th>
+        <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let loan of loans; let i = index" class="border-b transition duration-300 hover:bg-gray-50">
-        <td class="py-4 px-6 font-semibold">{{ loan.deudor }}</td>
-        <td class="py-4 px-6 text-center">{{ loan.fecha_prestamo }}</td>
-        <td class="py-4 px-6 text-center">{{ loan.fecha_pago }}</td>
-        <td class="py-4 px-6 text-right font-semibold text-teal-600">
+      <tr *ngFor="let loan of loans; let i = index" class="border-t hover:bg-gray-50 opacity-0 animate-fadeSlideDown"
+        [style.animationDelay]="getRowAnimationDelay(loan)">
+        <td class="py-2 px-3 sm:px-4 font-semibold">{{ loan.deudor }}</td>
+        <td class="py-2 px-3 sm:px-4 text-center">{{ loan.fecha_prestamo }}</td>
+        <td class="py-2 px-3 sm:px-4 text-center">{{ loan.fecha_pago }}</td>
+        <td class="py-2 px-3 sm:px-4 text-right font-semibold text-teal-600">
           ${{ formatCurrency(loan.valor) }}
         </td>
-        <td class="py-4 px-6 text-center">
+        <td class="py-2 px-3 sm:px-4 text-center">
           <button (click)="togglePaymentStatus(loan)"
             class="px-3 py-1 text-xs font-semibold rounded-full transition duration-300"
             [ngClass]="loan.estado === 'Pagado' ? 'bg-sky-700 text-white hover:bg-slate-700' : 'bg-orange-600 text-white hover:bg-red-600'">
             {{ loan.estado }}
           </button>
         </td>
-        <td class="py-4 px-6 text-center">
+        <td class="py-2 px-3 sm:px-4 text-center">
           <button (click)="openAddModal(loan.id)" class="text-lime-600 mr-2">
             <span class="material-icons">add</span>
           </button>
@@ -58,30 +63,23 @@
             <mat-icon>delete</mat-icon>
           </button>
         </td>
-
-      </tr>
-
-      <!-- Total Préstamos Pendientes -->
-      <tr class="bg-teal-50 font-bold text-teal-900">
-        <td class="py-4 px-6 text-left">Total Préstamos Pendientes</td>
-        <td class="py-4 px-6"></td>
-        <td class="py-4 px-6"></td>
-        <td class="py-4 px-6 text-right">
-          ${{ formatCurrency(getTotalPendingLoans()) }}
-        </td>
-        <td class="py-4 px-6"></td>
-        <td></td>
       </tr>
     </tbody>
-  </table>
-</div>
 
-<!-- Botón para agregar préstamo -->
-<div class="flex justify-end p-4 animate-fadeSlideDown">
-  <button (click)="openModal()"
-    class="bg-sky-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-slate-700 transition">
-    Agregar Préstamo +
-  </button>
+    <!-- Total Préstamos Pendientes -->
+    <tfoot>
+      <tr class="bg-teal-50 font-bold text-teal-900 opacity-0 animate-fadeSlideDown">
+        <td class="py-3 px-3 sm:px-4 text-left">Total Préstamos Pendientes</td>
+        <td class="py-3 px-3 sm:px-4"></td>
+        <td class="py-3 px-3 sm:px-4"></td>
+        <td class="py-3 px-3 sm:px-4 text-right">
+          ${{ formatCurrency(getTotalPendingLoans()) }}
+        </td>
+        <td class="py-3 px-3 sm:px-4"></td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
 </div>
 
 <!-- Modal para agregar préstamo -->

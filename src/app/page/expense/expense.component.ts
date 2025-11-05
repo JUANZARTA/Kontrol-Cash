@@ -8,8 +8,13 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
-import { trigger, state, style, transition, animate } from '@angular/animations';
-
+import {
+  trigger,
+  state,
+  style,
+  transition,
+  animate,
+} from '@angular/animations';
 
 export interface ExpenseWithId extends Expense {
   id: string;
@@ -18,16 +23,17 @@ export interface ExpenseWithId extends Expense {
 @Component({
   selector: 'app-expense',
   standalone: true,
-  imports: [CommonModule, FormsModule,MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   templateUrl: './expense.component.html',
   styleUrls: ['./expense.component.css'],
-  providers: [DecimalPipe],animations: [
+  providers: [DecimalPipe],
+  animations: [
     trigger('accordion', [
       state('closed', style({ height: '0px', opacity: 0, overflow: 'hidden' })),
       state('open', style({ height: '*', opacity: 1 })),
       transition('closed <=> open', [animate('300ms ease')]),
-    ])
-  ]
+    ]),
+  ],
 })
 export default class ExpenseComponent implements OnInit, OnDestroy {
   private expenseService = inject(ExpenseService);
@@ -51,7 +57,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   isModalOpen = false;
   isEditModalOpen = false;
 
-    // Variables para modales nuevos
+  // Variables para modales nuevos
   isAddValueModalOpen: boolean = false;
   isDeleteModalOpen: boolean = false;
   selectedExpenseId: string | null = null;
@@ -131,169 +137,175 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     );
   }
 
-// ======================
-// Modal: Agregar Gasto
-// ======================
-openModal() {
-  this.isModalOpen = true;
-}
-
-closeModal() {
-  this.isModalOpen = false;
-  this.newExpense = new Expense('', CategoriaGasto.Variable, 0, 0);
-}
-
-addExpense() {
-  if (!this.newExpense.descripcion || !this.newExpense.categoria) {
-    alert('Por favor completa todos los campos.');
-    return;
+  // ======================
+  // Modal: Agregar Gasto
+  // ======================
+  openModal() {
+    this.isModalOpen = true;
   }
 
-  this.expenseService
-    .addExpense(this.userId, this.currentYear, this.currentMonth, this.newExpense)
-    .subscribe({
-      next: () => {
-        this.loadExpenses();
-        this.closeModal();
-      },
-      error: (err) => {
-        console.error('Error al agregar gasto:', err);
-      }
-    });
-}
-
-// ======================
-// Modal: Agregar Valor en Gasto
-// ======================
-openAddModal(id: string) {
-  this.selectedExpenseId = id;
-  this.isAddValueModalOpen = true;
-}
-
-closeAddValueModal() {
-  this.isAddValueModalOpen = false;
-  this.newValue = 0;
-}
-
-applyValue(action: 'add' | 'subtract') {
-  if (!this.selectedExpenseId) return;
-
-  const expense = this.expenses.find(e => e.id === this.selectedExpenseId);
-  if (!expense) return;
-
-  let finalValue = this.newValue;
-
-  if (action === 'subtract') {
-    finalValue = -Math.abs(this.newValue); // asegurar negativo
-  } else {
-    finalValue = Math.abs(this.newValue); // asegurar positivo
+  closeModal() {
+    this.isModalOpen = false;
+    this.newExpense = new Expense('', CategoriaGasto.Variable, 0, 0);
   }
 
-  const updatedValue = expense.valor + finalValue;
-
-  const updatedExpense: Expense = {
-    descripcion: expense.descripcion,
-    categoria: expense.categoria,
-    valor: updatedValue,
-    estimacion: expense.estimacion
-  };
-
-  this.expenseService.updateExpense(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    expense.id,
-    updatedExpense
-  ).subscribe({
-    next: () => {
-      this.loadExpenses();
-      this.closeAddValueModal();
-    },
-    error: (err) => {
-      console.error('Error al actualizar gasto:', err);
+  addExpense() {
+    if (!this.newExpense.descripcion || !this.newExpense.categoria) {
+      alert('Por favor completa todos los campos.');
+      return;
     }
-  });
-}
 
-// ======================
-// Modal: Editar Gasto
-// ======================
-openEditModal(id: string) {
-  const original = this.expenses.find((e) => e.id === id);
-  if (!original) return;
+    this.expenseService
+      .addExpense(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.newExpense
+      )
+      .subscribe({
+        next: () => {
+          this.loadExpenses();
+          this.closeModal();
+        },
+        error: (err) => {
+          console.error('Error al agregar gasto:', err);
+        },
+      });
+  }
 
-  this.editedExpense = new Expense(
-    original.descripcion,
-    original.categoria,
-    original.valor,
-    original.estimacion
-  );
-  this.editedId = id;
-  this.isEditModalOpen = true;
-}
+  // ======================
+  // Modal: Agregar Valor en Gasto
+  // ======================
+  openAddModal(id: string) {
+    this.selectedExpenseId = id;
+    this.isAddValueModalOpen = true;
+  }
 
-closeEditModal() {
-  this.isEditModalOpen = false;
-  this.editedExpense = new Expense('', CategoriaGasto.Variable, 0, 0);
-  this.editedId = null;
-}
+  closeAddValueModal() {
+    this.isAddValueModalOpen = false;
+    this.newValue = 0;
+  }
 
-saveEditedExpense() {
-  if (!this.editedId) return;
+  applyValue(action: 'add' | 'subtract') {
+    if (!this.selectedExpenseId) return;
 
-  this.expenseService
-    .updateExpense(
-      this.userId,
-      this.currentYear,
-      this.currentMonth,
-      this.editedId,
-      this.editedExpense
-    )
-    .subscribe({
-      next: () => {
-        this.loadExpenses();
-        this.closeEditModal();
-      },
-      error: (err) => {
-        console.error('Error al editar gasto:', err);
-      }
-    });
-}
+    const expense = this.expenses.find((e) => e.id === this.selectedExpenseId);
+    if (!expense) return;
 
-// ======================
-// Modal: Eliminar Gasto
-// ======================
-openDeleteModal(id: string) {
-  this.isDeleteModalOpen = true;
-  this.expenseToDeleteId = id;
-}
+    let finalValue = this.newValue;
 
-closeDeleteModal() {
-  this.isDeleteModalOpen = false;
-  this.expenseToDeleteId = null;
-}
+    if (action === 'subtract') {
+      finalValue = -Math.abs(this.newValue); // asegurar negativo
+    } else {
+      finalValue = Math.abs(this.newValue); // asegurar positivo
+    }
 
-confirmDeleteExpense() {
-  if (!this.expenseToDeleteId) return;
+    const updatedValue = expense.valor + finalValue;
 
-  this.expenseService
-    .deleteExpense(
-      this.userId,
-      this.currentYear,
-      this.currentMonth,
-      this.expenseToDeleteId
-    )
-    .subscribe({
-      next: () => {
-        this.loadExpenses();
-        this.closeDeleteModal();
-      },
-      error: (err) => {
-        console.error('Error al eliminar gasto:', err);
-      }
-    });
-}
+    const updatedExpense: Expense = {
+      descripcion: expense.descripcion,
+      categoria: expense.categoria,
+      valor: updatedValue,
+      estimacion: expense.estimacion,
+    };
 
+    this.expenseService
+      .updateExpense(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        expense.id,
+        updatedExpense
+      )
+      .subscribe({
+        next: () => {
+          this.loadExpenses();
+          this.closeAddValueModal();
+        },
+        error: (err) => {
+          console.error('Error al actualizar gasto:', err);
+        },
+      });
+  }
+
+  // ======================
+  // Modal: Editar Gasto
+  // ======================
+  openEditModal(id: string) {
+    const original = this.expenses.find((e) => e.id === id);
+    if (!original) return;
+
+    this.editedExpense = new Expense(
+      original.descripcion,
+      original.categoria,
+      original.valor,
+      original.estimacion
+    );
+    this.editedId = id;
+    this.isEditModalOpen = true;
+  }
+
+  closeEditModal() {
+    this.isEditModalOpen = false;
+    this.editedExpense = new Expense('', CategoriaGasto.Variable, 0, 0);
+    this.editedId = null;
+  }
+
+  saveEditedExpense() {
+    if (!this.editedId) return;
+
+    this.expenseService
+      .updateExpense(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.editedId,
+        this.editedExpense
+      )
+      .subscribe({
+        next: () => {
+          this.loadExpenses();
+          this.closeEditModal();
+        },
+        error: (err) => {
+          console.error('Error al editar gasto:', err);
+        },
+      });
+  }
+
+  // ======================
+  // Modal: Eliminar Gasto
+  // ======================
+  openDeleteModal(id: string) {
+    this.isDeleteModalOpen = true;
+    this.expenseToDeleteId = id;
+  }
+
+  closeDeleteModal() {
+    this.isDeleteModalOpen = false;
+    this.expenseToDeleteId = null;
+  }
+
+  confirmDeleteExpense() {
+    if (!this.expenseToDeleteId) return;
+
+    this.expenseService
+      .deleteExpense(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.expenseToDeleteId
+      )
+      .subscribe({
+        next: () => {
+          this.loadExpenses();
+          this.closeDeleteModal();
+        },
+        error: (err) => {
+          console.error('Error al eliminar gasto:', err);
+        },
+      });
+  }
 
   // Método para eliminar todos los gastos
   getTotalExpenses(): number {
@@ -358,24 +370,27 @@ confirmDeleteExpense() {
     input.value = this.formatCurrency(numericValue);
   }
 
-getGroupedExpenses() {
-  const groups: { [categoria: string]: any[] } = {};
+  getGroupedExpenses() {
+    const groups: { [categoria: string]: any[] } = {};
 
-  // Agrupar los gastos por categoría
-  this.expenses.forEach(expense => {
-    if (!groups[expense.categoria]) {
-      groups[expense.categoria] = [];
-    }
-    groups[expense.categoria].push(expense);
-  });
+    // Agrupar los gastos por categoría
+    this.expenses.forEach((expense) => {
+      if (!groups[expense.categoria]) {
+        groups[expense.categoria] = [];
+      }
+      groups[expense.categoria].push(expense);
+    });
 
-  // Convertir a array de objetos con open = true
-  return Object.keys(groups).map(categoria => ({
-    categoria,
-    items: groups[categoria],
-    open: true // abre cada acordeón por defecto
-  }));
-}
-
-
+    // Convertir a array de objetos con open = true
+    return Object.keys(groups).map((categoria) => ({
+      categoria,
+      items: groups[categoria],
+      open: true, // abre cada acordeón por defecto
+    }));
+  }
+  
+  getExpenseRowDelay(index: number, groupIndex: number): string {
+    // Cada grupo tiene delay base + fila incremental
+    return `${0.1 + groupIndex * 0.05 + index * 0.03}s`;
+  }
 }
