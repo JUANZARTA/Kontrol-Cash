@@ -42,7 +42,7 @@ newValue: number = 0;
   wallet: any[] = [];
   loans: LoanWithId[] = [];
 
-  estadoFinanciero = '';
+  estadoFinanciero: string = 'Cargando...';
   estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
   cuadreDescuadre = 0;
 
@@ -61,7 +61,7 @@ newValue: number = 0;
 
   currentYear: string = '';
   currentMonth: string = '';
-  private dateSubscription: Subscription | undefined; 
+  private dateSubscription: Subscription | undefined;
 
   // Referencia a Math para usar en el template
   ngOnInit() {
@@ -348,7 +348,7 @@ confirmDeleteLoan() {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/[^\d-]/g, '');
     const value = Number(raw) || 0;
-  
+
     if (type === 'new') {
       this.newLoan.valor = value;
     } else if (type === 'edit') {
@@ -356,7 +356,7 @@ confirmDeleteLoan() {
     } else if (type === 'add') {
       this.newValue = value;
     }
-  
+
     input.value = this.formatCurrency(value);
   }
   onEditValueInput(event: Event) {
@@ -366,5 +366,5 @@ confirmDeleteLoan() {
     this.editedLoan.valor = value;
     input.value = this.formatCurrency(value);
   }
-  
+
 }

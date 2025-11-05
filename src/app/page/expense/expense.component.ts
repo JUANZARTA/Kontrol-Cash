@@ -43,7 +43,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   loans: any[] = [];
 
   // Estado financiero
-  estadoFinanciero = '';
+  estadoFinanciero = 'Cargando...';
   estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
   cuadreDescuadre = 0;
 
@@ -79,7 +79,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   editedId: string | null = null;
 
   readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
-  
+
   currentYear: string = '';
   currentMonth: string = '';
 
@@ -338,7 +338,7 @@ confirmDeleteExpense() {
     const input = event.target as HTMLInputElement;
     const rawValue = input.value.replace(/[^\d-]/g, '');
     const numericValue = Number(rawValue) || 0;
-  
+
     if (field === 'valor') {
       this.newExpense.valor = numericValue;
     } else if (field === 'estimacion') {
@@ -346,10 +346,10 @@ confirmDeleteExpense() {
     } else if (field === 'add') {
       this.newValue = numericValue;
     }
-  
+
     input.value = this.formatCurrency(numericValue);
   }
-  
+
   onEditValueInput(event: Event, field: 'valor' | 'estimacion') {
     const input = event.target as HTMLInputElement;
     const rawValue = input.value.replace(/[.,]/g, '');

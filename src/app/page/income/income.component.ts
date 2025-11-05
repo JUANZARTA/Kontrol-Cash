@@ -605,4 +605,9 @@ export default class IncomeComponent implements OnInit, OnDestroy {
       this.toastVisible = false;
     }, duration);
   }
+
+  getRowAnimationDelay(income: IncomeWithId) {
+    const index = this.incomes.indexOf(income);
+    return `${0.2 + index * 0.1}s`; // empieza 0.2s, aumenta 0.1s por fila
+  }
 }

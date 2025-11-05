@@ -311,6 +311,15 @@ export default class WalletComponent implements OnInit, OnDestroy {
       });
   }
 
+  // Metodo para editar valor en modal edicion
+  onEditValueInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/[^\d-]/g, '');
+    const value = Number(raw) || 0;
+    this.editedAccount.valor = value;
+    input.value = this.formatCurrency(value);
+  }
+
   // ======================
   // Modal: Eliminar Cuenta
   // ======================
@@ -438,14 +447,9 @@ export default class WalletComponent implements OnInit, OnDestroy {
     input.value = this.formatCurrency(value);
   }
 
-  onEditValueInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const raw = input.value.replace(/[^\d-]/g, '');
-    const value = Number(raw) || 0;
-    this.editedAccount.valor = value;
-    input.value = this.formatCurrency(value);
-  }
 
+
+  // Metodo para alternar al menu de opciones de cada cuenta
   toggleMenu(account: any) {
     // Cierra cualquier otro menú abierto
     this.wallet.forEach((a: any) => (a.showMenu = false));
@@ -453,11 +457,13 @@ export default class WalletComponent implements OnInit, OnDestroy {
     account.showMenu = !account.showMenu;
   }
 
+  // Metodo para obtener el delay de la animcacion de cada indice
   getAnimationDelay(account: any) {
     const index = this.wallet.indexOf(account);
     return `${0.3 + index * 0.1}s`; // empieza 0.3s, aumenta 0.1s por tarjeta
   }
 
+  // Metodo para manejar la entrada de valores en modal de transaccion
   onAssignedValueInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/,/g, ''); // quitamos comas

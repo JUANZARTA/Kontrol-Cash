@@ -1,5 +1,5 @@
 <!-- Estado financiero -->
-<div class="px-6 py-4 border-b flex center-end">
+<div class="px-6 py-4 border-b flex center-end animate-fadeSlideDown">
   <span [ngClass]="{
         'bg-orange-600': estadoFinancieroColor === 'rojo',
         'bg-sky-600': estadoFinancieroColor === 'azul',
@@ -10,7 +10,7 @@
 </div>
 
 <!-- Encabezado con botón -->
-<div class="flex items-center justify-between p-4">
+<div class="flex items-center justify-between p-4 opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
   <h6 class="text-lg font-semibold">Tabla de Ingresos</h6>
   <button (click)="openModal()" class="text-blue-600 font-medium px-3 py-1 rounded-md hover:bg-blue-50 transition">
     Agregar +
@@ -29,7 +29,8 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let income of incomes" class="border-t hover:bg-gray-50">
+      <tr *ngFor="let income of incomes" class="border-t hover:bg-gray-50 opacity-0 animate-fadeSlideDown"
+        [style.animationDelay]="getRowAnimationDelay(income)">
         <td class="py-2 px-3 sm:px-4">{{ income.nombre }}</td>
         <td class="py-2 px-3 sm:px-4">{{ income.categoria }}</td>
         <td class="py-2 px-3 sm:px-4 text-right">
@@ -51,7 +52,7 @@
 
     <!-- Fila de totales -->
     <tfoot>
-      <tr class="bg-gray-100 font-bold text-blue-900 border-t">
+      <tr class="bg-gray-100 font-bold text-blue-900 border-t animate-fadeSlideDown">
         <td class="py-3 px-3 sm:px-4 text-left" colspan="2">Total General</td>
         <td class="py-3 px-3 sm:px-4 text-right">
           ${{ formatCurrency(getTotalIncome()) }}
@@ -63,7 +64,7 @@
 </div>
 
 <!-- Sección de asignación de dinero desde descuadre -->
-<div class="flex items-center gap-4 mt-4">
+<div class="flex items-center gap-4 mt-4 opacity-0 animate-fadeSlideDown" style="animation-delay:0.3s">
   <p class="text-gray-800 font-medium">
     Dinero a asignar:
     <span class="font-bold text-gray-900">
@@ -79,33 +80,32 @@
     class="bg-sky-200 text-sky-800 font-semibold px-5 py-2 rounded-md hover:bg-sky-300 transition">
     + Billetera
   </button>
-
 </div>
 
 <!-- Modal para agregar ingreso -->
 <div *ngIf="isModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-    <h2 class="text-xl font-bold mb-4">Agregar Nuevo Ingreso</h2>
-    <p class="text-gray-600 mb-4 text-sm">Introduce los detalles del nuevo ingreso.</p>
+  <div class="bg-white p-6 rounded-lg shadow-lg w-96 animate-pop-in">
+    <h2 class="text-xl font-bold mb-4 animate-fadeSlideDown">Agregar Nuevo Ingreso</h2>
+    <p class="text-gray-600 mb-4 text-sm animate-fadeSlideDown">Introduce los detalles del nuevo ingreso.</p>
 
-    <label class="block mb-2">Nombre:</label>
+    <label class="block mb-2 animate-fadeIn ">Nombre:</label>
     <input type="text" [(ngModel)]="newIncome.nombre" placeholder="Ej: Sueldo"
-      class="w-full p-2 border rounded-md mb-3" />
+      class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
 
-    <label class="block mb-2">Categoría:</label>
-    <select [(ngModel)]="newIncome.categoria" class="w-full p-2 border rounded-md mb-3">
+    <label class="block mb-2 animate-fadeIn">Categoría:</label>
+    <select [(ngModel)]="newIncome.categoria" class="w-full p-2 border rounded-md mb-3 animate-fadeIn">
       <option *ngFor="let categoria of categorias" [value]="categoria">{{ categoria }}</option>
     </select>
 
-    <label class="block mb-2">Valor:</label>
+    <label class="block mb-2 animate-fadeIn">Valor:</label>
     <input type="text" [value]="formatCurrency(newIncome.valor)" (input)="onValueInput($event, 'valor')"
-      placeholder="Ej: 1.000.000" class="w-full p-2 border rounded-md mb-3" />
+      placeholder="Ej: 1.000.000" class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
 
     <div class="flex justify-end gap-2">
       <button (click)="closeModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200">Cancelar</button>
+        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200 animate-fadeIn">Cancelar</button>
       <button (click)="addIncome()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Agregar</button>
+        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700 animate-fadeIn">Agregar</button>
     </div>
   </div>
 </div>
@@ -131,67 +131,69 @@
 
 <!-- Modal para agregar valor al ingreso -->
 <div *ngIf="isAddValueModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-80">
-    <h2 class="text-xl font-bold mb-2">Agregar o Restar Valor</h2>
-    <p class="text-gray-600 mb-4 text-sm">Introduce un valor para adicionar o restar a este ingreso.</p>
+  <div class="bg-white p-6 rounded-lg shadow-lg w-80 animate-pop-in">
+    <h2 class="text-xl font-bold mb-2 animate-fadeSlideDown">Agregar o Restar Valor</h2>
+    <p class="text-gray-600 mb-4 text-sm animate-fadeSlideDown">Introduce un valor para adicionar o restar a este
+      ingreso.</p>
 
-    <label class="block mb-2 font-semibold">Valor:</label>
+    <label class="block mb-2 font-semibold animate-fadeIn">Valor:</label>
     <input type="text" [value]="formatCurrency(newValue)" (input)="onValueInput($event, 'add')" placeholder="Ej: 5000"
-      class="w-full p-2 border rounded-md mb-4" />
+      class="w-full p-2 border rounded-md mb-4 animate-fadeIn" />
 
     <div class="flex justify-end gap-2">
       <button (click)="closeAddValueModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200">Cancelar</button>
+        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200 animate-fadeIn">Cancelar</button>
       <button (click)="applyValue('subtract')"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Restar</button>
+        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700 animate-fadeIn">Restar</button>
       <button (click)="applyValue('add')"
-        class="px-4 py-2 bg-teal-700 text-white rounded-md hover:bg-emerald-800">Sumar</button>
+        class="px-4 py-2 bg-teal-700 text-white rounded-md hover:bg-emerald-800 animate-fadeIn">Sumar</button>
     </div>
   </div>
 </div>
 
 <!-- Modal para editar ingreso -->
 <div *ngIf="isEditModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-    <h2 class="text-xl font-bold mb-4">Editar Ingreso</h2>
-    <p class="text-gray-600 mb-4 text-sm">Edita los detalles del ingreso.</p>
+  <div class="bg-white p-6 rounded-lg shadow-lg w-96 animate-pop-in">
+    <h2 class="text-xl font-bold mb-4 animate-fadeSlideDown">Editar Ingreso</h2>
+    <p class="text-gray-600 mb-4 text-sm animate-fadeSlideDown">Edita los detalles del ingreso.</p>
 
-    <label class="block mb-2">Nombre:</label>
+    <label class="block mb-2 animate-fadeIn">Nombre:</label>
     <input type="text" [(ngModel)]="editedIncome.nombre" placeholder="Ej: Proyecto freelance"
-      class="w-full p-2 border rounded-md mb-3" />
+      class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
 
-    <label class="block mb-2">Categoría:</label>
-    <select [(ngModel)]="editedIncome.categoria" class="w-full p-2 border rounded-md mb-3">
+    <label class="block mb-2 animate-fadeIn">Categoría:</label>
+    <select [(ngModel)]="editedIncome.categoria" class="w-full p-2 border rounded-md mb-3 animate-fadeIn">
       <option *ngFor="let categoria of categorias" [value]="categoria">{{ categoria }}</option>
     </select>
 
-    <label class="block mb-2">Valor:</label>
+    <label class="block mb-2 animate-fadeIn">Valor:</label>
     <input type="text" [value]="formatCurrency(editedIncome.valor)" (input)="onEditValueInput($event)"
-      placeholder="Ej: 800.000" class="w-full p-2 border rounded-md mb-3" />
-
+      placeholder="Ej: 800.000" class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
 
     <div class="flex justify-end gap-2">
       <button (click)="closeEditModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200">Cancelar</button>
+        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200 animate-fadeIn">Cancelar</button>
       <button (click)="saveEditedIncome()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Guardar</button>
+        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700 animate-fadeIn">Guardar</button>
     </div>
   </div>
 </div>
 
 <!-- Modal para eliminar ingreso -->
 <div *ngIf="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
-    <span class="material-icons text-red-600 mx-auto mb-4" style="font-size: 48px;">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-80 text-center animate-pop-in">
+    <span class="material-icons text-red-600 mx-auto mb-4 animate-fadeIn" style="font-size: 48px;">
       report_problem
     </span>
-    <h2 class="text-xl font-bold mt-4 mb-2">¿Eliminar Ingreso?</h2>
-    <p class="mb-6 text-gray-700">¿Estás seguro de que deseas eliminar este ingreso? Esta acción no se puede deshacer.
+    <h2 class="text-xl font-bold mt-4 mb-2 animate-fadeSlideDown">¿Eliminar Ingreso?</h2>
+    <p class="mb-6 text-gray-700 animate-fadeSlideDown">
+      ¿Estás seguro de que deseas eliminar este ingreso? Esta acción no se puede deshacer.
     </p>
     <div class="flex justify-center gap-2">
       <button (click)="closeDeleteModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-orange-200">Cancelar</button>
-      <button (click)="confirmDeleteIncome()" class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-red-600">
+        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-orange-200 animate-fadeIn">Cancelar</button>
+      <button (click)="confirmDeleteIncome()"
+        class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-red-600 animate-fadeIn">
         Eliminar
       </button>
     </div>
@@ -200,13 +202,15 @@
 
 <!-- Modal de Transacción -->
 <div *ngIf="isTransactionModalOpen" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-  <div class="bg-white rounded-2xl shadow-xl p-6 w-96 relative">
+  <div class="bg-white rounded-2xl shadow-xl p-6 w-96 relative animate-pop-in">
 
     <!-- Título -->
-    <h3 class="text-xl font-bold mb-4 text-center">Asignar dinero del descuadre</h3>
+    <h3 class="text-xl font-bold mb-4 text-center animate-fadeSlideDown">
+      Asignar dinero del descuadre
+    </h3>
 
     <!-- Dinero disponible para asignar -->
-    <div class="mb-4">
+    <div class="mb-4 animate-fadeIn">
       <span class="font-medium text-gray-700">Dinero a asignar:</span>
       <span class="font-bold text-gray-900">
         ${{ formatCurrency(assignedValue || 0) }}
@@ -214,18 +218,18 @@
     </div>
 
     <!-- Selección de billetera destino -->
-    <div class="mb-4">
+    <div class="mb-4 animate-fadeIn">
       <label class="block mb-1 font-medium text-gray-700">Selecciona billetera destino</label>
       <select [(ngModel)]="selectedWallet" class="w-full border rounded-md p-2">
         <option value="" disabled>Selecciona billetera</option>
         <option *ngFor="let w of wallet" [value]="w.id">
-          {{ w.tipo }} <!-- solo el nombre de la billetera -->
+          {{ w.tipo }}
         </option>
       </select>
     </div>
 
     <!-- Input de monto a transferir -->
-    <div class="mb-4">
+    <div class="mb-4 animate-fadeIn">
       <label class="block mb-1 font-medium text-gray-700">Monto a transferir</label>
       <input type="text" [value]="formatCurrencyA(assignedValue)" (input)="onAssignedValueInput($event)"
         placeholder="Ingresa el monto" class="w-full border rounded-md p-2" />
@@ -234,14 +238,13 @@
       </p>
     </div>
 
-
     <!-- Alertas -->
-    <div *ngIf="insufficientFundsAlert" class="mb-4 text-red-600 font-medium">
+    <div *ngIf="insufficientFundsAlert" class="mb-4 text-red-600 font-medium animate-fadeIn">
       Fondos insuficientes para esta operación.
     </div>
 
     <!-- Botones -->
-    <div class="flex justify-end gap-2">
+    <div class="flex justify-end gap-2 animate-fadeIn">
       <button (click)="confirmTransaction()"
         class="bg-sky-700 text-white px-4 py-2 rounded hover:bg-green-600 transition">
         Transferir
@@ -252,7 +255,8 @@
     </div>
 
     <!-- Cerrar modal -->
-    <button (click)="closeTransactionModal()" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+    <button (click)="closeTransactionModal()"
+      class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 animate-fadeIn">
       ✕
     </button>
 

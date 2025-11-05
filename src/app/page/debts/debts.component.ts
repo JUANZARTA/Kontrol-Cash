@@ -39,7 +39,7 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   loans: any[] = [];
 
   // Estado financiero
-  estadoFinanciero = '';
+  estadoFinanciero: string = 'Cargando...';
   estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
   cuadreDescuadre = 0;
 

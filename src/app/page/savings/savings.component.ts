@@ -42,7 +42,7 @@ newValue: number = 0;
   wallet: any[] = [];
   loans: any[] = [];
 
-  estadoFinanciero = '';
+  estadoFinanciero: string = 'Cargando...';
   estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
   cuadreDescuadre = 0;
 
@@ -89,7 +89,7 @@ newValue: number = 0;
           if (this.savings.length === 0) {
             this.authService
               .addNotification(
-                this.userId, 
+                this.userId,
                 'No has ahorrado este mes',
                 'sin_ahorro_mes'
               )
@@ -272,7 +272,7 @@ confirmDeleteSaving() {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/[^\d-]/g, '');
     const value = Number(raw) || 0;
-  
+
     if (type === 'new') {
       this.newSaving.valor = value;
     } else if (type === 'edit') {
@@ -280,7 +280,7 @@ confirmDeleteSaving() {
     } else if (type === 'add') {
       this.newValue = value;
     }
-  
+
     input.value = this.formatCurrency(value);
   }
   onEditValueInput(event: Event) {
@@ -290,5 +290,5 @@ confirmDeleteSaving() {
     this.editedSaving.valor = value;
     input.value = this.formatCurrency(value);
   }
-  
+
 }
