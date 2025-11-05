@@ -17,9 +17,9 @@ import { Expense } from '../../models/expense.model';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
 
-
 export interface WalletAccountWithId extends WalletAccount {
   id: string;
+  showMenu: boolean;
 }
 
 @Component({
@@ -42,11 +42,11 @@ export default class WalletComponent implements OnInit, OnDestroy {
   private finanzasService = inject(FinanzasService);
 
   // Variables para modales de agregar valor y eliminar
-isAddValueModalOpen: boolean = false;
-isDeleteModalOpen: boolean = false;
-selectedAccountId: string | null = null;
-accountToDeleteId: string | null = null;
-newValue: number = 0;
+  isAddValueModalOpen: boolean = false;
+  isDeleteModalOpen: boolean = false;
+  selectedAccountId: string | null = null;
+  accountToDeleteId: string | null = null;
+  newValue: number = 0;
 
   // Datos
   wallet: WalletAccountWithId[] = [];
@@ -54,6 +54,16 @@ newValue: number = 0;
   debts: Debt[] = [];
   incomes: Income[] = [];
   expenses: Expense[] = [];
+
+  // Variables para transacción
+  sourceWalletId: string = '';
+  sourceWallet: WalletAccountWithId | undefined;
+
+  // Modal de transaccion
+  isTransactionModalOpen = false;
+  selectedWallet = '';
+  assignedValue: number | null = null;
+  totalDisponible = 20000; // Valor quemado por ahora
 
   // Variables para manejar el estado de los modales
   isModalOpen = false;
@@ -109,7 +119,7 @@ newValue: number = 0;
       .subscribe({
         next: (data) => {
           this.wallet = Object.entries(data || {}).map(
-            ([id, item]: [string, any]) => ({ id, ...item })
+            ([id, item]: [string, any]) => ({ id, ...item, showMenu: false })
           );
           this.checkLowFunds();
         },
@@ -172,164 +182,234 @@ newValue: number = 0;
     }
   }
 
-// ======================
-// Modal: Agregar Cuenta
-// ======================
-openModal() {
-  this.isModalOpen = true;
-}
-
-closeModal() {
-  this.isModalOpen = false;
-  this.newAccount = new WalletAccount('', 0);
-}
-
-addAccount() {
-  if (!this.newAccount.tipo) {
-    alert('Por favor completa todos los campos.');
-    return;
+  // ======================
+  // Modal: Agregar Cuenta
+  // ======================
+  openModal() {
+    this.isModalOpen = true;
   }
 
-  this.walletService.addAccount(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.newAccount
-  ).subscribe({
-    next: () => {
-      this.loadAllData();
-      this.closeModal();
-    },
-    error: (err) => {
-      console.error('Error al agregar cuenta:', err);
-    }
-  });
-}
-
-// ======================
-// Modal: Agregar Valor en Cuenta
-// ======================
-openAddModal(id: string) {
-  this.selectedAccountId = id;
-  this.isAddValueModalOpen = true;
-}
-
-closeAddValueModal() {
-  this.isAddValueModalOpen = false;
-  this.newValue = 0;
-}
-
-applyValue(action: 'add' | 'subtract') {
-  if (!this.selectedAccountId) return;
-
-  const account = this.wallet.find(a => a.id === this.selectedAccountId);
-  if (!account) return;
-
-  let finalValue = this.newValue;
-
-  if (action === 'subtract') {
-    finalValue = -Math.abs(this.newValue);
-  } else {
-    finalValue = Math.abs(this.newValue);
+  closeModal() {
+    this.isModalOpen = false;
+    this.newAccount = new WalletAccount('', 0);
   }
 
-  const updatedValue = account.valor + finalValue;
-
-  const updatedAccount: WalletAccount = {
-    tipo: account.tipo,
-    valor: updatedValue
-  };
-
-  this.walletService.updateAccount(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    account.id,
-    updatedAccount
-  ).subscribe({
-    next: () => {
-      this.loadAllData();
-      this.closeAddValueModal();
-    },
-    error: (err) => {
-      console.error('Error al actualizar cuenta:', err);
+  addAccount() {
+    if (!this.newAccount.tipo) {
+      alert('Por favor completa todos los campos.');
+      return;
     }
-  });
-}
 
-// ======================
-// Modal: Editar Cuenta
-// ======================
-openEditModal(id: string) {
-  const original = this.wallet.find(a => a.id === id);
-  if (!original) return;
+    this.walletService
+      .addAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.newAccount
+      )
+      .subscribe({
+        next: () => {
+          this.loadAllData();
+          this.closeModal();
+        },
+        error: (err) => {
+          console.error('Error al agregar cuenta:', err);
+        },
+      });
+  }
 
-  this.editedAccount = new WalletAccount(
-    original.tipo,
-    original.valor
-  );
-  this.editedId = id;
-  this.isEditModalOpen = true;
-}
+  // ======================
+  // Modal: Agregar Valor en Cuenta
+  // ======================
+  openAddModal(id: string) {
+    this.selectedAccountId = id;
+    this.isAddValueModalOpen = true;
+  }
 
-closeEditModal() {
-  this.isEditModalOpen = false;
-  this.editedAccount = new WalletAccount('', 0);
-  this.editedId = null;
-}
+  closeAddValueModal() {
+    this.isAddValueModalOpen = false;
+    this.newValue = 0;
+  }
 
-saveEditedAccount() {
-  if (!this.editedId) return;
+  applyValue(action: 'add' | 'subtract') {
+    if (!this.selectedAccountId) return;
 
-  this.walletService.updateAccount(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.editedId,
-    this.editedAccount
-  ).subscribe({
-    next: () => {
-      this.loadAllData();
-      this.closeEditModal();
-    },
-    error: (err) => {
-      console.error('Error al actualizar cuenta:', err);
+    const account = this.wallet.find((a) => a.id === this.selectedAccountId);
+    if (!account) return;
+
+    let finalValue = this.newValue;
+
+    if (action === 'subtract') {
+      finalValue = -Math.abs(this.newValue);
+    } else {
+      finalValue = Math.abs(this.newValue);
     }
-  });
-}
 
-// ======================
-// Modal: Eliminar Cuenta
-// ======================
-openDeleteModal(id: string) {
-  this.isDeleteModalOpen = true;
-  this.accountToDeleteId = id;
-}
+    const updatedValue = account.valor + finalValue;
 
-closeDeleteModal() {
-  this.isDeleteModalOpen = false;
-  this.accountToDeleteId = null;
-}
+    const updatedAccount: WalletAccount = {
+      tipo: account.tipo,
+      valor: updatedValue,
+    };
 
-confirmDeleteAccount() {
-  if (!this.accountToDeleteId) return;
+    this.walletService
+      .updateAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        account.id,
+        updatedAccount
+      )
+      .subscribe({
+        next: () => {
+          this.loadAllData();
+          this.closeAddValueModal();
+        },
+        error: (err) => {
+          console.error('Error al actualizar cuenta:', err);
+        },
+      });
+  }
 
-  this.walletService.deleteAccount(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.accountToDeleteId
-  ).subscribe({
-    next: () => {
-      this.loadAllData();
-      this.closeDeleteModal();
-    },
-    error: (err) => {
-      console.error('Error al eliminar cuenta:', err);
+  // ======================
+  // Modal: Editar Cuenta
+  // ======================
+  openEditModal(id: string) {
+    const original = this.wallet.find((a) => a.id === id);
+    if (!original) return;
+
+    this.editedAccount = new WalletAccount(original.tipo, original.valor);
+    this.editedId = id;
+    this.isEditModalOpen = true;
+  }
+
+  closeEditModal() {
+    this.isEditModalOpen = false;
+    this.editedAccount = new WalletAccount('', 0);
+    this.editedId = null;
+  }
+
+  saveEditedAccount() {
+    if (!this.editedId) return;
+
+    this.walletService
+      .updateAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.editedId,
+        this.editedAccount
+      )
+      .subscribe({
+        next: () => {
+          this.loadAllData();
+          this.closeEditModal();
+        },
+        error: (err) => {
+          console.error('Error al actualizar cuenta:', err);
+        },
+      });
+  }
+
+  // ======================
+  // Modal: Eliminar Cuenta
+  // ======================
+  openDeleteModal(id: string) {
+    this.isDeleteModalOpen = true;
+    this.accountToDeleteId = id;
+  }
+
+  closeDeleteModal() {
+    this.isDeleteModalOpen = false;
+    this.accountToDeleteId = null;
+  }
+
+  confirmDeleteAccount() {
+    if (!this.accountToDeleteId) return;
+
+    this.walletService
+      .deleteAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.accountToDeleteId
+      )
+      .subscribe({
+        next: () => {
+          this.loadAllData();
+          this.closeDeleteModal();
+        },
+        error: (err) => {
+          console.error('Error al eliminar cuenta:', err);
+        },
+      });
+  }
+
+  // ======================
+  // Modal: Transaccion
+  // ======================
+  openTransactionModal(accountId: string) {
+    this.sourceWalletId = accountId;
+    this.sourceWallet = this.wallet.find((a) => a.id === accountId);
+    this.selectedWallet = '';
+    this.assignedValue = null;
+    this.isTransactionModalOpen = true;
+  }
+
+  closeTransactionModal() {
+    this.isTransactionModalOpen = false;
+  }
+
+  confirmTransaction() {
+    if (!this.selectedWallet) {
+      alert('Selecciona la cuenta destino.');
+      return;
     }
-  });
-}
+    if (!this.assignedValue || this.assignedValue <= 0) {
+      alert('Ingresa un valor válido.');
+      return;
+    }
 
+    const destination = this.wallet.find((a) => a.id === this.selectedWallet);
+    const source = this.sourceWallet;
+
+    if (!source || !destination) return;
+
+    if (this.assignedValue > source.valor) {
+      alert('El valor supera el saldo disponible de la cuenta origen.');
+      return;
+    }
+
+    // Actualizar valores localmente
+    source.valor -= this.assignedValue;
+    destination.valor += this.assignedValue;
+
+    // Actualizar en backend
+    this.walletService
+      .updateAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        source.id,
+        { tipo: source.tipo, valor: source.valor }
+      )
+      .subscribe();
+    this.walletService
+      .updateAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        destination.id,
+        { tipo: destination.tipo, valor: destination.valor }
+      )
+      .subscribe({
+        next: () => {
+          this.loadAllData();
+          this.closeTransactionModal();
+        },
+        error: (err) => console.error('Error al transferir dinero:', err),
+      });
+  }
 
   // Método para calcular el total de la cartera
   getTotalWallet(): number {
@@ -346,7 +426,7 @@ confirmDeleteAccount() {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/[^\d-]/g, '');
     const value = Number(raw) || 0;
-  
+
     if (type === 'new') {
       this.newAccount.valor = value;
     } else if (type === 'edit') {
@@ -354,10 +434,10 @@ confirmDeleteAccount() {
     } else if (type === 'add') {
       this.newValue = value;
     }
-  
+
     input.value = this.formatCurrency(value);
   }
-  
+
   onEditValueInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/[^\d-]/g, '');
@@ -365,5 +445,11 @@ confirmDeleteAccount() {
     this.editedAccount.valor = value;
     input.value = this.formatCurrency(value);
   }
-  
+
+  toggleMenu(account: any) {
+    // Cierra cualquier otro menú abierto
+    this.wallet.forEach((a: any) => (a.showMenu = false));
+    // Alterna el menú actual
+    account.showMenu = !account.showMenu;
+  }
 }

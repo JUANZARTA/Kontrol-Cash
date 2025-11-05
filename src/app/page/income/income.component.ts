@@ -8,7 +8,14 @@ import { Subscription } from 'rxjs'; // ✅ Nuevo
 import { AuthService } from '../../services/auth.service'; // ✅ Nuevo
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
+import { WalletAccount } from '../../models/wallet.model';
+import { WalletService } from '../../services/wallet.service';
 
+// Extiende WalletAccount para agregar id y showMenu
+export interface WalletAccountWithId extends WalletAccount {
+  id: string;
+  showMenu: boolean;
+}
 export interface IncomeWithId extends Income {
   id: string;
 }
@@ -28,11 +35,12 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   private dateService = inject(DateService); // ✅ Nuevo
   private authService = inject(AuthService); // ✅ Nuevo
   private finanzasService = inject(FinanzasService);
+  private walletService = inject(WalletService);
 
   // Propiedades
   incomes: IncomeWithId[] = [];
   expenses: any[] = [];
-  wallet: any[] = [];
+  wallet: WalletAccountWithId[] = [];
   loans: any[] = [];
 
   // Variables para modales de agregar valor y eliminar
@@ -42,9 +50,21 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   incomeToDeleteId: string | null = null;
   newValue: number = 0;
 
+  // estado financiero
   estadoFinanciero = '';
   estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
   cuadreDescuadre = 0;
+
+  // ID de la billetera origen (la que abre el modal)
+  sourceWalletId: string | null = null;
+  sourceWallet: WalletAccountWithId | null = null;
+  insufficientFundsAlert = false;
+
+  // Modal de transaccion
+  isTransactionModalOpen = false;
+  selectedWallet = '';
+  assignedValue: number | null = null;
+  totalDisponible = 20000; // Valor quemado por ahora
 
   // Modales
   isModalOpen: boolean = false;
@@ -68,14 +88,17 @@ export default class IncomeComponent implements OnInit, OnDestroy {
 
   // Variables para el gráfico
   ngOnInit() {
-    // ✅ Suscripción reactiva a cambios de año/mes
+    // Suscripción a cambios de fecha
     this.dateSubscription = this.dateService.selectedDate$.subscribe((date) => {
       if (date.year && date.month) {
         this.currentYear = date.year;
         this.currentMonth = date.month;
         this.loadIncomes();
+        this.loadWallets(); // ✅ carga billeteras al iniciar
       }
     });
+
+    // Estado financiero
     this.finanzasService.mostrarEstadoFinanciero(
       this,
       this.userId,
@@ -112,162 +135,240 @@ export default class IncomeComponent implements OnInit, OnDestroy {
     );
   }
 
-// ======================
-// Modal: Agregar Ingreso
-// ======================
-openModal() {
-  this.isModalOpen = true;
-}
-
-closeModal() {
-  this.isModalOpen = false;
-  this.newIncome = new Income('', CategoriaIngreso.Fijo, 0);
-}
-
-addIncome() {
-  if (!this.newIncome.nombre || !this.newIncome.categoria) {
-    alert('Por favor completa todos los campos.');
-    return;
+  loadWallets() {
+    this.walletService
+      .getWallet(this.userId, this.currentYear, this.currentMonth)
+      .subscribe((data) => {
+        this.wallet = Object.entries(data || {}).map(([id, w]) => ({
+          id,
+          tipo: w.tipo || 'Sin tipo', // ✅ usar tipo en lugar de nombre
+          valor: w.valor || 0,
+          showMenu: false,
+        }));
+      });
   }
 
-  this.incomeService
-    .addIncome(this.userId, this.currentYear, this.currentMonth, this.newIncome)
-    .subscribe({
-      next: () => {
-        this.loadIncomes();
-        this.closeModal();
-      },
-      error: (err) => {
-        console.error('Error al agregar ingreso:', err);
-      }
-    });
-}
-
-// ======================
-// Modal: Agregar Valor en Ingreso
-// ======================
-openAddModal(id: string) {
-  this.selectedIncomeId = id;
-  this.isAddValueModalOpen = true;
-}
-
-closeAddValueModal() {
-  this.isAddValueModalOpen = false;
-  this.newValue = 0;
-}
-
-applyValue(action: 'add' | 'subtract') {
-  if (!this.selectedIncomeId) return;
-
-  const income = this.incomes.find(i => i.id === this.selectedIncomeId);
-  if (!income) return;
-
-  let finalValue = this.newValue;
-
-  if (action === 'subtract') {
-    finalValue = -Math.abs(this.newValue);
-  } else {
-    finalValue = Math.abs(this.newValue);
+  // ======================
+  // Modal: Agregar Ingreso
+  // ======================
+  openModal() {
+    this.isModalOpen = true;
   }
 
-  const updatedValue = income.valor + finalValue;
+  closeModal() {
+    this.isModalOpen = false;
+    this.newIncome = new Income('', CategoriaIngreso.Fijo, 0);
+  }
 
-  const updatedIncome: Income = {
-    nombre: income.nombre,
-    categoria: income.categoria,
-    valor: updatedValue
-  };
-
-  this.incomeService.updateIncome(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    income.id,
-    updatedIncome
-  ).subscribe({
-    next: () => {
-      this.loadIncomes();
-      this.closeAddValueModal();
-    },
-    error: (err) => {
-      console.error('Error al actualizar ingreso:', err);
+  addIncome() {
+    if (!this.newIncome.nombre || !this.newIncome.categoria) {
+      alert('Por favor completa todos los campos.');
+      return;
     }
-  });
-}
 
-// ======================
-// Modal: Editar Ingreso
-// ======================
-openEditModal(id: string) {
-  const original = this.incomes.find(i => i.id === id);
-  if (!original) return;
+    this.incomeService
+      .addIncome(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.newIncome
+      )
+      .subscribe({
+        next: () => {
+          this.loadIncomes();
+          this.closeModal();
+        },
+        error: (err) => {
+          console.error('Error al agregar ingreso:', err);
+        },
+      });
+  }
 
-  this.editedIncome = new Income(
-    original.nombre,
-    original.categoria,
-    original.valor
-  );
-  this.editedId = id;
-  this.isEditModalOpen = true;
-}
+  // ======================
+  // Modal: Agregar Valor en Ingreso
+  // ======================
+  openAddModal(id: string) {
+    this.selectedIncomeId = id;
+    this.isAddValueModalOpen = true;
+  }
 
-closeEditModal() {
-  this.isEditModalOpen = false;
-  this.editedIncome = new Income('', CategoriaIngreso.Fijo, 0);
-  this.editedId = null;
-}
+  closeAddValueModal() {
+    this.isAddValueModalOpen = false;
+    this.newValue = 0;
+  }
 
-saveEditedIncome() {
-  if (!this.editedId) return;
+  applyValue(action: 'add' | 'subtract') {
+    if (!this.selectedIncomeId) return;
 
-  this.incomeService.updateIncome(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.editedId,
-    this.editedIncome
-  ).subscribe({
-    next: () => {
-      this.loadIncomes();
-      this.closeEditModal();
-    },
-    error: (err) => {
-      console.error('Error al editar ingreso:', err);
+    const income = this.incomes.find((i) => i.id === this.selectedIncomeId);
+    if (!income) return;
+
+    let finalValue = this.newValue;
+
+    if (action === 'subtract') {
+      finalValue = -Math.abs(this.newValue);
+    } else {
+      finalValue = Math.abs(this.newValue);
     }
-  });
-}
 
-// ======================
-// Modal: Eliminar Ingreso
-// ======================
-openDeleteModal(id: string) {
-  this.isDeleteModalOpen = true;
-  this.incomeToDeleteId = id;
-}
+    const updatedValue = income.valor + finalValue;
 
-closeDeleteModal() {
-  this.isDeleteModalOpen = false;
-  this.incomeToDeleteId = null;
-}
+    const updatedIncome: Income = {
+      nombre: income.nombre,
+      categoria: income.categoria,
+      valor: updatedValue,
+    };
 
-confirmDeleteIncome() {
-  if (!this.incomeToDeleteId) return;
+    this.incomeService
+      .updateIncome(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        income.id,
+        updatedIncome
+      )
+      .subscribe({
+        next: () => {
+          this.loadIncomes();
+          this.closeAddValueModal();
+        },
+        error: (err) => {
+          console.error('Error al actualizar ingreso:', err);
+        },
+      });
+  }
 
-  this.incomeService.deleteIncome(
-    this.userId,
-    this.currentYear,
-    this.currentMonth,
-    this.incomeToDeleteId
-  ).subscribe({
-    next: () => {
-      this.loadIncomes();
-      this.closeDeleteModal();
-    },
-    error: (err) => {
-      console.error('Error al eliminar ingreso:', err);
+  // ======================
+  // Modal: Editar Ingreso
+  // ======================
+  openEditModal(id: string) {
+    const original = this.incomes.find((i) => i.id === id);
+    if (!original) return;
+
+    this.editedIncome = new Income(
+      original.nombre,
+      original.categoria,
+      original.valor
+    );
+    this.editedId = id;
+    this.isEditModalOpen = true;
+  }
+
+  closeEditModal() {
+    this.isEditModalOpen = false;
+    this.editedIncome = new Income('', CategoriaIngreso.Fijo, 0);
+    this.editedId = null;
+  }
+
+  saveEditedIncome() {
+    if (!this.editedId) return;
+
+    this.incomeService
+      .updateIncome(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.editedId,
+        this.editedIncome
+      )
+      .subscribe({
+        next: () => {
+          this.loadIncomes();
+          this.closeEditModal();
+        },
+        error: (err) => {
+          console.error('Error al editar ingreso:', err);
+        },
+      });
+  }
+
+  // ======================
+  // Modal: Eliminar Ingreso
+  // ======================
+  openDeleteModal(id: string) {
+    this.isDeleteModalOpen = true;
+    this.incomeToDeleteId = id;
+  }
+
+  closeDeleteModal() {
+    this.isDeleteModalOpen = false;
+    this.incomeToDeleteId = null;
+  }
+
+  confirmDeleteIncome() {
+    if (!this.incomeToDeleteId) return;
+
+    this.incomeService
+      .deleteIncome(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.incomeToDeleteId
+      )
+      .subscribe({
+        next: () => {
+          this.loadIncomes();
+          this.closeDeleteModal();
+        },
+        error: (err) => {
+          console.error('Error al eliminar ingreso:', err);
+        },
+      });
+  }
+
+  // ======================
+  // Modal: Transaccion
+  // ======================
+  openTransactionModal() {
+    this.isTransactionModalOpen = true;
+
+    // Convertimos assignedValue a positivo para que no se muestre negativo
+    this.assignedValue =
+      this.cuadreDescuadre < 0 ? -this.cuadreDescuadre : this.cuadreDescuadre;
+
+    if (!this.wallet.length) {
+      this.loadWallets();
     }
-  });
-}
+  }
+
+  closeTransactionModal() {
+    this.isTransactionModalOpen = false;
+    this.assignedValue = null;
+    this.selectedWallet = '';
+    this.insufficientFundsAlert = false;
+  }
+
+  confirmTransaction() {
+    if (
+      !this.selectedWallet ||
+      !this.assignedValue ||
+      this.assignedValue <= 0
+    ) {
+      alert('Selecciona una billetera y un valor válido.');
+      return;
+    }
+
+    const toAccount = this.wallet.find((w) => w.id === this.selectedWallet);
+    if (!toAccount) return;
+
+    // Sumar al destino
+    toAccount.valor += this.assignedValue;
+
+    // Guardar en DB usando WalletService
+    this.walletService
+      .updateAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        toAccount.id,
+        { tipo: toAccount.tipo, valor: toAccount.valor } // ✅ reemplazamos nombre por tipo
+      )
+
+      .subscribe(() => {
+        this.loadWallets(); // refresca la lista
+        this.closeTransactionModal();
+      });
+  }
 
   // Método para calcular el total de ingresos
   getTotalIncome(): number {
@@ -307,16 +408,15 @@ confirmDeleteIncome() {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/[^\d-]/g, '');
     const value = Number(raw) || 0;
-  
+
     if (field === 'valor') {
       this.newIncome.valor = value;
     } else if (field === 'add') {
       this.newValue = value;
     }
-  
+
     input.value = this.formatCurrency(value);
   }
-  
 
   // Método para manejar la entrada de valores y formatear
   onEditValueInput(event: Event) {

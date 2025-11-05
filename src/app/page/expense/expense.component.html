@@ -8,20 +8,18 @@
     {{ estadoFinanciero }}
   </span>
 </div>
+
 <!-- Encabezado -->
-<div
-  class="flex items-center justify-between p-6 bg-sky-800 text-white rounded-t-xl shadow-md">
-  <div>
-    <h6 class="text-xl font-bold tracking-wide">Tabla de Gastos</h6>
-    <p class="text-sm flex items-center gap-2 opacity-90">
-      <strong>Mes de Enero</strong>
-    </p>
-  </div>
-  <button (click)="openModal()"
-    class="bg-white text-blue-700 font-semibold px-4 py-2 rounded-md shadow-md hover:bg-blue-100 transition">
-    Agregar Gasto +
+<div class="flex items-center justify-between p-4">
+  <h6 class="text-lg font-semibold text-gray-800">Tabla de Gastos</h6>
+
+  <button
+    (click)="openModal()"
+    class="text-sky-700 font-medium px-3 py-1.5 rounded-md hover:bg-sky-50 transition">
+    Agregar +
   </button>
 </div>
+
 
 <!-- Tabla de Gastos -->
 <div class="overflow-x-auto">
