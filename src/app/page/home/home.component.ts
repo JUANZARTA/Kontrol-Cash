@@ -1,4 +1,10 @@
-import {Component,OnInit,OnDestroy,Inject,PLATFORM_ID,} from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  Inject,
+  PLATFORM_ID,
+} from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { Subscription, forkJoin } from 'rxjs';
@@ -20,11 +26,12 @@ import { FinanzasService } from '../../services/finanzas.service';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { inject } from '@angular/core';
+import { FinancialChartComponent } from '../../shared/components/financial-chart/financial-chart.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, FinancialChartComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
 })
@@ -60,7 +67,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
 
   // Estado financiero
   saludFinanciera: 'positiva' | 'advertencia' | 'critica' = 'positiva';
-  mensajeSaludFinanciera: string = '';
+  mensajeSaludFinanciera: string = 'Cargando estado financiero...';
 
   // Para modal de gasto desde home
   categorias = Object.values(CategoriaGasto); // Llena el select con enum
@@ -74,6 +81,14 @@ export default class HomeComponent implements OnInit, OnDestroy {
   restanteActualmente: number = 0;
   restanteTotal: number = 0;
   diferenciaSaldo: number = 0;
+
+  // Totales para la gráfica
+  totalBilletera: number = 0;
+  gastosTotales: number = 0;
+  totalDeuda: number = 0;
+  totalPrestamo: number = 0;
+  ingresosTotales: number = 0;
+  totalAhorro: number = 0;
 
   constructor(
     private walletService: WalletService,
@@ -158,6 +173,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
         ([id, item]: [string, any]) => ({ id, ...item })
       );
       this.evaluarSaludFinanciera();
+      this.calcularTotales();
     });
     this.finanzasService.mostrarEstadoFinanciero(
       this,
@@ -165,6 +181,32 @@ export default class HomeComponent implements OnInit, OnDestroy {
       this.currentYear,
       this.currentMonth
     );
+  }
+
+  private calcularTotales() {
+    // 🔹 Usa los nombres reales de tus modelos
+    this.totalDeuda = this.debts?.reduce((a, d) => a + (d.valor || 0), 0);
+    this.totalPrestamo = this.loans?.reduce((a, p) => a + (p.valor || 0), 0);
+    this.ingresosTotales = this.ingresos?.reduce(
+      (a, i) => a + (i.valor || 0),
+      0
+    );
+    this.gastosTotales = this.gastos?.reduce((a, g) => a + (g.valor || 0), 0);
+    this.totalBilletera = this.wallet?.reduce((a, c) => a + (c.valor || 0), 0);
+
+    // 🔹 Calcula total disponible aproximado
+    this.restanteTotal =
+      this.totalBilletera + this.totalPrestamo - this.totalDeuda;
+
+    // 🔹 Si no hay ingresos explícitos, inferirlos
+    if (!this.ingresosTotales && this.restanteTotal) {
+      this.ingresosTotales = this.restanteTotal;
+    }
+
+    // 🔹 Calcula ahorro estimado
+    this.totalAhorro =
+      this.estimacionDineroRestanteMes ||
+      Math.max(this.ingresosTotales - this.gastosTotales, 0);
   }
 
   // Usuario actual
@@ -289,6 +331,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadData(); // Actualiza vista
           this.cerrarModalCuenta(); // Cierra modal
+          this.calcularTotales();
         },
         error: (err) => {
           console.error('❌ Error al agregar cuenta desde home:', err);

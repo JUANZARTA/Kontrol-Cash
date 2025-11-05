@@ -1,0 +1,11 @@
+<div class="flex justify-center items-center relative">
+  <canvas id="financialChart" class="w-72 h-72"></canvas>
+
+  <!-- Mostrar solo si todos los totales están en 0 -->
+  <div
+    *ngIf="ingresosTotales === 0 && gastosTotales === 0 && totalDeuda === 0 && totalBilletera === 0 && totalPrestamo === 0 && totalAhorro === 0"
+    class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm font-medium pointer-events-none"
+  >
+    Sin datos
+  </div>
+</div>

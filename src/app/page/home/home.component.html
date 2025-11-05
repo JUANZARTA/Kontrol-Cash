@@ -1,277 +1,319 @@
+<!-- 🗓 Encabezado con mes y año seleccionados -->
+<!-- <h2 class="text-2xl font-bold text-gray-700 text-center mb-4 animate-fadeSlideDown">
+  Resumen financiero de {{ nombreMes(currentMonth) }} / {{ currentYear }}
+</h2> -->
+
+<!-- Indicador de salud financiera + estado financiero -->
+<div class="flex justify-center items-center gap-4 flex-wrap mb-6">
+
+  <!-- Mensaje de salud financiera -->
+  <span [ngClass]="{
+    'from-teal-500 to-teal-700': saludFinanciera === 'positiva',
+    'from-yellow-400 to-yellow-600': saludFinanciera === 'advertencia',
+    'from-orange-500 to-orange-700': saludFinanciera === 'critica'
+  }" class="bg-gradient-to-r text-white text-sm font-semibold px-6 py-3 rounded-full shadow-lg
+         transform transition-all duration-300 hover:scale-105 animate-fadeSlideDown animate-floating-slower">
+    {{ mensajeSaludFinanciera || 'Estado desconocido' }}
+  </span>
 
 
-  <!-- 🗓 Encabezado con mes y año seleccionados -->
-  <h2 class="text-xl font-bold text-gray-700 text-center">
-    Resumen financiero de {{ nombreMes(currentMonth) }} / {{ currentYear }}
-  </h2>
 
-  <!-- Indicador de salud financiera + estado financiero -->
-  <div class="flex justify-center mb-4 gap-4 flex-wrap text-center">
+  <!-- Estado financiero (cuadre/descuadre) -->
+  <span [ngClass]="{
+      'bg-gradient-to-r from-orange-500 to-orange-700': estadoFinanciero.toLowerCase().includes('descuadre'),
+      'bg-gradient-to-r from-sky-500 to-sky-700': estadoFinanciero.toLowerCase().includes('sin justificar'),
+      'bg-gradient-to-r from-teal-500 to-teal-700': estadoFinanciero.toLowerCase().includes('al día')
+    }" class="text-white text-sm font-semibold px-6 py-3 rounded-full shadow-lg
+           transform transition-all duration-300 hover:scale-105 animate-fadeSlideDown
+           animate-floating-slower">
+    {{ estadoFinanciero || 'Sin información' }}
+  </span>
 
-    <!-- Mensaje de salud financiera -->
-    <span [ngClass]="{
-        'bg-teal-600': saludFinanciera === 'positiva',
-        'bg-yellow-500': saludFinanciera === 'advertencia',
-        'bg-orange-600': saludFinanciera === 'critica'
-      }" class="text-white text-sm font-semibold px-4 py-2 rounded-full shadow-md">
-      {{ mensajeSaludFinanciera }}
-    </span>
+</div>
 
-    <!-- Estado financiero (cuadre/descuadre) con mensaje completo -->
-    <span [ngClass]="{
-      'bg-orange-600': estadoFinanciero.toLowerCase().includes('descuadre'),
-      'bg-sky-600': estadoFinanciero.toLowerCase().includes('sin justificar'),
-      'bg-teal-600': estadoFinanciero.toLowerCase().includes('al día')
-      }" class="text-white text-sm font-semibold px-4 py-2 rounded-full shadow-md">
-      {{ estadoFinanciero }}
-    </span>
+<!-- Resumen Financiero Compacto -->
+<div class="mt-6 w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
 
+  <!-- 📊 Resumen General -->
+  <div
+    class="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-lg p-5 mt-6 transform transition-all duration-500 hover:shadow-xl hover:scale-[1.01] animate-fadeSlideUp">
+    <h3 class="text-sky-800 text-lg font-semibold mb-4 text-center">
+      Resumen General
+    </h3>
+
+    <div class="overflow-hidden rounded-xl border border-gray-100">
+      <table class="w-full text-sm text-gray-700">
+        <tbody>
+          <tr class="border-b hover:bg-sky-50 transition-colors duration-200">
+            <td class="px-4 py-3 font-medium">Gastos realizados en el mes</td>
+            <td class="px-4 py-3 text-right text-gray-800 font-semibold">
+              {{ formatCurrency(gastadoActualmente) }}
+            </td>
+          </tr>
+          <tr class="border-b hover:bg-sky-50 transition-colors duration-200">
+            <td class="px-4 py-3 font-medium">Saldo actual en cartera</td>
+            <td class="px-4 py-3 text-right text-green-600 font-semibold">
+              {{ formatCurrency(restanteActualmente) }}
+            </td>
+          </tr>
+          <tr
+            class="border-b bg-orange-50 text-orange-700 font-semibold hover:bg-orange-100 transition-colors duration-200">
+            <td class="px-4 py-3">Gastaste de más</td>
+            <td class="px-4 py-3 text-right">
+              {{ formatCurrency(diferenciaSaldo) }}
+            </td>
+          </tr>
+          <tr class="border-b hover:bg-sky-50 transition-colors duration-200">
+            <td class="px-4 py-3 font-medium">
+              Total disponible (cartera + préstamos)
+            </td>
+            <td class="px-4 py-3 text-right text-gray-800 font-semibold">
+              {{ formatCurrency(restanteTotal) }}
+            </td>
+          </tr>
+          <tr class="border-b hover:bg-sky-50 transition-colors duration-200">
+            <td class="px-4 py-3 font-medium">Gastos planificados del mes</td>
+            <td class="px-4 py-3 text-right text-gray-700 font-semibold">
+              {{ formatCurrency(estimacionGastosMes) }}
+            </td>
+          </tr>
+          <tr class="bg-sky-50 font-bold text-sky-800 hover:bg-sky-100 transition-colors duration-200">
+            <td class="px-4 py-3">Saldo estimado al final del mes</td>
+            <td class="px-4 py-3 text-right">
+              {{ formatCurrency(estimacionDineroRestanteMes) }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Totales -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-    <div class="bg-sky-800 text-white p-4 rounded-lg shadow-md">
-      <h3 class="text-lg font-semibold">Total en Cartera</h3>
-      <p class="text-2xl font-bold">{{ totalWallet | currency }}</p>
-    </div>
-    <div class="bg-sky-800 text-white p-4 rounded-lg shadow-md">
-      <h3 class="text-lg font-semibold">Total Deudas Pendientes</h3>
-      <p class="text-2xl font-bold">{{ totalPendingDebts | currency }}</p>
-    </div>
-    <div class="bg-sky-800 text-white p-4 rounded-lg shadow-md">
-      <h3 class="text-lg font-semibold">Total Préstamos Pendientes</h3>
-      <p class="text-2xl font-bold">{{ totalPendingLoans | currency }}</p>
-    </div>
-  </div>
-
-  <!-- CONTENEDOR FLEXIBLE EN TARJETAS -->
-  <div class="mt-6 w-full max-w-5xl mx-auto flex flex-col xl:flex-row gap-6">
-
-    <!-- 🔹 Tarjeta: Gastos Reales -->
-    <div class="flex-1 rounded-lg shadow border border-gray-200 bg-white ">
-      <div class="bg-sky-800 text-gray-100 font-semibold px-4 py-3 rounded-t-lg">
-        Gastos Reales
-      </div>
-      <div class="divide-y divide-gray-200 text-sm text-gray-800">
-        <div class="flex justify-between px-4 py-3">
-          <span>Gastos realizados en el mes</span>
-          <span class="text-right font-medium">{{ formatCurrency(gastadoActualmente) }}</span>
-        </div>
-        <div class="flex justify-between px-4 py-3">
-          <span>Saldo actual en cartera</span>
-          <span class="text-right font-medium">{{ formatCurrency(restanteActualmente) }}</span>
-        </div>
-        <div class="flex justify-between px-4 py-3 bg-orange-50 font-bold">
-          <span>Gastaste de más</span>
-          <span class="text-right">{{ formatCurrency(diferenciaSaldo) }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 🔹 Tarjeta: Estimaciones -->
-    <div class="flex-1 rounded-lg shadow border border-gray-200 bg-white ">
-      <div class="bg-sky-800 text-gray-100 font-semibold px-4 py-3 rounded-t-lg">
-        Estimaciones
-      </div>
-      <div class="divide-y divide-gray-200  text-sm text-gray-800 ">
-        <div class="flex justify-between px-4 py-3">
-          <span>Total disponible (cartera + préstamos)</span>
-          <span class="text-right font-medium">{{ formatCurrency(restanteTotal) }}</span>
-        </div>
-        <div class="flex justify-between px-4 py-3">
-          <span>Gastos planificados para el mes</span>
-          <span class="text-right font-medium">{{ formatCurrency(estimacionGastosMes) }}</span>
-        </div>
-        <div class="flex justify-between px-4 py-3 bg-sky-50 font-bold">
-          <span>Saldo estimado al final del mes</span>
-          <span class="text-right">{{ formatCurrency(estimacionDineroRestanteMes) }}</span>
-        </div>
-      </div>
-    </div>
+  <!-- 🥧 Gráfica circular -->
+  <div class="flex justify-center items-center animate-pop-in">
+    <app-financial-chart [ingresosTotales]="ingresosTotales" [gastosTotales]="gastosTotales" [totalDeuda]="totalDeuda"
+      [totalBilletera]="totalBilletera" [totalPrestamo]="totalPrestamo" [totalAhorro]="totalAhorro">
+    </app-financial-chart>
 
   </div>
+</div>
 
-  <!-- Tarjetas: Cartera, Deudas, Préstamos estilo tabla -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Totales Sobrios -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
 
-    <!-- Componente: Cartera -->
-    <details open class="bg-white border border-gray-200  rounded-lg shadow">
-      <summary
-        class="flex items-center justify-between px-4 py-3 bg-sky-700 text-white rounded-t-lg cursor-pointer select-none">
-        <div>
-          <h3 class="text-base md:text-lg font-semibold">Cartera</h3>
-          <p class="text-xs opacity-90">Estado Actual ({{ wallet.length }} cuentas)</p>
-        </div>
-        <button (click)="abrirModalCuenta(); $event.stopPropagation()"
-          class="bg-white text-sky-700 font-semibold px-3 py-1 rounded-md shadow-sm hover:bg-blue-100 transition text-sm">
-          + Agregar
-        </button>
-      </summary>
-      <div class="p-4">
-        <div *ngIf="wallet.length > 0" class="divide-y divide-gray-200">
-          <div *ngFor="let item of wallet" class="py-2 flex justify-between text-sm">
-            <span class="font-medium text-gray-700">{{ item.tipo }}</span>
-            <span class="text-right font-semibold text-gray-900 ">{{ item.valor | currency }}</span>
-          </div>
-        </div>
-        <div *ngIf="wallet.length === 0" class="text-center text-gray-400  py-6">
-          Sin registros
+  <!-- Total en Cartera -->
+  <div class="bg-white text-sky-800 p-4 rounded-lg shadow-md
+              transform transition-all duration-300 hover:scale-105 hover:shadow-lg
+              animate-pop-in animate-floating-slower">
+    <h3 class="text-base font-semibold mb-1 text-center">Total en Cartera</h3>
+    <p class="text-xl font-bold text-center">{{ totalWallet | currency }}</p>
+  </div>
+
+  <!-- Total Deudas Pendientes -->
+  <div class="bg-white text-sky-800 p-4 rounded-lg shadow-md
+              transform transition-all duration-300 hover:scale-105 hover:shadow-lg
+              animate-pop-in animate-floating-slow">
+    <h3 class="text-base font-semibold mb-1 text-center">Total Deudas Pendientes</h3>
+    <p class="text-xl font-bold text-center">{{ totalPendingDebts | currency }}</p>
+  </div>
+
+  <!-- Total Préstamos Pendientes -->
+  <div class="bg-white text-sky-800 p-4 rounded-lg shadow-md
+              transform transition-all duration-300 hover:scale-105 hover:shadow-lg
+              animate-pop-in animate-floating">
+    <h3 class="text-base font-semibold mb-1 text-center">Total Préstamos Pendientes</h3>
+    <p class="text-xl font-bold text-center">{{ totalPendingLoans | currency }}</p>
+  </div>
+
+</div>
+
+
+
+<!-- Tarjetas: Cartera, Deudas, Préstamos -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+  <!-- Componente: Cartera -->
+  <details open class="bg-white border border-gray-200 rounded-2xl shadow-md
+                     transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg
+                     animate-pop-in animate-floating-slower">
+    <summary
+      class="flex items-center justify-between px-4 py-3 bg-sky-800 text-white rounded-t-2xl cursor-pointer select-none">
+      <div>
+        <h3 class="text-base md:text-lg font-semibold">Cartera</h3>
+        <p class="text-xs opacity-90">Estado Actual ({{ wallet.length }} cuentas)</p>
+      </div>
+      <button (click)="abrirModalCuenta(); $event.stopPropagation()"
+        class="bg-white text-sky-800 font-semibold px-3 py-1 rounded-md shadow-sm hover:bg-gray-100 transition text-sm">
+        + Agregar
+      </button>
+    </summary>
+    <div class="p-4">
+      <div *ngIf="wallet.length > 0" class="divide-y divide-gray-100">
+        <div *ngFor="let item of wallet" class="py-2 flex justify-between text-sm">
+          <span class="font-medium text-gray-700">{{ item.tipo }}</span>
+          <span class="text-right font-semibold text-gray-900">{{ item.valor | currency }}</span>
         </div>
       </div>
-    </details>
+      <div *ngIf="wallet.length === 0" class="text-center text-gray-400 py-6">
+        Sin registros
+      </div>
+    </div>
+  </details>
 
-    <!-- Componente: Deudas -->
-    <details open class="bg-white border border-gray-200 rounded-lg shadow">
-      <summary
-        class="flex items-center justify-between px-4 py-3 bg-sky-700 text-white rounded-t-lg cursor-pointer select-none">
-        <div>
-          <h3 class="text-base md:text-lg font-semibold">Deudas</h3>
-          <p class="text-xs opacity-90">Estado Actual ({{ debts.length }} deudas)</p>
-        </div>
-        <button (click)="abrirModalDeuda(); $event.stopPropagation()"
-          class="bg-white text-sky-700 font-semibold px-3 py-1 rounded-md shadow-sm hover:bg-blue-100  transition text-sm">
-          + Agregar
-        </button>
-      </summary>
-      <div class="p-4">
-        <div *ngIf="debts.length > 0" class="divide-y divide-gray-200 ">
-          <div *ngFor="let debt of debts" class="py-2 flex justify-between text-sm">
-            <span class="font-medium text-gray-700 ">{{ debt.acreedor }}</span>
-            <span [ngClass]="{
-            'text-green-600 ': debt.estado === 'Pagado',
-            'text-red-600 ': debt.estado === 'Pendiente'
+  <!-- Componente: Deudas -->
+  <details open class="bg-white border border-gray-200 rounded-2xl shadow-md
+                     transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg
+                     animate-pop-in animate-floating-slow">
+    <summary
+      class="flex items-center justify-between px-4 py-3 bg-sky-800 text-white rounded-t-2xl cursor-pointer select-none">
+      <div>
+        <h3 class="text-base md:text-lg font-semibold">Deudas</h3>
+        <p class="text-xs opacity-90">Estado Actual ({{ debts.length }} deudas)</p>
+      </div>
+      <button (click)="abrirModalDeuda(); $event.stopPropagation()"
+        class="bg-white text-sky-800 font-semibold px-3 py-1 rounded-md shadow-sm hover:bg-gray-100 transition text-sm">
+        + Agregar
+      </button>
+    </summary>
+    <div class="p-4">
+      <div *ngIf="debts.length > 0" class="divide-y divide-gray-100">
+        <div *ngFor="let debt of debts" class="py-2 flex justify-between text-sm">
+          <span class="font-medium text-gray-700">{{ debt.acreedor }}</span>
+          <span [ngClass]="{
+            'text-green-600': debt.estado === 'Pagado',
+            'text-red-600': debt.estado === 'Pendiente'
           }" class="text-right font-semibold">{{ debt.estado }}</span>
-          </div>
-        </div>
-        <div *ngIf="debts.length === 0" class="text-center text-gray-400 py-6">
-          Sin registros
         </div>
       </div>
-    </details>
+      <div *ngIf="debts.length === 0" class="text-center text-gray-400 py-6">
+        Sin registros
+      </div>
+    </div>
+  </details>
 
-    <!-- Componente: Préstamos -->
-    <details open class="bg-white  border border-gray-200  rounded-lg shadow">
-      <summary
-        class="flex items-center justify-between px-4 py-3 bg-sky-700 text-white rounded-t-lg cursor-pointer select-none">
-        <div>
-          <h3 class="text-base md:text-lg font-semibold">Préstamos</h3>
-          <p class="text-xs opacity-90">Estado Actual ({{ loans.length }} préstamos)</p>
-        </div>
-        <button (click)="abrirModalPrestamo(); $event.stopPropagation()"
-          class="bg-white text-sky-700 font-semibold px-3 py-1 rounded-md shadow-sm hover:bg-blue-100  transition text-sm">
-          + Agregar
-        </button>
-      </summary>
-      <div class="p-4">
-        <div *ngIf="loans.length > 0" class="divide-y divide-gray-200 ">
-          <div *ngFor="let loan of loans" class="py-2 flex justify-between text-sm">
-            <span class="font-medium text-gray-700 ">{{ loan.deudor }}</span>
-            <span [ngClass]="{
-            'text-green-600 ': loan.estado === 'Pagado',
-            'text-red-600 ': loan.estado === 'Pendiente'
+  <!-- Componente: Préstamos -->
+  <details open class="bg-white border border-gray-200 rounded-2xl shadow-md
+                     transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg
+                     animate-pop-in animate-floating">
+    <summary
+      class="flex items-center justify-between px-4 py-3 bg-sky-800 text-white rounded-t-2xl cursor-pointer select-none">
+      <div>
+        <h3 class="text-base md:text-lg font-semibold">Préstamos</h3>
+        <p class="text-xs opacity-90">Estado Actual ({{ loans.length }} préstamos)</p>
+      </div>
+      <button (click)="abrirModalPrestamo(); $event.stopPropagation()"
+        class="bg-white text-sky-800 font-semibold px-3 py-1 rounded-md shadow-sm hover:bg-gray-100 transition text-sm">
+        + Agregar
+      </button>
+    </summary>
+    <div class="p-4">
+      <div *ngIf="loans.length > 0" class="divide-y divide-gray-100">
+        <div *ngFor="let loan of loans" class="py-2 flex justify-between text-sm">
+          <span class="font-medium text-gray-700">{{ loan.deudor }}</span>
+          <span [ngClass]="{
+            'text-green-600': loan.estado === 'Pagado',
+            'text-red-600': loan.estado === 'Pendiente'
           }" class="text-right font-semibold">{{ loan.estado }}</span>
-          </div>
-        </div>
-        <div *ngIf="loans.length === 0" class="text-center text-gray-400 ">
-          Sin registros
         </div>
       </div>
-    </details>
-
-  </div>
-
-  <!-- Modal: Agregar Cuenta a Cartera desde Home -->
-  <div *ngIf="isModalCuentaOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg shadow-xl w-96 text-gray-800 ">
-      <h2 class="text-xl font-bold mb-4">Agregar Cuenta</h2>
-
-      <label class="block text-sm mb-1">Nombre / Tipo:</label>
-      <input type="text" [(ngModel)]="nuevaCuenta.tipo"
-        class="w-full p-2 border border-gray-300  rounded mb-3 bg-white text-sm" placeholder="Ej: Nequi, Efectivo" />
-
-      <label class="block text-sm mb-1">Valor:</label>
-      <input type="text" [value]="nuevaCuenta.valor ? nuevaCuenta.valor.toLocaleString('es-CO') : ''"
-        (input)="formatearInputMoneda($event, 'cuenta')"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white  text-sm" placeholder="Ej: 1.000.000" />
-
-      <div class="flex justify-end gap-2 pt-2">
-        <button (click)="cerrarModalCuenta()" class="px-4 py-2 border rounded-md hover:bg-gray-100 ">Cancelar</button>
-        <button (click)="guardarCuentaDesdeHome()"
-          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Guardar</button>
+      <div *ngIf="loans.length === 0" class="text-center text-gray-400 py-6">
+        Sin registros
       </div>
     </div>
-  </div>
+  </details>
 
-  <!-- Modal: Agregar Deuda desde Home -->
-  <div *ngIf="isModalDeudaOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white  p-6 rounded-lg shadow-xl w-96 text-gray-800 ">
-      <h2 class="text-xl font-bold mb-4">Agregar Nueva Deuda</h2>
+</div>
 
-      <label class="block text-sm mb-1">Nombre Deuda:</label>
-      <input type="text" [(ngModel)]="nuevaDeuda.acreedor"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " placeholder="Ejm: Banco Pichincha" />
 
-      <label class="block text-sm mb-1">Fecha de Deuda:</label>
-      <input type="date" [(ngModel)]="nuevaDeuda.fecha_deuda"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " />
+<!-- Modal: Agregar Cuenta a Cartera desde Home -->
+<div *ngIf="isModalCuentaOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white p-6 rounded-lg shadow-xl w-96 text-gray-800 ">
+    <h2 class="text-xl font-bold mb-4">Agregar Cuenta</h2>
 
-      <label class="block text-sm mb-1">Fecha de Pago:</label>
-      <input type="date" [(ngModel)]="nuevaDeuda.fecha_pago"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " />
+    <label class="block text-sm mb-1">Nombre / Tipo:</label>
+    <input type="text" [(ngModel)]="nuevaCuenta.tipo"
+      class="w-full p-2 border border-gray-300  rounded mb-3 bg-white text-sm" placeholder="Ej: Nequi, Efectivo" />
 
-      <label class="block text-sm mb-1">Valor:</label>
-      <input type="text" [value]="nuevaDeuda.valor ? nuevaDeuda.valor.toLocaleString('es-CO') : ''"
-        (input)="formatearInputMoneda($event, 'deuda')"
-        class="w-full p-2 border border-gray-300  rounded mb-3 bg-white " placeholder="Ej: 35.000" />
+    <label class="block text-sm mb-1">Valor:</label>
+    <input type="text" [value]="nuevaCuenta.valor ? nuevaCuenta.valor.toLocaleString('es-CO') : ''"
+      (input)="formatearInputMoneda($event, 'cuenta')"
+      class="w-full p-2 border border-gray-300 rounded mb-3 bg-white  text-sm" placeholder="Ej: 1.000.000" />
 
-      <label class="block text-sm mb-1">Estado:</label>
-      <select [(ngModel)]="nuevaDeuda.estado" class="w-full p-2 border border-gray-300 rounded mb-4 bg-white ">
-        <option value="Pendiente">Pendiente</option>
-        <option value="Pagado">Pagado</option>
-      </select>
-
-      <div class="flex justify-end gap-2 pt-2">
-        <button (click)="cerrarModalDeuda()" class="px-4 py-2 border rounded-md hover:bg-gray-100 ">Cancelar</button>
-        <button (click)="guardarDeudaDesdeHome()"
-          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Agregar</button>
-      </div>
+    <div class="flex justify-end gap-2 pt-2">
+      <button (click)="cerrarModalCuenta()" class="px-4 py-2 border rounded-md hover:bg-gray-100 ">Cancelar</button>
+      <button (click)="guardarCuentaDesdeHome()"
+        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Guardar</button>
     </div>
   </div>
+</div>
 
-  <!-- Modal: Agregar Préstamo desde Home -->
-  <div *ngIf="isModalPrestamoOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg shadow-xl w-96 text-gray-800 ">
-      <h2 class="text-xl font-bold mb-4">Agregar Préstamo</h2>
+<!-- Modal: Agregar Deuda desde Home -->
+<div *ngIf="isModalDeudaOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white  p-6 rounded-lg shadow-xl w-96 text-gray-800 ">
+    <h2 class="text-xl font-bold mb-4">Agregar Nueva Deuda</h2>
 
-      <label class="block text-sm mb-1">Nombre del Deudor:</label>
-      <input type="text" [(ngModel)]="nuevoPrestamo.deudor"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white" placeholder="Ej: Juan Pérez" />
+    <label class="block text-sm mb-1">Nombre Deuda:</label>
+    <input type="text" [(ngModel)]="nuevaDeuda.acreedor"
+      class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " placeholder="Ejm: Banco Pichincha" />
 
-      <label class="block text-sm mb-1">Fecha de Préstamo:</label>
-      <input type="date" [(ngModel)]="nuevoPrestamo.fecha_prestamo"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " />
+    <label class="block text-sm mb-1">Fecha de Deuda:</label>
+    <input type="date" [(ngModel)]="nuevaDeuda.fecha_deuda"
+      class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " />
 
-      <label class="block text-sm mb-1">Fecha de Pago:</label>
-      <input type="date" [(ngModel)]="nuevoPrestamo.fecha_pago"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white" />
+    <label class="block text-sm mb-1">Fecha de Pago:</label>
+    <input type="date" [(ngModel)]="nuevaDeuda.fecha_pago"
+      class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " />
 
-      <label class="block text-sm mb-1">Valor:</label>
-      <input type="text" [value]="nuevoPrestamo.valor ? nuevoPrestamo.valor.toLocaleString('es-CO') : ''"
-        (input)="formatearInputMoneda($event, 'prestamo')"
-        class="w-full p-2 border border-gray-300 rounded mb-3 bg-white" placeholder="Ej: 250.000" />
+    <label class="block text-sm mb-1">Valor:</label>
+    <input type="text" [value]="nuevaDeuda.valor ? nuevaDeuda.valor.toLocaleString('es-CO') : ''"
+      (input)="formatearInputMoneda($event, 'deuda')" class="w-full p-2 border border-gray-300  rounded mb-3 bg-white "
+      placeholder="Ej: 35.000" />
 
-      <label class="block text-sm mb-1">Estado:</label>
-      <select [(ngModel)]="nuevoPrestamo.estado" class="w-full p-2 border border-gray-300 rounded mb-4 bg-white">
-        <option value="Pendiente">Pendiente</option>
-        <option value="Pagado">Pagado</option>
-      </select>
+    <label class="block text-sm mb-1">Estado:</label>
+    <select [(ngModel)]="nuevaDeuda.estado" class="w-full p-2 border border-gray-300 rounded mb-4 bg-white ">
+      <option value="Pendiente">Pendiente</option>
+      <option value="Pagado">Pagado</option>
+    </select>
 
-      <div class="flex justify-end gap-2 pt-2">
-        <button (click)="cerrarModalPrestamo()" class="px-4 py-2 border rounded-md hover:bg-gray-100">Cancelar</button>
-        <button (click)="guardarPrestamoDesdeHome()"
-          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Agregar</button>
-      </div>
+    <div class="flex justify-end gap-2 pt-2">
+      <button (click)="cerrarModalDeuda()" class="px-4 py-2 border rounded-md hover:bg-gray-100 ">Cancelar</button>
+      <button (click)="guardarDeudaDesdeHome()"
+        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Agregar</button>
     </div>
   </div>
+</div>
 
+<!-- Modal: Agregar Préstamo desde Home -->
+<div *ngIf="isModalPrestamoOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white p-6 rounded-lg shadow-xl w-96 text-gray-800 ">
+    <h2 class="text-xl font-bold mb-4">Agregar Préstamo</h2>
 
+    <label class="block text-sm mb-1">Nombre del Deudor:</label>
+    <input type="text" [(ngModel)]="nuevoPrestamo.deudor"
+      class="w-full p-2 border border-gray-300 rounded mb-3 bg-white" placeholder="Ej: Juan Pérez" />
+
+    <label class="block text-sm mb-1">Fecha de Préstamo:</label>
+    <input type="date" [(ngModel)]="nuevoPrestamo.fecha_prestamo"
+      class="w-full p-2 border border-gray-300 rounded mb-3 bg-white " />
+
+    <label class="block text-sm mb-1">Fecha de Pago:</label>
+    <input type="date" [(ngModel)]="nuevoPrestamo.fecha_pago"
+      class="w-full p-2 border border-gray-300 rounded mb-3 bg-white" />
+
+    <label class="block text-sm mb-1">Valor:</label>
+    <input type="text" [value]="nuevoPrestamo.valor ? nuevoPrestamo.valor.toLocaleString('es-CO') : ''"
+      (input)="formatearInputMoneda($event, 'prestamo')" class="w-full p-2 border border-gray-300 rounded mb-3 bg-white"
+      placeholder="Ej: 250.000" />
+
+    <label class="block text-sm mb-1">Estado:</label>
+    <select [(ngModel)]="nuevoPrestamo.estado" class="w-full p-2 border border-gray-300 rounded mb-4 bg-white">
+      <option value="Pendiente">Pendiente</option>
+      <option value="Pagado">Pagado</option>
+    </select>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <button (click)="cerrarModalPrestamo()" class="px-4 py-2 border rounded-md hover:bg-gray-100">Cancelar</button>
+      <button (click)="guardarPrestamoDesdeHome()"
+        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Agregar</button>
+    </div>
+  </div>
+</div>
