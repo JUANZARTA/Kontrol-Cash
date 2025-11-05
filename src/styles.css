@@ -80,5 +80,28 @@
   animation: fadeSlideUp 0.5s ease-out forwards;
 }
 
+@keyframes fadeSlideLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeSlideLeft {
+  animation: fadeSlideLeft 0.4s forwards;
+}
+/* Oculta visualmente la barra de scroll pero mantiene el desplazamiento */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE y Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Opera */
+}
 
 /*********************/
