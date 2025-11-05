@@ -4,24 +4,37 @@ import { Observable } from 'rxjs';
 import { Invoice } from '../models/invoice.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class InvoiceService {
+  private readonly FIREBASE_BASE_URL =
+    'https://micartera-acd5b-default-rtdb.firebaseio.com';
+
   constructor(private http: HttpClient) {}
 
-  getInvoices(userId: string, year: string, month: string): Observable<any> {
-    return this.http.get(`/api/invoices/${userId}/${year}/${month}`);
+  getInvoices(userId: string, year: string, month: string) {
+    const url = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/invoices.json`;
+    return this.http.get<{ [key: string]: Invoice }>(url);
   }
 
-  addInvoice(userId: string, year: string, month: string, invoice: Invoice): Observable<any> {
-    return this.http.post(`/api/invoices/${userId}/${year}/${month}`, invoice);
+  addInvoice(userId: string, year: string, month: string, invoice: Invoice) {
+    const url = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/invoices.json`;
+    return this.http.post(url, invoice);
   }
 
-  updateInvoice(userId: string, year: string, month: string, id: string, invoice: Invoice): Observable<any> {
-    return this.http.put(`/api/invoices/${userId}/${year}/${month}/${id}`, invoice);
+  updateInvoice(
+    userId: string,
+    year: string,
+    month: string,
+    id: string,
+    invoice: Invoice
+  ) {
+    const url = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/invoices/${id}.json`;
+    return this.http.put(url, invoice);
   }
 
-  deleteInvoice(userId: string, year: string, month: string, id: string): Observable<any> {
-    return this.http.delete(`/api/invoices/${userId}/${year}/${month}/${id}`);
+  deleteInvoice(userId: string, year: string, month: string, id: string) {
+    const url = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/invoices/${id}.json`;
+    return this.http.delete(url);
   }
 }
