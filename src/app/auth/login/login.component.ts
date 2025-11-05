@@ -1,7 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import {  FormBuilder,
+import {
+  FormBuilder,
   FormGroup,
   Validators,
   ReactiveFormsModule,
@@ -31,6 +32,9 @@ export default class LoginComponent implements OnInit {
   errorMessage = '';
   welcomeName: string = '';
 
+  showLoginOverlay = false;
+  loginSuccess = false;
+
   constructor() {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -38,24 +42,25 @@ export default class LoginComponent implements OnInit {
     });
   }
 
-// Método para capturar el resultado del login con Google y redirigir si es nuevo login
-ngOnInit(): void {
-  firebase.auth().getRedirectResult()
-    .then((result: firebase.auth.UserCredential) => {
-      if (result && result.user) {
-        this.welcomeName = result.user.displayName || 'Usuario';
-        this.showSuccessModal = true;
+  // Método para capturar el resultado del login con Google y redirigir si es nuevo login
+  ngOnInit(): void {
+    firebase
+      .auth()
+      .getRedirectResult()
+      .then((result: firebase.auth.UserCredential) => {
+        if (result && result.user) {
+          this.welcomeName = result.user.displayName || 'Usuario';
+          this.showSuccessModal = true;
 
-        setTimeout(() => {
-          this.router.navigate(['app/home']);
-        }, 1000);
-      }
-    })
-    .catch((error: any) => {
-      console.error('Error en getRedirectResult:', error);
-    });
-}
-
+          setTimeout(() => {
+            this.router.navigate(['app/home']);
+          }, 1000);
+        }
+      })
+      .catch((error: any) => {
+        console.error('Error en getRedirectResult:', error);
+      });
+  }
 
   isInvalid(controlName: string): boolean {
     const control = this.loginForm.get(controlName);
@@ -64,17 +69,24 @@ ngOnInit(): void {
 
   onSubmit() {
     if (this.loginForm.valid) {
+      this.showLoginOverlay = true; // mostrar overlay
+      this.loginSuccess = false; // estado inicial "Ingresando..."
+
       const { email, password } = this.loginForm.value;
 
       this.authService.login(email, password).subscribe({
         next: (res) => {
           const uid = res.localId;
 
+          // Ya podemos indicar éxito
+          this.loginSuccess = true;
+
+          // Obtener datos de usuario
           this.authService.getUserData(uid).subscribe((userData) => {
             const nombre = userData?.nombre || '';
             this.showWelcomeModal(nombre);
 
-            // ✅ Nuevas recomendaciones de ahorro
+            // Notificaciones
             const recomendaciones = [
               'Reservá al menos el 10% de tus ingresos como ahorro.',
               'Evitá gastos pequeños repetitivos, pueden sumar mucho.',
@@ -92,9 +104,15 @@ ngOnInit(): void {
                 }
               });
             });
+
+            // Cerrar overlay después de 1.5s
+            setTimeout(() => {
+              this.showLoginOverlay = false;
+            }, 1000);
           });
         },
         error: (errorMsg) => {
+          this.showLoginOverlay = false; // ocultar overlay si hay error
           this.showErrorModal(this.getFirebaseErrorMessage(errorMsg));
         },
       });
@@ -143,4 +161,3 @@ ngOnInit(): void {
     this.authService.loginWithGoogle();
   }
 }
-

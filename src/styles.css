@@ -2,3 +2,52 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes floating {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes floating-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes floating-fast {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-25px); }
+}
+
+@keyframes floating-slower {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Animaciones más rápidas */
+.animate-floating { animation: floating 3s ease-in-out infinite; }
+.animate-floating-slow { animation: floating-slow 4s ease-in-out infinite; }
+.animate-floating-fast { animation: floating-fast 3.5s ease-in-out infinite; }
+.animate-floating-slower { animation: floating-slower 5s ease-in-out infinite; }
+@keyframes float-curve {
+  0%   { transform: translate(0px, 0px) rotate(0deg); }
+  25%  { transform: translate(20px, -15px) rotate(10deg); }
+  50%  { transform: translate(-15px, 20px) rotate(-10deg); }
+  75%  { transform: translate(25px, -10px) rotate(5deg); }
+  100% { transform: translate(0px, 0px) rotate(0deg); }
+}
+
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(0, 81, 255, 0.2);
+  width: 50px;
+  height: 50px;
+  animation: float-curve 5s ease-in-out infinite;
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop-in { animation: pop-in 0.2s ease-out forwards; }
+
