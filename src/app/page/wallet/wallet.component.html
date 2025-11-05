@@ -1,5 +1,5 @@
 <!-- Estado financiero -->
-<div class="px-6 py-4 border-b flex center-end">
+<div class="px-6 py-4 border-b flex center-end animate-fadeSlideDown">
   <span [ngClass]="{
         'bg-orange-600': estadoFinancieroColor === 'rojo',
         'bg-sky-600': estadoFinancieroColor === 'azul',
@@ -10,23 +10,22 @@
 </div>
 
 <!-- Encabezado -->
-<div class="flex items-center justify-between p-4">
+<div class="flex items-center justify-between p-4 animate-fadeSlideDown" style="animation-delay:0.1s">
   <h6 class="text-lg font-semibold text-gray-800">Mi Billetera</h6>
-
   <button (click)="openModal()" class="text-sky-700 font-medium px-3 py-1.5 rounded-md hover:bg-sky-50 transition">
-    Agregar Cuenta +
+    Agregar +
   </button>
 </div>
 
 <!-- Total general -->
-<div class="mt-6 text-right font-semibold text-gray-700">
+<div class="mt-6 text-right font-semibold text-gray-700 animate-fadeSlideDown" style="animation-delay:0.2s">
   Total general: ${{ formatCurrency(getTotalWallet()) }}
 </div>
 
 <!-- Contenedor de tarjetas -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-  <div *ngFor="let account of wallet"
-    class="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition bg-white">
+  <div *ngFor="let account of wallet" class="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition bg-white 
+              transform opacity-0 animate-fadeIn" [style.animationDelay]="getAnimationDelay(account)">
 
     <!-- Encabezado -->
     <div class="flex items-center justify-between p-4 border-b border-gray-100">
@@ -69,7 +68,7 @@
     <!-- Pie de tarjeta -->
     <div class="p-3 border-t border-gray-100 text-center">
       <button (click)="openTransactionModal(account.id)"
-        class="bg-blue-200 text-blue-800 font-medium px-5 py-2 rounded-md hover:bg-blue-300 transition">
+        class="bg-sky-200 text-sky-800 font-semibold px-5 py-2 rounded-md hover:bg-sky-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
         Mover
       </button>
     </div>
@@ -179,8 +178,9 @@
 
     <!-- Valor a transferir -->
     <label class="block mb-2 font-medium">Valor a asignar:</label>
-    <input type="text" [value]="formatCurrency(assignedValue || 0)" (input)="onValueInput($event, 'add')"
+    <input type="text" [value]="formatCurrency(assignedValue || 0)" (input)="onAssignedValueInput($event)"
       placeholder="Ej: 50,000" class="w-full p-2 border rounded-md mb-1" />
+
 
     <p class="text-xs text-gray-500 mb-4">
       Valor mínimo $0, máximo ${{ formatCurrency(sourceWallet?.valor || 0) }}

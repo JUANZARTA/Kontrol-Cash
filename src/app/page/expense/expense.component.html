@@ -20,86 +20,66 @@
   </button>
 </div>
 
-
-<!-- Tabla de Gastos -->
+<!-- Tabla de Gastos estilo Tabla de Ingresos -->
 <div class="overflow-x-auto">
   <div class="space-y-4">
-    <details *ngFor="let grupo of getGroupedExpenses()" open class="border border-gray-300 rounded-md">
-      <summary
-        class="bg-sky-700 text-white p-4 cursor-pointer font-bold select-none flex flex-col sm:flex-row sm:items-center sm:justify-between px-2 sm:px-4 py-3 gap-y-1">
-        <span class="text-lg">
-          {{ grupo.categoria }} ({{ grupo.items.length }} gastos)
-        </span>
-
-        <!-- Totales alineados como columnas -->
-        <div
-          class="flex flex-col sm:flex-row sm:items-center sm:gap-10 text-sm sm:text-base font-bold text-white sm:pr-4 sm:pt-[2px]">
-          <span class="sm:w-32 text-right">Gastado: ${{ formatCurrency(getGroupTotal(grupo.items)) }}</span>
-          <span class="sm:w-40 text-right">Estimación: ${{ formatCurrency(getGroupEstimatedTotal(grupo.items)) }}</span>
-        </div>
-      </summary>
-
-
-
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[640px] border-collapse text-sm">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="text-left py-2 px-4 sm:px-4">Descripción</th>
-              <th class="text-right py-2 px-4 sm:px-4">Gastado</th>
-              <th class="text-right py-2 px-4 sm:px-4">Estimación</th>
-              <th class="text-center py-2 px-4 sm:px-4">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let expense of grupo.items; let i = index" class="border-t" [ngClass]="{
-              'bg-orange-100': expense.valor > expense.estimacion,
-              'bg-teal-100': expense.valor === expense.estimacion
-            }">
-              <td class="py-2 px-2 sm:px-4">{{ expense.descripcion }}</td>
-              <td class="py-2 px-2 sm:px-4 text-right">
-                ${{ formatCurrency(expense.valor) }}
-              </td>
-              <td class="py-2 px-2 sm:px-4 text-right">
-                ${{ formatCurrency(expense.estimacion) }}
-              </td>
-              <td class="py-2 px-4 text-center">
-                <button (click)="openAddModal(expense.id)" class="text-lime-600 mr-2">
-                  <span class="material-icons">add</span>
-                </button>
-                <button (click)="openEditModal(expense.id)" class="text-sky-700 mr-2">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button (click)="openDeleteModal(expense.id)" class="text-orange-600">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </td>
-
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </details>
+    <table *ngFor="let grupo of getGroupedExpenses()" class="w-full min-w-[640px] border-collapse text-sm border border-gray-200">
+      <thead class="bg-sky-200 border-b">
+        <tr>
+          <th class="text-left py-2 px-3 sm:px-4" colspan="4">
+            {{ grupo.categoria }} ({{ grupo.items.length }} gastos)
+          </th>
+        </tr>
+        <tr>
+          <th class="text-left py-2 px-3 sm:px-4">Descripción</th>
+          <th class="text-right py-2 px-3 sm:px-4">Gastado</th>
+          <th class="text-right py-2 px-3 sm:px-4">Estimación</th>
+          <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let expense of grupo.items" class="border-t hover:bg-gray-50">
+          <td class="py-2 px-3 sm:px-4">{{ expense.descripcion }}</td>
+          <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(expense.valor) }}</td>
+          <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(expense.estimacion) }}</td>
+          <td class="py-2 px-3 sm:px-4 text-center">
+            <button (click)="openAddModal(expense.id)" class="text-lime-600 mr-2">
+              <span class="material-icons">add</span>
+            </button>
+            <button (click)="openEditModal(expense.id)" class="text-sky-700 mr-2">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button (click)="openDeleteModal(expense.id)" class="text-orange-600">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="bg-gray-100 font-bold text-blue-900 border-t">
+          <td class="py-3 px-3 sm:px-4 text-left" colspan="2">Total Grupo</td>
+          <td class="py-3 px-3 sm:px-4 text-right">${{ formatCurrency(getGroupTotal(grupo.items)) }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
   </div>
 
   <!-- Totales generales -->
   <div class="overflow-x-auto mt-4">
     <table class="w-full min-w-[640px] border-collapse text-sm">
       <tbody>
-        <tr class="bg-blue-100 font-bold text-blue-900 border-t">
-          <td class="py-3 px-2 sm:px-4 text-left">Totales Generales</td>
-          <td class="py-3 px-2 sm:px-4 text-right"> Gastado:
-            ${{ formatCurrency(getTotalExpenses()) }}
-          </td>
-          <td class="py-3 px-2 sm:px-4 text-right"> Estimado:
-            ${{ formatCurrency(getTotalEstimations()) }}
-          </td>
+        <tr class="bg-gray-100 font-bold text-blue-900 border-t">
+          <td class="py-3 px-3 sm:px-4 text-left">Totales Generales</td>
+          <td class="py-3 px-3 sm:px-4 text-right">Gastado: ${{ formatCurrency(getTotalExpenses()) }}</td>
+          <td class="py-3 px-3 sm:px-4 text-right">Estimado: ${{ formatCurrency(getTotalEstimations()) }}</td>
           <td></td>
         </tr>
       </tbody>
     </table>
   </div>
 </div>
+
 
 <!-- Modal de agregar gasto -->
 <div *ngIf="isModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">

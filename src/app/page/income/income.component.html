@@ -74,6 +74,12 @@
     class="bg-sky-200 text-sky-800 font-semibold px-5 py-2 rounded-md hover:bg-sky-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
     Asignar
   </button>
+  <!-- Botón + Billetera si no hay billeteras -->
+  <button *ngIf="!wallet || wallet.length === 0" (click)="openModalW()"
+    class="bg-sky-200 text-sky-800 font-semibold px-5 py-2 rounded-md hover:bg-sky-300 transition">
+    + Billetera
+  </button>
+
 </div>
 
 <!-- Modal para agregar ingreso -->
@@ -99,6 +105,25 @@
       <button (click)="closeModal()"
         class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200">Cancelar</button>
       <button (click)="addIncome()"
+        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para agregar billetera -->
+<div *ngIf="isModalOpenW" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+    <h2 class="text-xl font-bold mb-4">Agregar Nueva Cuenta</h2>
+    <p class="text-gray-600 mb-4 text-sm">Introduce los detalles de la nueva cuenta.</p>
+
+    <label class="block mb-2">Dinero en:</label>
+    <input type="text" [(ngModel)]="newAccount.tipo" placeholder="Ej: Cuenta de ahorros"
+      class="w-full p-2 border rounded-md mb-3" />
+
+    <div class="flex justify-end gap-2">
+      <button (click)="closeModalW()"
+        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200">Cancelar</button>
+      <button (click)="addAccountW()"
         class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Agregar</button>
     </div>
   </div>
@@ -202,10 +227,13 @@
     <!-- Input de monto a transferir -->
     <div class="mb-4">
       <label class="block mb-1 font-medium text-gray-700">Monto a transferir</label>
-      <input type="number" [(ngModel)]="assignedValue" [max]="cuadreDescuadre" min="0" placeholder="Ingresa el monto"
-        class="w-full border rounded-md p-2">
-      <p class="text-sm text-gray-500 mt-1">Máximo disponible: ${{ formatCurrency(cuadreDescuadre) }}</p>
+      <input type="text" [value]="formatCurrencyA(assignedValue)" (input)="onAssignedValueInput($event)"
+        placeholder="Ingresa el monto" class="w-full border rounded-md p-2" />
+      <p class="text-sm text-gray-500 mt-1">
+        Máximo disponible: ${{ formatCurrency(cuadreDescuadre) }}
+      </p>
     </div>
+
 
     <!-- Alertas -->
     <div *ngIf="insufficientFundsAlert" class="mb-4 text-red-600 font-medium">
@@ -215,7 +243,7 @@
     <!-- Botones -->
     <div class="flex justify-end gap-2">
       <button (click)="confirmTransaction()"
-        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
+        class="bg-sky-700 text-white px-4 py-2 rounded hover:bg-green-600 transition">
         Transferir
       </button>
       <button (click)="closeTransactionModal()" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 transition">
@@ -229,4 +257,10 @@
     </button>
 
   </div>
+</div>
+
+<!-- Toast de éxito -->
+<div *ngIf="toastVisible"
+  class="fixed bottom-4 right-4 bg-sky-700 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-300">
+  {{ toastMessage }}
 </div>

@@ -7,9 +7,13 @@ import { DateService } from '../../services/date.service'; // ✅ Nuevo
 import { Subscription } from 'rxjs'; // ✅ Nuevo
 import { AuthService } from '../../services/auth.service'; // ✅ Nuevo
 import { FinanzasService } from '../../services/finanzas.service';
+import { DebtService } from '../../services/debts.service';
+import { Debt } from '../../models/debt.model';
 import { MatIconModule } from '@angular/material/icon';
 import { WalletAccount } from '../../models/wallet.model';
 import { WalletService } from '../../services/wallet.service';
+import { LoanService } from '../../services/loans.service';
+import { ExpenseService } from '../../services/expense.service';
 
 // Extiende WalletAccount para agregar id y showMenu
 export interface WalletAccountWithId extends WalletAccount {
@@ -34,6 +38,9 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   private decimalPipe = inject(DecimalPipe);
   private dateService = inject(DateService); // ✅ Nuevo
   private authService = inject(AuthService); // ✅ Nuevo
+  private loanService = inject(LoanService);
+  private debtService = inject(DebtService);
+  private expenseService = inject(ExpenseService);
   private finanzasService = inject(FinanzasService);
   private walletService = inject(WalletService);
 
@@ -42,6 +49,7 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   expenses: any[] = [];
   wallet: WalletAccountWithId[] = [];
   loans: any[] = [];
+  debts: Debt[] = [];
 
   // Variables para modales de agregar valor y eliminar
   isAddValueModalOpen: boolean = false;
@@ -50,10 +58,18 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   incomeToDeleteId: string | null = null;
   newValue: number = 0;
 
+  // Crear Billetera
+  isModalOpenW = false;
+  newAccount: WalletAccount = new WalletAccount('', 0);
+
   // estado financiero
-  estadoFinanciero = '';
+  estadoFinanciero: string = 'Cargando...';
   estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
   cuadreDescuadre = 0;
+
+  // Variable para mostrar toast
+  toastMessage: string = '';
+  toastVisible: boolean = false;
 
   // ID de la billetera origen (la que abre el modal)
   sourceWalletId: string | null = null;
@@ -110,6 +126,80 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   // Método para limpiar suscripciones al destruir el componente
   ngOnDestroy(): void {
     this.dateSubscription?.unsubscribe();
+  }
+
+  // Método para cargar todos los datos necesarios y calcular el cuadre
+  loadAllData() {
+    this.walletService
+      .getWallet(this.userId, this.currentYear, this.currentMonth)
+      .subscribe({
+        next: (data) => {
+          this.wallet = Object.entries(data || {}).map(
+            ([id, item]: [string, any]) => ({ id, ...item, showMenu: false })
+          );
+          this.checkLowFunds();
+        },
+      });
+
+    this.loanService
+      .getLoans(this.userId, this.currentYear, this.currentMonth)
+      .subscribe({
+        next: (data) => {
+          this.loans = Object.entries(data || {}).map(
+            ([id, item]: [string, any]) => ({ id, ...item })
+          );
+        },
+      });
+
+    this.debtService
+      .getDebts(this.userId, this.currentYear, this.currentMonth)
+      .subscribe({
+        next: (data) => {
+          this.debts = Object.entries(data || {}).map(
+            ([id, item]: [string, any]) => ({ id, ...item })
+          );
+        },
+      });
+
+    this.incomeService
+      .getIncomes(this.userId, this.currentYear, this.currentMonth)
+      .subscribe({
+        next: (data) => {
+          this.incomes = Object.entries(data || {}).map(
+            ([id, item]: [string, any]) => ({ id, ...item })
+          );
+        },
+      });
+
+    this.expenseService
+      .getExpenses(this.userId, this.currentYear, this.currentMonth)
+      .subscribe({
+        next: (data) => {
+          this.expenses = Object.entries(data || {}).map(
+            ([id, item]: [string, any]) => ({ id, ...item })
+          );
+        },
+      });
+    this.finanzasService.mostrarEstadoFinanciero(
+      this,
+      this.userId,
+      this.currentYear,
+      this.currentMonth
+    );
+  }
+
+  // Método para revisar si el total es bajo y notificar
+  checkLowFunds() {
+    const total = this.getTotalWallet();
+    if (total < 100000) {
+      this.authService
+        .addNotification(this.userId, 'Tu efectivo bajó a menos de $100.000')
+        .subscribe();
+    }
+  }
+  // Método para calcular el total de la cartera
+  getTotalWallet(): number {
+    return this.wallet.reduce((sum, e) => sum + Number(e.valor), 0);
   }
 
   // Método para cargar todos los datos necesarios y calcular el cuadre
@@ -180,6 +270,42 @@ export default class IncomeComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error al agregar ingreso:', err);
+        },
+      });
+  }
+
+  // ======================
+  // Modal: Agregar Billetera
+  // ======================
+  openModalW() {
+    this.isModalOpenW = true;
+  }
+
+  closeModalW() {
+    this.isModalOpenW = false;
+    this.newAccount = new WalletAccount('', 0);
+  }
+
+  addAccountW() {
+    if (!this.newAccount.tipo) {
+      alert('Por favor completa todos los campos.');
+      return;
+    }
+
+    this.walletService
+      .addAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.newAccount
+      )
+      .subscribe({
+        next: () => {
+          this.loadWallets(); // solo recargamos las billeteras
+          this.closeModalW(); // cerramos correctamente el modal
+        },
+        error: (err) => {
+          console.error('Error al agregar cuenta:', err);
         },
       });
   }
@@ -365,8 +491,15 @@ export default class IncomeComponent implements OnInit, OnDestroy {
       )
 
       .subscribe(() => {
-        this.loadWallets(); // refresca la lista
+        // ✅ Mostrar mensaje de éxito
+        this.showToast('Transferencia exitosa');
+
+        // ✅ Recargar datos automáticamente
+        this.loadWallets();
         this.closeTransactionModal();
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       });
   }
 
@@ -418,6 +551,20 @@ export default class IncomeComponent implements OnInit, OnDestroy {
     input.value = this.formatCurrency(value);
   }
 
+  onValueInputW(event: Event, type: 'new' | 'edit' | 'add') {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/[^\d-]/g, '');
+    const value = Number(raw) || 0;
+
+    if (type === 'new') {
+      this.newAccount.valor = value;
+    } else if (type === 'add') {
+      this.newValue = value;
+    }
+
+    input.value = this.formatCurrency(value);
+  }
+
   // Método para manejar la entrada de valores y formatear
   onEditValueInput(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -425,5 +572,37 @@ export default class IncomeComponent implements OnInit, OnDestroy {
     const value = Number(raw) || 0;
     this.editedIncome.valor = value;
     input.value = this.formatCurrency(value);
+  }
+
+  // Cuando el usuario escribe en el input de asignar dinero
+  onAssignedValueInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+
+    // Quitamos cualquier carácter que no sea número
+    const rawValue = input.value.replace(/[^\d]/g, '');
+
+    // Convertimos a número
+    const numericValue = Number(rawValue) || 0;
+
+    // Guardamos en la variable vinculada
+    this.assignedValue = numericValue;
+
+    // Volvemos a formatear el input con comas
+    input.value = this.formatCurrency(numericValue);
+  }
+
+  // Método que convierte 1000 -> 1,000
+  formatCurrencyA(value: number | null | undefined): string {
+    if (value === null || value === undefined) return '';
+    return value.toLocaleString('en-US'); // separador de miles con coma
+  }
+
+  showToast(message: string, duration: number = 2000) {
+    this.toastMessage = message;
+    this.toastVisible = true;
+
+    setTimeout(() => {
+      this.toastVisible = false;
+    }, duration);
   }
 }

@@ -75,7 +75,7 @@ export default class WalletComponent implements OnInit, OnDestroy {
   editedId: string | null = null;
 
   // Variables para manejar el estado de la cartera
-  estadoFinanciero: string = '';
+  estadoFinanciero: string = 'Cargando...';
   estadoFinancieroColor: 'rojo' | 'azul' | 'verde' = 'verde';
 
   cuadreDescuadreWallet: number = 0;
@@ -451,5 +451,19 @@ export default class WalletComponent implements OnInit, OnDestroy {
     this.wallet.forEach((a: any) => (a.showMenu = false));
     // Alterna el menú actual
     account.showMenu = !account.showMenu;
+  }
+
+  getAnimationDelay(account: any) {
+    const index = this.wallet.indexOf(account);
+    return `${0.3 + index * 0.1}s`; // empieza 0.3s, aumenta 0.1s por tarjeta
+  }
+
+  onAssignedValueInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/,/g, ''); // quitamos comas
+    const value = Number(raw) || 0;
+
+    this.assignedValue = value; // ASIGNAMOS CORRECTAMENTE
+    input.value = this.formatCurrency(value); // opcional: mostrar con coma
   }
 }

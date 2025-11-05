@@ -8,6 +8,7 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
+import { trigger, state, style, transition, animate } from '@angular/animations';
 
 
 export interface ExpenseWithId extends Expense {
@@ -20,8 +21,13 @@ export interface ExpenseWithId extends Expense {
   imports: [CommonModule, FormsModule,MatIconModule],
   templateUrl: './expense.component.html',
   styleUrls: ['./expense.component.css'],
-  providers: [DecimalPipe],
-  
+  providers: [DecimalPipe],animations: [
+    trigger('accordion', [
+      state('closed', style({ height: '0px', opacity: 0, overflow: 'hidden' })),
+      state('open', style({ height: '*', opacity: 1 })),
+      transition('closed <=> open', [animate('300ms ease')]),
+    ])
+  ]
 })
 export default class ExpenseComponent implements OnInit, OnDestroy {
   private expenseService = inject(ExpenseService);
@@ -309,24 +315,6 @@ confirmDeleteExpense() {
     return Number(expense.valor) > Number(expense.estimacion);
   }
 
-  // Método para formatear el valor a porcentaje
-  getGroupedExpenses(): { categoria: string; items: ExpenseWithId[] }[] {
-    const map = new Map<string, ExpenseWithId[]>();
-
-    for (const exp of this.expenses) {
-      const cat = exp.categoria;
-      if (!map.has(cat)) {
-        map.set(cat, []);
-      }
-      map.get(cat)!.push(exp);
-    }
-
-    return Array.from(map.entries()).map(([categoria, items]) => ({
-      categoria,
-      items,
-    }));
-  }
-
   // Método para calcular el total por categoría
   getGroupTotal(items: any[]) {
     return items.reduce((acc, item) => acc + (Number(item.valor) || 0), 0);
@@ -362,7 +350,6 @@ confirmDeleteExpense() {
     input.value = this.formatCurrency(numericValue);
   }
   
-
   onEditValueInput(event: Event, field: 'valor' | 'estimacion') {
     const input = event.target as HTMLInputElement;
     const rawValue = input.value.replace(/[.,]/g, '');
@@ -370,4 +357,25 @@ confirmDeleteExpense() {
     this.editedExpense[field] = numericValue;
     input.value = this.formatCurrency(numericValue);
   }
+
+getGroupedExpenses() {
+  const groups: { [categoria: string]: any[] } = {};
+
+  // Agrupar los gastos por categoría
+  this.expenses.forEach(expense => {
+    if (!groups[expense.categoria]) {
+      groups[expense.categoria] = [];
+    }
+    groups[expense.categoria].push(expense);
+  });
+
+  // Convertir a array de objetos con open = true
+  return Object.keys(groups).map(categoria => ({
+    categoria,
+    items: groups[categoria],
+    open: true // abre cada acordeón por defecto
+  }));
+}
+
+
 }

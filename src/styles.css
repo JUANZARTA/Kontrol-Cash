@@ -51,3 +51,31 @@
 }
 .animate-pop-in { animation: pop-in 0.2s ease-out forwards; }
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s forwards;
+}
+
+
+/*********************/
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeSlideDown {
+  animation: fadeSlideDown 0.5s ease-out forwards;
+}
+
+.animate-fadeSlideUp {
+  animation: fadeSlideUp 0.5s ease-out forwards;
+}
