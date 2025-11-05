@@ -60,12 +60,14 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
     valor: 0,
     estado: 'Pendiente',
   };
+
   editedInvoice: Invoice = {
     nombre: '',
     fechaPago: '',
     valor: 0,
     estado: 'Pendiente',
   };
+
   editedInvoiceId: string | null = null;
   invoiceToDeleteId: string | null = null;
   payInvoice: InvoiceWithId | null = null;
@@ -195,6 +197,7 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
   openAddInvoiceModal() {
     this.isAddInvoiceModalOpen = true;
   }
+
   closeAddInvoiceModal() {
     this.isAddInvoiceModalOpen = false;
     this.newInvoice = {
@@ -204,17 +207,28 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
       estado: 'Pendiente',
     };
   }
+
   addInvoice() {
     if (!this.newInvoice.nombre || !this.newInvoice.fechaPago) {
       alert('Completa todos los campos');
       return;
     }
+
+    // Establecer estado inicial según la fecha
+    const today = new Date();
+    const fechaPago = new Date(this.newInvoice.fechaPago);
+
+    const invoiceToSend: Invoice = {
+      ...this.newInvoice,
+      estado: fechaPago < today ? 'Vencida' : 'Pendiente',
+    };
+
     this.invoiceService
       .addInvoice(
         this.userId,
         this.currentYear,
         this.currentMonth,
-        this.newInvoice
+        invoiceToSend
       )
       .subscribe({
         next: () => {
@@ -235,19 +249,31 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
     this.editedInvoiceId = id;
     this.isEditInvoiceModalOpen = true;
   }
+
   closeEditInvoiceModal() {
     this.isEditInvoiceModalOpen = false;
     this.editedInvoiceId = null;
   }
+
   saveEditedInvoice() {
     if (!this.editedInvoiceId) return;
+
+    // Recalcular estado según la nueva fecha
+    const today = new Date();
+    const fechaPago = new Date(this.editedInvoice.fechaPago);
+
+    const invoiceToUpdate: Invoice = {
+      ...this.editedInvoice,
+      estado: fechaPago < today ? 'Vencida' : 'Pendiente',
+    };
+
     this.invoiceService
       .updateInvoice(
         this.userId,
         this.currentYear,
         this.currentMonth,
         this.editedInvoiceId,
-        this.editedInvoice
+        invoiceToUpdate
       )
       .subscribe({
         next: () => {
@@ -265,36 +291,51 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
     this.invoiceToDeleteId = id;
     this.isDeleteInvoiceModalOpen = true;
   }
+
   closeDeleteInvoiceModal() {
     this.isDeleteInvoiceModalOpen = false;
     this.invoiceToDeleteId = null;
   }
+
   confirmDeleteInvoice() {
     if (!this.invoiceToDeleteId) return;
     const invoice = this.invoices.find((i) => i.id === this.invoiceToDeleteId);
     if (!invoice) return;
 
-    if (invoice.gastoId) {
-      // Si existe gasto asociado, eliminar primero
-      this.expenseService
-        .deleteExpense(
-          this.userId,
-          this.currentYear,
-          this.currentMonth,
-          invoice.gastoId
-        )
-        .subscribe({
-          next: () => {
-            // Luego eliminar factura
-            this.deleteInvoiceById(invoice.id);
-          },
-          error: (err) =>
-            console.error('[DELETE] Error al eliminar gasto asociado:', err),
-        });
-    } else {
-      // Si no tiene gasto, eliminar factura directamente
-      this.deleteInvoiceById(invoice.id);
-    }
+    // 1️⃣ Obtener todos los gastos del mes
+    this.expenseService
+      .getExpenses(this.userId, this.currentYear, this.currentMonth)
+      .subscribe({
+        next: (expenses: { [key: string]: Expense }) => {
+          // 2️⃣ Filtrar gastos que coincidan con la factura
+          const gastosCoincidentes = Object.entries(expenses || {}).filter(
+            ([id, gasto]) =>
+              gasto.categoria === CategoriaGasto.Facturas &&
+              gasto.descripcion === invoice.nombre &&
+              gasto.valor === invoice.valor
+          );
+
+          // 3️⃣ Eliminar todos los gastos coincidentes
+          const deleteObservables = gastosCoincidentes.map(([id]) =>
+            this.expenseService.deleteExpense(
+              this.userId,
+              this.currentYear,
+              this.currentMonth,
+              id
+            )
+          );
+
+          // 4️⃣ Esperar a que se eliminen los gastos, luego eliminar la factura
+          Promise.all(deleteObservables.map((obs) => obs.toPromise()))
+            .then(() => {
+              this.deleteInvoiceById(invoice.id);
+            })
+            .catch((err) =>
+              console.error('[DELETE] Error al eliminar gastos asociados:', err)
+            );
+        },
+        error: (err) => console.error('[GET] Error al obtener gastos:', err),
+      });
   }
 
   // Función auxiliar para eliminar la factura
@@ -326,6 +367,7 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
     this.selectedWalletForPayment = '';
     this.isPayInvoiceModalOpen = true;
   }
+
   closePayInvoiceModal() {
     this.isPayInvoiceModalOpen = false;
     this.payInvoice = null;
@@ -338,12 +380,13 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
       (w) => w.id === this.selectedWalletForPayment
     );
     if (!account) return;
+
     if (account.valor < this.payInvoice.valor) {
       alert('Saldo insuficiente');
       return;
     }
 
-    // Restar de la cartera
+    // 1️⃣ Restar de la cartera
     account.valor -= this.payInvoice.valor;
     this.walletService
       .updateAccount(
@@ -355,7 +398,7 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
       )
       .subscribe();
 
-    // Registrar gasto
+    // 2️⃣ Registrar gasto
     const facturaGasto: Expense = new Expense(
       this.payInvoice.nombre,
       CategoriaGasto.Facturas,
@@ -374,9 +417,28 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
         next: (res: any) => {
           // Asociar id del gasto a la factura
           this.payInvoice!.gastoId = res.name || res.id;
+
+          // 3️⃣ Cambiar estado a Pagada
           this.payInvoice!.estado = 'Pagada';
-          this.closePayInvoiceModal();
-          this.loadAllData();
+
+          // 4️⃣ Enviar cambio al backend
+          this.invoiceService
+            .updateInvoice(
+              this.userId,
+              this.currentYear,
+              this.currentMonth,
+              this.payInvoice!.id,
+              this.payInvoice!
+            )
+            .subscribe({
+              next: () => {
+                // 5️⃣ Cerrar modal y recargar datos
+                this.closePayInvoiceModal();
+                this.loadAllData();
+              },
+              error: (err) =>
+                console.error('[PUT] Error al actualizar factura pagada:', err),
+            });
         },
       });
   }

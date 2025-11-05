@@ -10,14 +10,14 @@
 </div>
 
 <!-- Sección en construcción -->
-<div
+<!-- <div
   class="flex flex-col items-center justify-center h-64 bg-gray-100 rounded-lg border border-gray-300 mt-6 animate-fadeInUp">
   <span class="material-icons text-6xl text-gray-400 mb-4 animate-bounce">construction</span>
   <h2 class="text-2xl font-bold text-gray-700 animate-pulse">¡Estamos trabajando en esto!</h2>
   <p class="text-gray-500 mt-2 text-center max-w-xs">
     Pronto podrás ver y administrar esta sección.
   </p>
-</div>
+</div> -->
 
 <!-- Encabezado -->
 <div class="flex items-center justify-between p-4 animate-fadeSlideDown">
@@ -36,6 +36,7 @@
          'bg-white': invoice.estado === 'Pendiente'
        }">
 
+    <!-- Cabecera de la tarjeta -->
     <div class="flex items-center justify-between p-4 border-b border-gray-100">
       <h3 class="text-sm font-bold" [ngClass]="{'text-gray-600': invoice.estado === 'Pagada'}">
         {{ invoice.nombre }}
@@ -58,6 +59,7 @@
       </div>
     </div>
 
+    <!-- Cuerpo de la tarjeta -->
     <div class="p-5 text-center">
       <p class="text-gray-500 text-xs mb-1">Valor de la factura</p>
       <p class="text-xl font-semibold" [ngClass]="{'text-gray-600': invoice.estado === 'Pagada'}">
@@ -66,10 +68,11 @@
       <p class="text-gray-500 text-sm mt-2">Fecha de pago: {{ invoice.fechaPago | date:'dd/MM/yyyy' }}</p>
     </div>
 
+    <!-- Pie de la tarjeta -->
     <div class="p-3 border-t border-gray-100 text-center">
       <button (click)="openPayInvoiceModal(invoice.id)" class="px-5 py-2 rounded-md transition font-semibold" [ngClass]="{
-          'bg-teal-200 text-teal-800 hover:bg-teal-300': canPayInvoice(invoice),
-          'bg-gray-300 text-gray-600 cursor-not-allowed': !canPayInvoice(invoice)
+          'bg-sky-200 text-sky-800 hover:bg-teal-300': canPayInvoice(invoice),
+          'bg-blue-300 text-gray-600 cursor-not-allowed': !canPayInvoice(invoice)
         }" [disabled]="!canPayInvoice(invoice)">
         Pagar
       </button>
