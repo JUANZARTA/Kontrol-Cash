@@ -1,194 +1,134 @@
-<!-- BOTÓN DE MENÚ HAMBURGUESA (VISIBLE SOLO EN MÓVILES) -->
+<!-- BOTÓN DE MENÚ HAMBURGUESA (MÓVILES) -->
 <button *ngIf="isMobile()" (click)="toggleSidebar()"
-  class="fixed top-4 left-4 z-50 bg-gray-800 text-white p-2 rounded-lg xl:hidden">
+  class="fixed top-4 left-4 z-50 bg-sky-600 text-white p-2 rounded-lg shadow-lg hover:bg-sky-700 transition-colors xl:hidden">
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"
     class="w-6 h-6">
     <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
   </svg>
 </button>
-<!-- SIDEBAR -->
-<aside [class.hidden]="!isSidebarOpen && isMobile()" class="bg-slate-800 fixed inset-0 z-50 my-4 ml-4 h-[calc(100vh-32px)] w-72
-  rounded-xl transition-all duration-300 ease-in-out shadow-xl">
-  <div class="relative border-b border-white/20">
-    <!-- Header -->
-    <a class="flex items-center gap-4 py-6 px-8">
-      <h6 class="block antialiased tracking-normal font-sans text-base font-semibold leading-relaxed text-white">
-        Mi Cartera
-      </h6>
-    </a>
 
-    <!-- BOTÓN PARA CERRAR EL SIDEBAR EN MÓVILES -->
-    <button (click)="toggleSidebar()" class="middle none font-sans font-medium text-center uppercase transition-all disabled:opacity-50
-        disabled:shadow-none disabled:pointer-events-none w-8 max-w-[32px] h-8 max-h-[32px] rounded-lg
-        text-xs text-white hover:bg-white/10 active:bg-white/30 absolute right-0 top-0 grid
-        rounded-br-none rounded-tl-none xl:hidden">
-      <span class="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"
-          aria-hidden="true" class="h-5 w-5 text-white">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </span>
+<!-- SIDEBAR -->
+<aside [class.translate-x-[-100%]]="!isSidebarOpen && isMobile()"
+  class="bg-white fixed top-0 left-0 z-50 h-full w-72 shadow-2xl rounded-r-2xl overflow-y-auto transform transition-transform duration-300 ease-in-out">
+
+  <!-- HEADER -->
+  <div class="flex items-center justify-between p-6 border-b border-gray-200">
+    <h6 class="text-lg font-bold text-gray-800">Mi Cartera</h6>
+    <button *ngIf="isMobile()" (click)="toggleSidebar()"
+      class="p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"
+        class="w-5 h-5 text-gray-700">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
     </button>
   </div>
 
-  <!-- SideBard-->
-  <div class="m-4">
-    <!-- Menu -->
-    <ul class="mb-4 flex flex-col gap-1">
-      <!-- Boton para el Home-->
-      <li>
-        <a routerLink="/app/home" (click)="closeSidebar()">
-          <button
-            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
-            class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
-            type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-              class="w-5 h-5 text-inherit">
-              <path
-                d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z">
-              </path>
-              <path
-                d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z">
-              </path>
-            </svg>
-            <p class="block antialiased font-sans text-base leading-relaxed text-inherit font-medium capitalize">Inicio
-            </p>
-          </button>
-        </a>
-      </li>
-      <!-- Boton para la tabla de gastos-->
-      <li>
-        <a routerLink="/app/expense" (click)="closeSidebar()">
-          <button
-            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
-            class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
-            type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-              <path
-                d="M5 3a1 1 0 000 2h14a1 1 0 100-2H5zM3 7h18v12H3V7zm2 2v8h14V9H5zm5 1a1 1 0 011 1v4a1 1 0 01-2 0v-4a1 1 0 011-1zm6 0a1 1 0 011 1v4a1 1 0 01-2 0v-4a1 1 0 011-1z" />
-            </svg>
-            <p class="block antialiased font-sans text-base leading-relaxed text-inherit font-medium capitalize">Tabla
-              de Gastos</p>
-          </button>
-        </a>
-      </li>
-      <!-- Boton para la tabla de ingresos-->
-      <li>
-        <a routerLink="/app/income" (click)="closeSidebar()">
-          <button
-            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
-            class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
-            type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-              <path fill-rule="evenodd"
-                d="M12 2.25a9.75 9.75 0 100 19.5 9.75 9.75 0 000-19.5zM7.5 12a4.5 4.5 0 019 0 4.5 4.5 0 01-9 0zM12 9a3 3 0 110 6 3 3 0 010-6z"
-                clip-rule="evenodd" />
-            </svg>
-            <p class="block antialiased font-sans text-base leading-relaxed text-inherit font-medium capitalize">Tabla
-              de Ingresos</p>
-          </button>
-        </a>
-      </li>
-      <!-- Boton para la tabla de cartera-->
-      <li>
-        <a routerLink="/app/wallet" (click)="closeSidebar()">
-          <button
-            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
-            class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
-            type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-              <path fill-rule="evenodd"
-                d="M4.5 5.25a2.25 2.25 0 012.25-2.25h10.5A2.25 2.25 0 0119.5 5.25v2.25H4.5V5.25zM3 9.75a.75.75 0 01.75-.75h16.5a.75.75 0 01.75.75V18a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18V9.75z"
-                clip-rule="evenodd" />
-            </svg>
-            <p class="block antialiased font-sans text-base leading-relaxed text-inherit font-medium capitalize">Mi
-              Cartera</p>
-          </button>
-        </a>
-      </li>
-      <!-- Boton para la tabla de ahorros-->
-      <li>
-        <a routerLink="/app/saving" (click)="closeSidebar()">
-          <button
-            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
-            class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
-            type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-              <path fill-rule="evenodd"
-                d="M12 2.25a9.75 9.75 0 100 19.5 9.75 9.75 0 000-19.5zM6 10.5h12a.75.75 0 010 1.5H6a.75.75 0 010-1.5zM7.5 15h9a.75.75 0 010 1.5h-9a.75.75 0 010-1.5z"
-                clip-rule="evenodd" />
-            </svg>
-            <p class="block antialiased font-sans text-base leading-relaxed text-inherit font-medium capitalize">Mis
-              Ahorros</p>
-          </button>
-        </a>
-      </li>
-      <br><!-- Boton para la tabla de prestamos-->
-      <li>
-        <a routerLink="/app/loan" (click)="closeSidebar()">
-          <button
-            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
-            class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
-            type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-              <path
-                d="M3 5h18a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2zm0 2v2h18V7H3zm0 4v6h18v-6H3zm2 2h2v2H5v-2z" />
-            </svg>
-            <p class="block antialiased font-sans text-base leading-relaxed text-inherit font-medium capitalize">
-              Prestamos</p>
-          </button>
-        </a>
-      </li>
-      <!-- Boton para la tabla de deudas-->
-      <li>
-        <a routerLink="/app/debt" (click)="closeSidebar()">
-          <button
-            routerLinkActive="bg-sky-700 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/40 active:opacity-[0.85]"
-            class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 flex w-full items-center gap-4 px-4 capitalize"
-            type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-              <path fill-rule="evenodd"
-                d="M2.25 12a9.75 9.75 0 1019.5 0 9.75 9.75 0 00-19.5 0zM13.5 9.75a.75.75 0 00-1.5 0V12H9.75a.75.75 0 000 1.5H12v2.25a.75.75 0 001.5 0V13.5h2.25a.75.75 0 000-1.5H13.5V9.75z"
-                clip-rule="evenodd" />
-            </svg>
-            <p class="block antialiased font-sans text-base leading-relaxed text-inherit font-medium capitalize">Deudas
-            </p>
-          </button>
-        </a>
-      </li>
-    </ul>
-    <!-- Cuenta -->
-    <ul class="mb-4 flex flex-col gap-1">
-      <li class="mx-3.5 mt-4 mb-2">
-        <p class="block antialiased font-sans text-sm leading-normal text-white font-black uppercase opacity-75">Cuenta
-        </p>
-      </li>
-      <!-- Boton para Salir de cuenta -->
-      <li>
-        <button (click)="logout()"
-          class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 w-full flex items-center gap-4 px-4 capitalize"
-          type="button">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-            class="w-5 h-5 text-inherit">
-            <path fill-rule="evenodd"
-              d="M7.5 3.75A1.5 1.5 0 006 5.25v13.5a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5V15a.75.75 0 011.5 0v3.75a3 3 0 01-3 3h-6a3 3 0 01-3-3V5.25a3 3 0 013-3h6a3 3 0 013 3V9A.75.75 0 0115 9V5.25a1.5 1.5 0 00-1.5-1.5h-6zm10.72 4.72a.75.75 0 011.06 0l3 3a.75.75 0 010 1.06l-3 3a.75.75 0 11-1.06-1.06l1.72-1.72H9a.75.75 0 010-1.5h10.94l-1.72-1.72a.75.75 0 010-1.06z"
-              clip-rule="evenodd"></path>
-          </svg>
-          <p class="block antialiased font-sans text-base leading-relaxed text-inherit font-medium capitalize">Salir</p>
-        </button>
-      </li>
+  <!-- MENÚ PRINCIPAL -->
+  <nav class="mt-4 px-4 flex flex-col gap-2">
 
-      <!-- Boton para Registrarse-->
-      <!-- <li>
-          <a class="" href="register">
-            <button class="middle none font-sans font-bold center transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 rounded-lg text-white hover:bg-white/10 active:bg-white/30 w-full flex items-center gap-4 px-4 capitalize" type="button">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="w-5 h-5 text-inherit">
-                <path d="M6.25 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM3.25 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM19.75 7.5a.75.75 0 00-1.5 0v2.25H16a.75.75 0 000 1.5h2.25v2.25a.75.75 0 001.5 0v-2.25H22a.75.75 0 000-1.5h-2.25V7.5z"></path>
-              </svg>
-              <p class="block antialiased font-sans text-base leading-relaxed text-inherit font-medium capitalize">Register</p>
-            </button>
-          </a>
-        </li> -->
-    </ul>
+    <!-- Inicio -->
+    <a routerLink="/app/home" (click)="closeSidebar()"
+      class="flex items-center gap-3 p-3 rounded-lg font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
+        <path
+          d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+        <path
+          d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
+      </svg>
+      Inicio
+    </a>
+
+    <!-- Tabla de Gastos -->
+    <a routerLink="/app/expense" (click)="closeSidebar()"
+      class="flex items-center gap-3 p-3 rounded-lg font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
+        <path
+          d="M5 3a1 1 0 000 2h14a1 1 0 100-2H5zM3 7h18v12H3V7zm2 2v8h14V9H5zm5 1a1 1 0 011 1v4a1 1 0 01-2 0v-4a1 1 0 011-1zm6 0a1 1 0 011 1v4a1 1 0 01-2 0v-4a1 1 0 011-1z" />
+      </svg>
+      Tabla de Gastos
+    </a>
+
+    <!-- Tabla de Ingresos -->
+    <a routerLink="/app/income" (click)="closeSidebar()"
+      class="flex items-center gap-3 p-3 rounded-lg font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
+        <path
+          d="M12 2.25a9.75 9.75 0 100 19.5 9.75 9.75 0 000-19.5zM7.5 12a4.5 4.5 0 019 0 4.5 4.5 0 01-9 0zM12 9a3 3 0 110 6 3 3 0 010-6z" />
+      </svg>
+      Tabla de Ingresos
+    </a>
+
+    <!-- Mi Cartera -->
+    <a routerLink="/app/wallet" (click)="closeSidebar()"
+      class="flex items-center gap-3 p-3 rounded-lg font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
+        <path
+          d="M4.5 5.25a2.25 2.25 0 012.25-2.25h10.5A2.25 2.25 0 0119.5 5.25v2.25H4.5V5.25zM3 9.75a.75.75 0 01.75-.75h16.5a.75.75 0 01.75.75V18a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18V9.75z" />
+      </svg>
+      Mi Cartera
+    </a>
+
+    <!-- Tabla Facturas -->
+    <a routerLink="/app/invoice" (click)="closeSidebar()"
+      class="flex items-center gap-3 p-3 rounded-lg font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
+        <path d="M5 4h14v2H5V4zm0 4h14v2H5V8zm0 4h14v2H5v-2zm0 4h14v2H5v-2z" />
+      </svg>
+      Facturas
+    </a>
+
+    <!-- Tabla de Gastos -->
+    <a routerLink="/app/expense" (click)="closeSidebar()"
+      class="flex items-center gap-3 p-3 rounded-lg font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
+        <path
+          d="M5 3a1 1 0 000 2h14a1 1 0 100-2H5zM3 7h18v12H3V7zm2 2v8h14V9H5zm5 1a1 1 0 011 1v4a1 1 0 01-2 0v-4a1 1 0 011-1zm6 0a1 1 0 011 1v4a1 1 0 01-2 0v-4a1 1 0 011-1z" />
+      </svg>
+      Tabla de Gastos
+    </a>
+
+    <!-- Mis Ahorros -->
+    <a routerLink="/app/saving" (click)="closeSidebar()"
+      class="flex items-center gap-3 p-3 rounded-lg font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
+        <path
+          d="M12 2.25a9.75 9.75 0 100 19.5 9.75 9.75 0 000-19.5zM6 10.5h12a.75.75 0 010 1.5H6a.75.75 0 010-1.5zM7.5 15h9a.75.75 0 010 1.5h-9a.75.75 0 010-1.5z" />
+      </svg>
+      Mis Ahorros
+    </a>
+
+    <!-- Préstamos -->
+    <a routerLink="/app/loan" (click)="closeSidebar()"
+      class="flex items-center gap-3 p-3 rounded-lg font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
+        <path
+          d="M3 5h18a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2zm0 2v2h18V7H3zm0 4v6h18v-6H3zm2 2h2v2H5v-2z" />
+      </svg>
+      Préstamos
+    </a>
+
+    <!-- Deudas -->
+    <a routerLink="/app/debt" (click)="closeSidebar()"
+      class="flex items-center gap-3 p-3 rounded-lg font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
+        <path
+          d="M2.25 12a9.75 9.75 0 1019.5 0 9.75 9.75 0 00-19.5 0zM13.5 9.75a.75.75 0 00-1.5 0V12H9.75a.75.75 0 000 1.5H12v2.25a.75.75 0 001.5 0V13.5h2.25a.75.75 0 000-1.5H13.5V9.75z" />
+      </svg>
+      Deudas
+    </a>
+
+  </nav>
+
+  <!-- CUENTA -->
+  <div class="mt-6 px-4">
+    <p class="text-sm font-bold text-gray-400 uppercase mb-2">Cuenta</p>
+    <button (click)="logout()"
+      class="flex items-center gap-3 p-3 w-full rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition font-medium">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
+        <path
+          d="M7.5 3.75A1.5 1.5 0 006 5.25v13.5a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5V15a.75.75 0 011.5 0v3.75a3 3 0 01-3 3h-6a3 3 0 01-3-3V5.25a3 3 0 013-3h6a3 3 0 013 3V9A.75.75 0 0115 9V5.25a1.5 1.5 0 00-1.5-1.5h-6zm10.72 4.72a.75.75 0 011.06 0l3 3a.75.75 0 010 1.06l-3 3a.75.75 0 11-1.06-1.06l1.72-1.72H9a.75.75 0 010-1.5h10.94l-1.72-1.72a.75.75 0 010-1.06z" />
+      </svg>
+      Salir
+    </button>
   </div>
 </aside>
