@@ -30,17 +30,18 @@
       </div>
 
       <!-- Contraseña -->
-      <div class="relative">
-        <label for="password" class="block text-gray-600 font-medium text-sm mb-1">Contraseña</label>
+      <div class="mb-6 relative">
+        <label for="password" class="block text-gray-600 text-sm font-semibold">Contraseña</label>
+
         <input [type]="showPassword ? 'text' : 'password'" id="password" formControlName="password"
-          class="w-full px-4 py-3 pr-12 rounded-lg border focus:ring-2 focus:ring-sky-400 outline-none transition"
+          class="w-full px-4 py-3 mt-2 border rounded-lg focus:ring focus:ring-sky-300 pr-10"
           [ngClass]="{'border-red-500': isInvalid('password')}">
+
         <button type="button" (click)="togglePasswordVisibility()"
-          class="absolute right-3 top-3 text-gray-500 focus:outline-none">
-          <span class="material-icons">
-            {{ showPassword ? 'visibility_off' : 'visibility' }}
-          </span>
+          class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 focus:outline-none text-lg">
+          <br>{{ showPassword ? '🙈' : '👁️' }}
         </button>
+
         <p *ngIf="isInvalid('password')" class="text-red-500 text-xs mt-1">Debe tener al menos 6 caracteres.</p>
       </div>
 
@@ -69,20 +70,33 @@
   <div *ngIf="showLoginOverlay" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
     <div class="bg-white rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center justify-center animate-pop-in">
       <div class="w-16 h-16 mb-4 flex items-center justify-center">
-        <svg *ngIf="!loginSuccess" class="animate-spin h-10 w-10 text-sky-500" xmlns="http://www.w3.org/2000/svg"
-          fill="none" viewBox="0 0 24 24">
+        <!-- Spinner -->
+        <svg *ngIf="!loginSuccess && !loginError" class="animate-spin h-10 w-10 text-sky-500"
+          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
         </svg>
+
+        <!-- Check éxito -->
         <svg *ngIf="loginSuccess" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" fill="none"
           viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
         </svg>
+
+        <!-- Cross error -->
+        <svg *ngIf="loginError" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-500" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
       </div>
-      <h3 class="text-lg font-semibold text-gray-800">
-        {{ loginSuccess ? '¡Éxito!' : 'Ingresando...' }}
+
+      <h3 class="text-lg font-semibold text-gray-800 text-center">
+        <ng-container *ngIf="loginSuccess">¡Éxito!</ng-container>
+        <ng-container *ngIf="loginError">Usuario o contraseña incorrecta</ng-container>
+        <ng-container *ngIf="!loginSuccess && !loginError">Ingresando...</ng-container>
       </h3>
     </div>
   </div>
+
 
 </div>

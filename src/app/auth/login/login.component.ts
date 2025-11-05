@@ -32,8 +32,9 @@ export default class LoginComponent implements OnInit {
   errorMessage = '';
   welcomeName: string = '';
 
-  showLoginOverlay = false;
+  loginError = false;
   loginSuccess = false;
+  showLoginOverlay = false;
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -70,18 +71,16 @@ export default class LoginComponent implements OnInit {
   onSubmit() {
     if (this.loginForm.valid) {
       this.showLoginOverlay = true; // mostrar overlay
-      this.loginSuccess = false; // estado inicial "Ingresando..."
+      this.loginSuccess = false;
+      this.loginError = false; // reset error
 
       const { email, password } = this.loginForm.value;
 
       this.authService.login(email, password).subscribe({
         next: (res) => {
           const uid = res.localId;
+          this.loginSuccess = true; // indica éxito
 
-          // Ya podemos indicar éxito
-          this.loginSuccess = true;
-
-          // Obtener datos de usuario
           this.authService.getUserData(uid).subscribe((userData) => {
             const nombre = userData?.nombre || '';
             this.showWelcomeModal(nombre);
@@ -108,12 +107,21 @@ export default class LoginComponent implements OnInit {
             // Cerrar overlay después de 1.5s
             setTimeout(() => {
               this.showLoginOverlay = false;
-            }, 1000);
+            }, 1500);
           });
         },
         error: (errorMsg) => {
-          this.showLoginOverlay = false; // ocultar overlay si hay error
-          this.showErrorModal(this.getFirebaseErrorMessage(errorMsg));
+          this.loginSuccess = false;
+          this.loginError = true; // indica error
+          this.showLoginOverlay = true; // mantener overlay para mostrar mensaje
+
+          // ocultar overlay automáticamente después de 2s
+          setTimeout(() => {
+            this.showLoginOverlay = false;
+          }, 2000);
+
+          // opcional: mensaje detallado
+          console.error(this.getFirebaseErrorMessage(errorMsg));
         },
       });
     }
