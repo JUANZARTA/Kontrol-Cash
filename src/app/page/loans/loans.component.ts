@@ -7,6 +7,7 @@ import { DateService } from '../../services/date.service';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
+import { WalletService } from '../../services/wallet.service';
 import { MatIconModule } from '@angular/material/icon';
 
 export interface LoanWithId extends Loan {
@@ -27,6 +28,7 @@ export default class LoansComponent implements OnInit, OnDestroy {
   private decimalPipe = inject(DecimalPipe);
   private dateService = inject(DateService);
   private authService = inject(AuthService);
+  private walletService = inject(WalletService);
   private finanzasService = inject(FinanzasService);
 
   // Variables para modales de agregar valor y eliminar
@@ -35,6 +37,12 @@ export default class LoansComponent implements OnInit, OnDestroy {
   selectedLoanId: string | null = null;
   loanToDeleteId: string | null = null;
   newValue: number = 0;
+  selectedWallet: string = '';
+
+  // Modal de pago
+  isPaymentModalOpen = false;
+  loanToPay: LoanWithId | null = null;
+  selectedPaymentWallet: string = '';
 
   // Datos
   incomes: any[] = [];
@@ -71,6 +79,7 @@ export default class LoansComponent implements OnInit, OnDestroy {
         this.currentYear = date.year;
         this.currentMonth = date.month;
         this.loadLoans();
+        this.loadWallets();
       }
     });
     this.finanzasService.mostrarEstadoFinanciero(
@@ -140,14 +149,23 @@ export default class LoansComponent implements OnInit, OnDestroy {
   // ======================
   openModal() {
     this.isModalOpen = true;
+    this.newLoan = new Loan('', '', '', 0, 'Pendiente');
+    this.selectedWallet = '';
+
+    // ✅ cargar billeteras si aún no están cargadas
+    if (!this.wallet.length) {
+      this.loadWallets();
+    }
   }
 
   closeModal() {
     this.isModalOpen = false;
     this.newLoan = new Loan('', '', '', 0, 'Pendiente');
+    this.selectedWallet = '';
   }
 
   addLoan() {
+    // Validaciones básicas
     if (
       !this.newLoan.deudor ||
       !this.newLoan.fecha_prestamo ||
@@ -158,17 +176,74 @@ export default class LoansComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Validar que se seleccionó billetera
+    if (!this.selectedWallet) {
+      alert('Selecciona la billetera de origen.');
+      return;
+    }
+
+    // Obtener billetera de origen
+    const sourceWallet = this.wallet.find((a) => a.id === this.selectedWallet);
+    if (!sourceWallet) {
+      alert('Billetera seleccionada no encontrada.');
+      return;
+    }
+
+    // Validar que haya suficiente saldo
+    if (this.newLoan.valor > sourceWallet.valor) {
+      alert('El valor excede el saldo disponible de la billetera.');
+      return;
+    }
+
+    // 1️⃣ Crear el préstamo en backend
     this.loanService
       .addLoan(this.userId, this.currentYear, this.currentMonth, this.newLoan)
       .subscribe({
         next: () => {
-          this.loadLoans();
-          this.closeModal();
+          // 2️⃣ Actualizar billetera de origen descontando valor
+          const updatedWallet = {
+            tipo: sourceWallet.tipo,
+            valor: sourceWallet.valor - this.newLoan.valor,
+          };
+
+          this.walletService
+            .updateAccount(
+              this.userId,
+              this.currentYear,
+              this.currentMonth,
+              sourceWallet.id,
+              updatedWallet
+            )
+            .subscribe({
+              next: () => {
+                this.loadLoans(); // recarga préstamos y billeteras
+                this.closeModal(); // cierra modal y limpia formulario
+                this.selectedWallet = ''; // limpiar selección
+              },
+              error: (err: any) =>
+                console.error('Error al actualizar billetera:', err),
+            });
         },
-        error: (err) => {
-          console.error('Error al agregar préstamo:', err);
-        },
+        error: (err: any) => console.error('Error al agregar préstamo:', err),
       });
+  }
+
+  loadWallets() {
+    this.walletService
+      .getWallet(this.userId, this.currentYear, this.currentMonth)
+      .subscribe((data) => {
+        this.wallet = Object.entries(data || {}).map(([id, w]) => ({
+          id,
+          tipo: w.tipo || 'Sin tipo', // mostrar tipo de billetera
+          valor: w.valor || 0,
+        }));
+      });
+  }
+
+  // Devuelve el saldo de la billetera seleccionada
+  get selectedWalletSaldo(): number {
+    const account = this.wallet.find((w) => w.id === this.selectedWallet);
+    return account ? account.valor : 0;
   }
 
   // ======================
@@ -224,6 +299,85 @@ export default class LoansComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error al actualizar préstamo:', err);
         },
+      });
+  }
+
+  // ======================
+  // Modal: Pagado el Préstamo
+  // ======================
+  openPaymentModal(loan: LoanWithId) {
+    if (loan.estado === 'Pagado') return; // solo prestamos pendientes
+    this.loanToPay = loan;
+    this.selectedPaymentWallet = '';
+    this.isPaymentModalOpen = true;
+
+    // Cargar billeteras si no están cargadas
+    if (!this.wallet.length) {
+      this.loadWallets();
+    }
+  }
+
+  closePaymentModal() {
+    this.isPaymentModalOpen = false;
+    this.loanToPay = null;
+    this.selectedPaymentWallet = '';
+  }
+
+  confirmLoanPayment() {
+    if (!this.loanToPay) return;
+    if (!this.selectedPaymentWallet) {
+      alert('Selecciona la billetera para registrar el pago.');
+      return;
+    }
+
+    const wallet = this.wallet.find((w) => w.id === this.selectedPaymentWallet);
+    if (!wallet) {
+      alert('Billetera no encontrada.');
+      return;
+    }
+
+    // 1️⃣ Sumar el valor del préstamo a la billetera
+    const updatedWallet = {
+      tipo: wallet.tipo,
+      valor: wallet.valor + this.loanToPay.valor,
+    };
+
+    this.walletService
+      .updateAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        wallet.id,
+        updatedWallet
+      )
+      .subscribe({
+        next: () => {
+          // 2️⃣ Cambiar estado del préstamo a Pagado
+          const updatedLoan: Loan = {
+            ...this.loanToPay!,
+            estado: 'Pagado',
+          };
+          this.loanService
+            .updateLoan(
+              this.userId,
+              this.currentYear,
+              this.currentMonth,
+              this.loanToPay!.id,
+              updatedLoan
+            )
+            .subscribe({
+              next: () => {
+                this.loadLoans(); // recarga la tabla
+                this.loadWallets(); // actualiza billeteras
+                this.isPaymentModalOpen = false;
+                this.loanToPay = null;
+                this.selectedPaymentWallet = '';
+              },
+              error: (err) =>
+                console.error('Error al actualizar préstamo:', err),
+            });
+        },
+        error: (err) => console.error('Error al actualizar billetera:', err),
       });
   }
 
@@ -380,5 +534,13 @@ export default class LoansComponent implements OnInit, OnDestroy {
     const i = index ?? this.loans.indexOf(loan);
     // Retorna un delay incremental: 0.1s, 0.2s, 0.3s, ...
     return `${0.1 + i * 0.05}s`;
+  }
+
+  get paymentWalletSaldo(): number {
+    if (!this.selectedPaymentWallet) return 0;
+    const account = this.wallet.find(
+      (w) => w.id === this.selectedPaymentWallet
+    );
+    return account ? account.valor : 0;
   }
 }

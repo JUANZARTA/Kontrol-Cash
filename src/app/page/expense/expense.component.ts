@@ -148,19 +148,26 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     this.isModalOpen = false;
     this.newExpense = new Expense('', CategoriaGasto.Variable, 0, 0);
   }
-
+  
   addExpense() {
     if (!this.newExpense.descripcion || !this.newExpense.categoria) {
       alert('Por favor completa todos los campos.');
       return;
     }
 
+    // Asignar 0 por defecto si valor o estimación están vacíos o null
+    const expenseToAdd = {
+      ...this.newExpense,
+      valor: this.newExpense.valor ?? 0,
+      estimacion: this.newExpense.estimacion ?? 0,
+    };
+
     this.expenseService
       .addExpense(
         this.userId,
         this.currentYear,
         this.currentMonth,
-        this.newExpense
+        expenseToAdd
       )
       .subscribe({
         next: () => {

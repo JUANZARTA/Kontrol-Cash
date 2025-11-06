@@ -44,8 +44,10 @@ export default class WalletComponent implements OnInit, OnDestroy {
   // Variables para modales de agregar valor y eliminar
   isAddValueModalOpen: boolean = false;
   isDeleteModalOpen: boolean = false;
+  isEmptyModalOpen: boolean = false;
   selectedAccountId: string | null = null;
   accountToDeleteId: string | null = null;
+  accountToEmptyId: string | null = null;
   newValue: number = 0;
 
   // Datos
@@ -321,6 +323,50 @@ export default class WalletComponent implements OnInit, OnDestroy {
   }
 
   // ======================
+  // Modal: Vaciar Cuenta
+  // ======================
+
+  openEmptyModal(id: string) {
+    this.isEmptyModalOpen = true;
+    this.accountToEmptyId = id;
+  }
+
+  closeEmptyModal() {
+    this.isEmptyModalOpen = false;
+    this.accountToEmptyId = null;
+  }
+
+  confirmEmptyAccount() {
+    if (!this.accountToEmptyId) return;
+
+    // Buscar la cuenta en el wallet
+    const account = this.wallet.find((a) => a.id === this.accountToEmptyId);
+    if (!account) return;
+
+    // Crear objeto actualizado con valor = 0
+    const updatedAccount = { ...account, valor: 0 };
+
+    // Actualizar mediante el servicio
+    this.walletService
+      .updateAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        this.accountToEmptyId,
+        updatedAccount
+      )
+      .subscribe({
+        next: () => {
+          this.loadAllData(); // recarga los datos
+          this.closeEmptyModal(); // cierra el modal
+        },
+        error: (err: any) => {
+          console.error('Error al vaciar cuenta:', err);
+        },
+      });
+  }
+
+  // ======================
   // Modal: Eliminar Cuenta
   // ======================
   openDeleteModal(id: string) {
@@ -446,8 +492,6 @@ export default class WalletComponent implements OnInit, OnDestroy {
 
     input.value = this.formatCurrency(value);
   }
-
-
 
   // Metodo para alternar al menu de opciones de cada cuenta
   toggleMenu(account: any) {

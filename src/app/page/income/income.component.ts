@@ -474,6 +474,11 @@ export default class IncomeComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.assignedValue > Math.abs(this.cuadreDescuadre ?? 0)) {
+      this.insufficientFundsAlert = true;
+      return;
+    }
+
     const toAccount = this.wallet.find((w) => w.id === this.selectedWallet);
     if (!toAccount) return;
 
@@ -487,19 +492,25 @@ export default class IncomeComponent implements OnInit, OnDestroy {
         this.currentYear,
         this.currentMonth,
         toAccount.id,
-        { tipo: toAccount.tipo, valor: toAccount.valor } // ✅ reemplazamos nombre por tipo
+        { tipo: toAccount.tipo, valor: toAccount.valor }
       )
-
       .subscribe(() => {
-        // ✅ Mostrar mensaje de éxito
+        // Mostrar mensaje de éxito
         this.showToast('Transferencia exitosa');
 
-        // ✅ Recargar datos automáticamente
+        // Recargar datos automáticamente
         this.loadWallets();
+
+        // Ajustar cuadre después de la asignación
+        this.cuadreDescuadre =
+          (this.cuadreDescuadre ?? 0) + (this.assignedValue ?? 0);
+
         this.closeTransactionModal();
+
+        // Forzar recarga de la página después de 500ms
         setTimeout(() => {
           window.location.reload();
-        }, 1000);
+        }, 500);
       });
   }
 
@@ -582,7 +593,15 @@ export default class IncomeComponent implements OnInit, OnDestroy {
     const rawValue = input.value.replace(/[^\d]/g, '');
 
     // Convertimos a número
-    const numericValue = Number(rawValue) || 0;
+    let numericValue = Number(rawValue) || 0;
+
+    // Limitar a lo disponible
+    if (numericValue > Math.abs(this.cuadreDescuadre)) {
+      numericValue = Math.abs(this.cuadreDescuadre);
+      this.insufficientFundsAlert = true; // Mostrar alerta
+    } else {
+      this.insufficientFundsAlert = false;
+    }
 
     // Guardamos en la variable vinculada
     this.assignedValue = numericValue;

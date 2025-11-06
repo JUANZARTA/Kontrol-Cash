@@ -36,6 +36,7 @@ export class FinanzasService {
           prestamos$.subscribe((loans) => {
             const prestamos = Object.values(loans || {});
 
+            // Totales de ingresos y gastos
             const ingresoTotal = ingresos.reduce(
               (a: number, i: any) => a + (i.valor || 0),
               0
@@ -44,26 +45,26 @@ export class FinanzasService {
               (a: number, g: any) => a + (g.valor || 0),
               0
             );
+
+            // Total de billeteras
             const walletTotal = walletData.reduce(
               (a: number, w: any) => a + (w.valor || 0),
               0
             );
-            const prestadoTotal = prestamos.reduce(
-              (a: number, l: any) => a + (l.valor || 0),
-              0
-            );
 
-            const diferenciaSaldo = walletData.reduce(
-              (a: number, w: any) => a + (w.valor || 0),
-              0
-            );
-
-            const prestadoActual = prestamos
-              .filter((l: any) => l.estado !== 'Pagado') // Solo préstamos NO pagados
+            // Solo préstamos pendientes para el cuadre
+            const prestamosPendientes = prestamos
+              .filter((l: any) => l.estado !== 'Pagado')
               .reduce((a: number, l: any) => a + (l.valor || 0), 0);
 
+            // Préstamos ya pagados (opcional, para mostrar)
+            const prestamosPagados = prestamos
+              .filter((l: any) => l.estado === 'Pagado')
+              .reduce((a: number, l: any) => a + (l.valor || 0), 0);
+
+            // Cálculo del cuadre/descuadre
             const restante = ingresoTotal - gastoTotal;
-            const diferencia = walletTotal + prestadoTotal - restante;
+            const diferencia = walletTotal + prestamosPendientes - restante;
 
             if (diferencia > 0) {
               componente.estadoFinanciero = `Tienes ${this.formatCurrency(
@@ -81,16 +82,24 @@ export class FinanzasService {
               componente.estadoFinancieroColor = 'verde';
             }
 
+            // Valores que puedes usar en tu componente
             componente.cuadreDescuadre = diferencia;
+            componente.prestamosPendientes = prestamosPendientes;
+            componente.prestamosPagados = prestamosPagados;
+
             componente.estimacionGastosMes = gastos.reduce(
               (a: number, g: any) => a + (g.estimacion || 0),
               0
             );
-            componente.estimacionDineroRestanteMes = ingresoTotal - componente.estimacionGastosMes;
+            componente.estimacionDineroRestanteMes =
+              ingresoTotal - componente.estimacionGastosMes;
             componente.gastadoActualmente = gastoTotal;
-            componente.restanteActualmente = ingresoTotal - gastoTotal - prestadoActual;
+            componente.restanteActualmente =
+              ingresoTotal - gastoTotal - prestamosPendientes;
             componente.restanteTotal = ingresoTotal - gastoTotal;
-            componente.diferenciaSaldo = componente.estimacionDineroRestanteMes - componente.restanteActualmente;
+            componente.diferenciaSaldo =
+              componente.estimacionDineroRestanteMes -
+              componente.restanteActualmente;
           });
         });
       });
