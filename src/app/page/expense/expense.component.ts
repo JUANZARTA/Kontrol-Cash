@@ -388,7 +388,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       open: true, // abre cada acordeón por defecto
     }));
   }
-  
+
   getExpenseRowDelay(index: number, groupIndex: number): string {
     // Cada grupo tiene delay base + fila incremental
     return `${0.1 + groupIndex * 0.05 + index * 0.03}s`;

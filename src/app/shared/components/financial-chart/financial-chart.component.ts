@@ -24,7 +24,6 @@ export class FinancialChartComponent implements OnChanges {
   @Input() totalDeuda = 0;
   @Input() totalBilletera = 0;
   @Input() totalPrestamo = 0;
-  @Input() totalAhorro = 0;
 
   private chart: Chart | null = null;
 
@@ -48,7 +47,6 @@ export class FinancialChartComponent implements OnChanges {
       this.totalDeuda,
       this.totalBilletera,
       this.totalPrestamo,
-      this.totalAhorro,
     ];
 
     const labels = [
@@ -57,7 +55,6 @@ export class FinancialChartComponent implements OnChanges {
       'Deudas',
       'Billetera',
       'Préstamos',
-      'Ahorro',
     ];
 
     const total = dataValues.reduce((a, b) => a + b, 0);
@@ -78,7 +75,6 @@ export class FinancialChartComponent implements OnChanges {
         '#ef4444',
         '#f59e0b',
         '#10b981',
-        '#0ea5e9',
         '#8b5cf6',
       ];
       chartLabels = labels;
@@ -127,7 +123,6 @@ export class FinancialChartComponent implements OnChanges {
       deuda: this.totalDeuda,
       billetera: this.totalBilletera,
       prestamo: this.totalPrestamo,
-      ahorro: this.totalAhorro,
       total,
     });
   }

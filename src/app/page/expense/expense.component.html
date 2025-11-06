@@ -18,71 +18,51 @@
   </button>
 </div>
 
-<!-- Tabla de Gastos estilo Tabla de Ingresos -->
-<div class="overflow-x-auto animate-fadeSlideDown">
-  <div class="space-y-4">
-    <table *ngFor="let grupo of getGroupedExpenses(); let gIndex = index"
-      class="w-full min-w-[640px] border-collapse text-sm border border-gray-200 opacity-0 animate-fadeSlideDown"
-      [style.animationDelay]="0.1 + gIndex * 0.05 + 's'">
-      <thead class="bg-sky-200 border-b">
-        <tr>
-          <th class="text-left py-2 px-3 sm:px-4" colspan="4">
-            {{ grupo.categoria }} ({{ grupo.items.length }} gastos)
-          </th>
-        </tr>
-        <tr>
-          <th class="text-left py-2 px-3 sm:px-4">Descripción</th>
-          <th class="text-right py-2 px-3 sm:px-4">Gastado</th>
-          <th class="text-right py-2 px-3 sm:px-4">Estimación</th>
-          <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let expense of grupo.items; let i = index"
+<!-- Tabla de Gastos en una sola tabla -->
+<div class="overflow-x-auto">
+  <table class="w-full min-w-[640px] border-collapse text-sm border border-gray-200">
+    <thead class="bg-sky-200 border-b">
+      <tr>
+        <th class="text-left py-2 px-3 sm:px-4">Descripción</th>
+        <th class="text-left py-2 px-3 sm:px-4">Categoría</th>
+        <th class="text-right py-2 px-3 sm:px-4">Gastado</th>
+        <th class="text-right py-2 px-3 sm:px-4">Estimación</th>
+        <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let expense of expenses; let i = index"
           class="border-t hover:bg-gray-50 opacity-0 animate-fadeSlideDown"
-          [style.animationDelay]="getExpenseRowDelay(i, gIndex)">
-          <td class="py-2 px-3 sm:px-4">{{ expense.descripcion }}</td>
-          <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(expense.valor) }}</td>
-          <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(expense.estimacion) }}</td>
-          <td class="py-2 px-3 sm:px-4 text-center">
-            <button (click)="openAddModal(expense.id)" class="text-lime-600 mr-2">
-              <span class="material-icons">add</span>
-            </button>
-            <button (click)="openEditModal(expense.id)" class="text-sky-700 mr-2">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button (click)="openDeleteModal(expense.id)" class="text-orange-600">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr class="bg-gray-100 font-bold text-blue-900 border-t opacity-0 animate-fadeSlideDown"
-          [style.animationDelay]="0.1 + gIndex * 0.05 + 's'">
-          <td class="py-3 px-3 sm:px-4 text-left" colspan="2">Total Grupo</td>
-          <td class="py-3 px-3 sm:px-4 text-right">${{ formatCurrency(getGroupTotal(grupo.items)) }}</td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-
-  <!-- Totales generales -->
-  <div class="overflow-x-auto mt-4">
-    <table class="w-full min-w-[640px] border-collapse text-sm opacity-0 animate-fadeSlideDown"
-      style="animation-delay:0.2s">
-      <tbody>
-        <tr class="bg-gray-100 font-bold text-blue-900 border-t">
-          <td class="py-3 px-3 sm:px-4 text-left">Totales Generales</td>
-          <td class="py-3 px-3 sm:px-4 text-right">Gastado: ${{ formatCurrency(getTotalExpenses()) }}</td>
-          <td class="py-3 px-3 sm:px-4 text-right">Estimado: ${{ formatCurrency(getTotalEstimations()) }}</td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+          [style.animationDelay]="0.1 + i * 0.05 + 's'">
+        <td class="py-2 px-3 sm:px-4">{{ expense.descripcion }}</td>
+        <td class="py-2 px-3 sm:px-4">{{ expense.categoria }}</td>
+        <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(expense.valor) }}</td>
+        <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(expense.estimacion) }}</td>
+        <td class="py-2 px-3 sm:px-4 text-center">
+          <button (click)="openAddModal(expense.id)" class="text-lime-600 mr-2">
+            <span class="material-icons">add</span>
+          </button>
+          <button (click)="openEditModal(expense.id)" class="text-sky-700 mr-2">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button (click)="openDeleteModal(expense.id)" class="text-orange-600">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr class="bg-gray-100 font-bold text-blue-900 border-t opacity-0 animate-fadeSlideDown" style="animation-delay:0.2s">
+        <td class="py-3 px-3 sm:px-4 text-left">Totales Generales</td>
+        <td></td>
+        <td class="py-3 px-3 sm:px-4 text-right">Gastado: ${{ formatCurrency(getTotalExpenses()) }}</td>
+        <td class="py-3 px-3 sm:px-4 text-right">Estimado: ${{ formatCurrency(getTotalEstimations()) }}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
 </div>
+
 
 <!-- Modal de agregar gasto -->
 <div *ngIf="isModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
