@@ -10,4 +10,16 @@ ng build --configuration production
 npx angular-cli-ghpages --dir=dist/miCartera
 
 
-la seccion de la cuenta debe durar abierta 10 minutos, despues de 10 minutso aparece una ventana emergente, diciendo que la session expiro, con un boton de aceptar, al presionar el aceptar me lanza al login par ainiciar secion denuevo, ahora, eso si no hay ninunga actividad dentro de esos 10 minutos,  con la ventana emergente del mismo diseño que las demas, otra cosa para depurar no haremos 10 minutos lo haremos de 10 segundo a ver si funciona.
+⦁	QUe me permita vaciar la billetera que quede en cero
+⦁	el préstamo, cuando lo creo diga de que billetera voy a prestar y me lo descuente
+⦁	el préstamo cuando de doy pagado, diga a que billetera y lo sume,
+⦁	cuanod asigno, no puedo asignar mas de lo que tengo por asignar, si no genero un descuadre
+⦁	en gasto cuando lo gastado supera la estimación poner en rojo la casilla
+⦁	en gastado cuando estimación y gastado sean igual poner en verde o azul tenua
+⦁	Terminar Home con grafica de Barras
+⦁	QUe las facturas se guarden para el siguiente mes pero como no pagadas
+⦁	que los gastos con categoría (fijo) se conserven para el siguiente mes
+⦁	que las billeteras se conserven para el siguiente mes, con su respectivo dinero, asi sea 0
+⦁	que el total de dinero del mes anterior se registre automáticamente como ingreso (mes pasado) para ese mes, asi se conserva coherencia
+⦁	La deuda cuando la adquiero o la tenia me deje pagar por partes (analizar)
+
