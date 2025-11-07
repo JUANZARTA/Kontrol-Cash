@@ -84,14 +84,33 @@
     <select [(ngModel)]="newExpense.categoria" class="w-full p-2 border rounded-md mb-3 animate-fadeIn">
       <option *ngFor="let categoria of categorias" [value]="categoria">{{ categoria }}</option>
     </select>
-
+    <!-- Campo de valor -->
     <label class="block mb-2 animate-fadeIn">Valor:</label>
-    <input type="text" [value]="formatCurrency(newExpense.valor)" (input)="onValueInput($event, 'valor')"
+    <input type="text" [value]="formatCurrency(newExpense.valor)" (input)="onExpenseValueInput($event)"
       placeholder="Ejm: 35.400" class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
 
+    <!-- Mostrar billetera solo si valor > 0 -->
+    <div *ngIf="newExpense.valor > 0" class="mb-3">
+      <label class="block mb-2 animate-fadeIn">Selecciona billetera:</label>
+      <select [(ngModel)]="selectedWalletExpense" class="w-full p-2 border rounded-md animate-fadeIn">
+        <option value="" disabled>Selecciona billetera</option>
+        <option *ngFor="let w of wallet" [value]="w.id">{{ w.tipo }}</option> <!-- Solo nombre -->
+      </select>
+
+      <!-- Mostrar saldo debajo en letras pequeñas -->
+      <p *ngIf="selectedWalletExpense" class="text-gray-500 text-sm mt-1">
+        ${{ getWalletBalance(selectedWalletExpense) }} disponibles
+      </p>
+
+    </div>
+
+
+
     <label class="block mb-2 animate-fadeIn">Estimación:</label>
-    <input type="text" [value]="formatCurrency(newExpense.estimacion)" (input)="onValueInput($event, 'estimacion')"
-      placeholder="Ejm: 30.000" class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
+    <input type="text" [value]="formatCurrency(newExpense.estimacion)"
+      (input)="onNewExpenseValueInput($event, 'estimacion')" placeholder="Ejm: 30.000"
+      class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
+
 
     <div class="flex justify-end gap-2">
       <button (click)="closeModal()" class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200 animate-fadeIn">
@@ -112,23 +131,36 @@
     <p class="text-gray-600 mb-4 text-sm animate-fadeSlideDown">Introduce un valor para agregar o restar a este gasto.
     </p>
 
+    <!-- Campo de valor -->
     <label class="block mb-2 font-semibold animate-fadeIn">Valor:</label>
-    <input type="text" [value]="formatCurrency(newValue)" (input)="onValueInput($event, 'add')" placeholder="Ej: 2000"
+    <input type="text" [value]="formatCurrency(newValue)" (input)="onValueInput($event)" placeholder="Ej: 2000"
       class="w-full p-2 border rounded-md mb-4 animate-fadeIn" />
 
+    <!-- Selección de billetera siempre visible -->
+    <label class="block mb-2 animate-fadeIn">Selecciona billetera:</label>
+    <select [(ngModel)]="selectedWallet" class="w-full p-2 border rounded-md mb-1 animate-fadeIn">
+      <option value="" disabled>Selecciona billetera</option>
+      <option *ngFor="let w of wallet" [value]="w.id">{{ w.tipo }}</option>
+    </select>
+    <p *ngIf="selectedWallet" class="text-gray-500 text-sm mt-1">
+      ${{ getWalletBalance(selectedWallet) }} disponibles
+    </p>
     <div class="flex justify-end gap-2">
-      <button (click)="closeAddValueModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200 animate-fadeIn">
-        Cancelar
-      </button>
-      <button (click)="applyValue('subtract')"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700 animate-fadeIn">
-        Restar
-      </button>
-      <button (click)="applyValue('add')"
-        class="px-4 py-2 bg-teal-700 text-white rounded-md hover:bg-emerald-800 animate-fadeIn">
-        Sumar
-      </button>
+      <div class="flex justify-end gap-2">
+        <button (click)="closeAddValueModal()"
+          class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200 animate-fadeIn">
+          Cancelar
+        </button>
+        <button (click)="setAction('subtract')"
+          class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700 animate-fadeIn">
+          Restar
+        </button>
+        <button (click)="setAction('add')"
+          class="px-4 py-2 bg-teal-700 text-white rounded-md hover:bg-emerald-800 animate-fadeIn">
+          Sumar
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -190,4 +222,10 @@
       </button>
     </div>
   </div>
+</div>
+
+<!-- Toast  -->
+<div *ngIf="showingToast"
+  class="fixed bottom-4 right-4 bg-sky-700 text-white px-4 py-2 rounded shadow-md animate-fadeIn">
+  {{ toastMessage }}
 </div>

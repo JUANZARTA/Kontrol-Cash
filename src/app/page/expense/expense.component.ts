@@ -8,6 +8,8 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
+import { WalletService } from '../../services/wallet.service';
+
 import {
   trigger,
   state,
@@ -41,6 +43,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   private dateService = inject(DateService); // ✅ Nuevo
   private authService = inject(AuthService); // ✅ nuevo
   private finanzasService = inject(FinanzasService);
+  private walletService = inject(WalletService);
 
   // Propiedades
   incomes: any[] = [];
@@ -48,10 +51,27 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   wallet: any[] = [];
   loans: any[] = [];
 
+  lastAction: 'add' | 'subtract' | null = null;
+  currentAction: 'add' | 'subtract' | null = null;
+
   // Estado financiero
   estadoFinanciero = 'Cargando...';
   estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
   cuadreDescuadre = 0;
+
+  // Variables nuevas en el componente
+  showingToast: boolean = false;
+  toastMessage: string = '';
+  toastTimeout: any;
+
+  // Selección de billetera para nuevo gasto
+  selectedWalletExpense: string = '';
+
+  // Selección de billetera para modal de agregar valor
+  selectedWallet: string = '';
+
+  // Monto a asignar de la billetera al gasto
+  assignedWalletValue: number = 0;
 
   // Modales
   isModalOpen = false;
@@ -137,31 +157,67 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     );
   }
 
+  // Método para cargar las billeteras
+  loadWallets() {
+    this.walletService
+      .getWallet(this.userId, this.currentYear, this.currentMonth)
+      .subscribe({
+        next: (data) => {
+          this.wallet = Object.entries(data || {}).map(
+            ([id, w]: [string, any]) => ({
+              id,
+              tipo: w.tipo || 'Sin tipo',
+              valor: w.valor || 0,
+            })
+          );
+        },
+        error: (err) => {
+          console.error('Error al cargar billeteras:', err);
+        },
+      });
+  }
+  setAction(action: 'add' | 'subtract'): void {
+    this.currentAction = action;
+    this.applyValue(action);
+  }
+
   // ======================
   // Modal: Agregar Gasto
   // ======================
   openModal() {
     this.isModalOpen = true;
+    this.loadWallets(); // cargar billeteras al abrir modal
+    this.selectedWalletExpense = ''; // limpiar selección previa
+    this.assignedWalletValue = 0; // resetear valor asignado
+    this.newExpense = new Expense('', CategoriaGasto.Variable, 0, 0); // limpiar campos
+    this.toastMessage = ''; // limpiar toast
+    this.showingToast = false; // resetear toast
   }
 
   closeModal() {
     this.isModalOpen = false;
     this.newExpense = new Expense('', CategoriaGasto.Variable, 0, 0);
   }
-  
+
   addExpense() {
     if (!this.newExpense.descripcion || !this.newExpense.categoria) {
-      alert('Por favor completa todos los campos.');
+      this.showToast('Por favor completa todos los campos.');
       return;
     }
 
-    // Asignar 0 por defecto si valor o estimación están vacíos o null
+    // Solo pedir billetera si el valor > 0
+    if (this.newExpense.valor > 0 && !this.selectedWalletExpense) {
+      this.showToast('Selecciona una billetera para descontar el gasto.');
+      return;
+    }
+
     const expenseToAdd = {
       ...this.newExpense,
       valor: this.newExpense.valor ?? 0,
       estimacion: this.newExpense.estimacion ?? 0,
     };
 
+    // Guardar gasto
     this.expenseService
       .addExpense(
         this.userId,
@@ -171,21 +227,74 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          this.loadExpenses();
-          this.closeModal();
+          // Descontar de la billetera solo si hay valor > 0
+          if (this.newExpense.valor > 0) {
+            const wallet = this.wallet.find(
+              (w) => w.id === this.selectedWalletExpense
+            );
+            if (wallet) {
+              wallet.valor -= this.assignedWalletValue;
+
+              // Guardar cambios de la billetera en DB
+              this.walletService
+                .updateAccount(
+                  this.userId,
+                  this.currentYear,
+                  this.currentMonth,
+                  wallet.id,
+                  { tipo: wallet.tipo, valor: wallet.valor }
+                )
+                .subscribe({
+                  next: () => {
+                    this.showToast(
+                      'Gasto agregado y descontado de la billetera'
+                    );
+                    this.loadExpenses();
+                    this.loadWallets(); // recargar billeteras
+                    this.closeModal();
+                  },
+                  error: (err) =>
+                    console.error('Error al actualizar billetera:', err),
+                });
+            } else {
+              this.loadExpenses();
+              this.closeModal();
+            }
+          } else {
+            this.loadExpenses();
+            this.closeModal();
+          }
         },
-        error: (err) => {
-          console.error('Error al agregar gasto:', err);
-        },
+        error: (err) => console.error('Error al agregar gasto:', err),
       });
+  }
+
+  // Método para mostrar "alerta bonita"
+  showToast(message: string, duration: number = 3000): void {
+    this.toastMessage = message;
+    this.showingToast = true;
+
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+
+    this.toastTimeout = setTimeout(() => {
+      this.showingToast = false;
+      this.toastMessage = '';
+    }, duration);
   }
 
   // ======================
   // Modal: Agregar Valor en Gasto
   // ======================
-  openAddModal(id: string) {
+  openAddModal(id: string): void {
     this.selectedExpenseId = id;
     this.isAddValueModalOpen = true;
+
+    // Cargar billeteras al abrir el modal
+    this.loadWallets();
+
+    // Reiniciar valores
+    this.selectedWallet = '';
+    this.newValue = 0;
   }
 
   closeAddValueModal() {
@@ -193,45 +302,82 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     this.newValue = 0;
   }
 
-  applyValue(action: 'add' | 'subtract') {
+  applyValue(action: 'add' | 'subtract'): void {
+    this.lastAction = action;
     if (!this.selectedExpenseId) return;
 
-    const expense = this.expenses.find((e) => e.id === this.selectedExpenseId);
-    if (!expense) return;
-
-    let finalValue = this.newValue;
-
-    if (action === 'subtract') {
-      finalValue = -Math.abs(this.newValue); // asegurar negativo
-    } else {
-      finalValue = Math.abs(this.newValue); // asegurar positivo
+    if (!this.selectedWallet) {
+      this.showToast('Selecciona una billetera para aplicar el valor');
+      return;
     }
 
-    const updatedValue = expense.valor + finalValue;
+    const expense = this.expenses.find((e) => e.id === this.selectedExpenseId);
+    const wallet = this.wallet.find((w) => w.id === this.selectedWallet);
 
-    const updatedExpense: Expense = {
-      descripcion: expense.descripcion,
-      categoria: expense.categoria,
-      valor: updatedValue,
-      estimacion: expense.estimacion,
-    };
+    if (!expense || !wallet) return;
 
-    this.expenseService
-      .updateExpense(
+    const currentExpenseValue = expense.valor;
+    const walletBalance = wallet.valor;
+    let valueToApply = Math.abs(this.newValue);
+
+    // 🔹 VALIDACIONES PRINCIPALES
+    if (action === 'add') {
+      // No permitir sumar más de lo que hay en la billetera
+      if (valueToApply > walletBalance) {
+        this.showToast(
+          'No puedes sumar más que el saldo disponible en la billetera'
+        );
+        return;
+      }
+      // Aplicar suma
+      wallet.valor -= valueToApply;
+      expense.valor += valueToApply;
+    } else if (action === 'subtract') {
+      // No permitir restar más que el valor actual del gasto
+      if (valueToApply > currentExpenseValue) {
+        this.showToast('No puedes restar más que el valor actual del gasto');
+        return;
+      }
+      // Aplicar resta (devuelve dinero a la billetera)
+      wallet.valor += valueToApply;
+      expense.valor -= valueToApply;
+    }
+
+    // 🔹 Actualizar billetera y gasto en la base de datos
+    this.walletService
+      .updateAccount(
         this.userId,
         this.currentYear,
         this.currentMonth,
-        expense.id,
-        updatedExpense
+        wallet.id,
+        { tipo: wallet.tipo, valor: wallet.valor }
       )
       .subscribe({
         next: () => {
-          this.loadExpenses();
-          this.closeAddValueModal();
+          this.expenseService
+            .updateExpense(
+              this.userId,
+              this.currentYear,
+              this.currentMonth,
+              expense.id,
+              {
+                descripcion: expense.descripcion,
+                categoria: expense.categoria,
+                valor: expense.valor,
+                estimacion: expense.estimacion,
+              }
+            )
+            .subscribe({
+              next: () => {
+                this.showToast('Operación aplicada correctamente');
+                this.loadExpenses();
+                this.loadWallets();
+                this.closeAddValueModal();
+              },
+              error: (err) => console.error('Error al actualizar gasto:', err),
+            });
         },
-        error: (err) => {
-          console.error('Error al actualizar gasto:', err);
-        },
+        error: (err) => console.error('Error al actualizar billetera:', err),
       });
   }
 
@@ -324,75 +470,68 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     return this.expenses.reduce((sum, e) => sum + Number(e.estimacion), 0);
   }
 
-  // Método para formatear el valor a moneda
-  formatCurrency(value: number): string {
+  // Formatear un número a moneda (1,000)
+  formatCurrency(value: number | null | undefined): string {
+    if (value === null || value === undefined) return '';
     return this.decimalPipe.transform(value, '1.0-0') || '';
   }
 
-  // Método para formatear el valor a porcentaje
-  isOverBudget(expense: Expense): boolean {
+  // Verifica si un gasto está sobre la estimación
+  isOverBudget(expense: ExpenseWithId): boolean {
     return Number(expense.valor) > Number(expense.estimacion);
   }
 
-  // Método para calcular el total por categoría
-  getGroupTotal(items: any[]) {
+  // Método para calcular el total de un grupo de gastos
+  getGroupTotal(items: ExpenseWithId[]): number {
     return items.reduce((acc, item) => acc + (Number(item.valor) || 0), 0);
   }
 
-  // Método para calcular el total estimado por categoría
-  getGroupEstimatedTotal(items: any[]) {
+  // Método para calcular el total estimado de un grupo de gastos
+  getGroupEstimatedTotal(items: ExpenseWithId[]): number {
     return items.reduce((acc, item) => acc + (Number(item.estimacion) || 0), 0);
   }
 
-  // Método para calcular el total de estimaciones
-  getTotalEstimations() {
-    return this.expenses.reduce(
-      (acc, item) => acc + (Number(item.estimacion) || 0),
-      0
-    );
+  // Método para obtener el total estimado de gastos
+  getTotalEstimations(): number {
+    return this.expenses.reduce((sum, e) => sum + Number(e.estimacion), 0);
   }
 
   // Procesar entrada y convertir a número limpio
-  onValueInput(event: Event, field: 'valor' | 'estimacion' | 'add') {
+  onValueInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const rawValue = input.value.replace(/[^\d]/g, '');
+    const numericValue = Number(rawValue) || 0;
+
+    // ✅ Permitir escribir cualquier número libremente
+    this.newValue = numericValue;
+
+    // ✅ Solo formateamos la vista
+    input.value = this.formatCurrency(numericValue);
+  }
+
+  // Manejar input en modal de edición
+  onEditValueInput(event: Event, field: 'valor' | 'estimacion'): void {
     const input = event.target as HTMLInputElement;
     const rawValue = input.value.replace(/[^\d-]/g, '');
     const numericValue = Number(rawValue) || 0;
 
-    if (field === 'valor') {
-      this.newExpense.valor = numericValue;
-    } else if (field === 'estimacion') {
-      this.newExpense.estimacion = numericValue;
-    } else if (field === 'add') {
-      this.newValue = numericValue;
-    }
-
-    input.value = this.formatCurrency(numericValue);
-  }
-
-  onEditValueInput(event: Event, field: 'valor' | 'estimacion') {
-    const input = event.target as HTMLInputElement;
-    const rawValue = input.value.replace(/[.,]/g, '');
-    const numericValue = Number(rawValue) || 0;
     this.editedExpense[field] = numericValue;
     input.value = this.formatCurrency(numericValue);
   }
 
   getGroupedExpenses() {
-    const groups: { [categoria: string]: any[] } = {};
+    const groups: { [categoria: string]: ExpenseWithId[] } = {};
 
-    // Agrupar los gastos por categoría
     this.expenses.forEach((expense) => {
-      if (!groups[expense.categoria]) {
-        groups[expense.categoria] = [];
-      }
+      if (!groups[expense.categoria]) groups[expense.categoria] = [];
       groups[expense.categoria].push(expense);
     });
 
-    // Convertir a array de objetos con open = true
-    return Object.keys(groups).map((categoria) => ({
+    return Object.keys(groups).map((categoria, index) => ({
       categoria,
       items: groups[categoria],
-      open: true, // abre cada acordeón por defecto
+      open: true, // abrir acordeón por defecto
+      groupIndex: index, // opcional para animaciones
     }));
   }
 
@@ -400,4 +539,58 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     // Cada grupo tiene delay base + fila incremental
     return `${0.1 + groupIndex * 0.05 + index * 0.03}s`;
   }
+
+  // Maneja el input de valor en el modal de nuevo gasto
+  onExpenseValueInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const rawValue = input.value.replace(/[^\d]/g, '');
+    let numericValue = Number(rawValue) || 0;
+
+    // Limitar al saldo de la billetera seleccionada
+    if (this.selectedWalletExpense) {
+      const wallet = this.wallet.find(
+        (w) => w.id === this.selectedWalletExpense
+      );
+      if (wallet && numericValue > wallet.valor) {
+        numericValue = wallet.valor;
+        this.showToast('No puedes gastar más que el saldo de la billetera');
+      }
+    }
+
+    this.newExpense.valor = numericValue;
+    input.value = this.formatCurrency(numericValue);
+
+    // Ajustar assignedWalletValue al valor del input
+    this.assignedWalletValue = numericValue;
+  }
+
+  // ----------------------------
+  // Método para obtener saldo de una billetera
+  // ----------------------------
+  getWalletBalance(walletId: string): string {
+    const w = this.wallet.find((wallet) => wallet.id === walletId);
+    return w ? this.formatCurrency(w.valor) : '0';
+  }
+
+  onNewExpenseValueInput(event: Event, field: 'valor' | 'estimacion'): void {
+  const input = event.target as HTMLInputElement;
+  const rawValue = input.value.replace(/[^\d]/g, '');
+  let numericValue = Number(rawValue) || 0;
+
+  // Si está editando el valor del gasto, limitar al saldo de la billetera seleccionada
+  if (field === 'valor' && this.selectedWalletExpense) {
+    const wallet = this.wallet.find(w => w.id === this.selectedWalletExpense);
+    if (wallet && numericValue > wallet.valor) {
+      numericValue = wallet.valor;
+      this.showToast('No puedes gastar más que el saldo de la billetera');
+    }
+  }
+
+  // Asignar valor
+  if (field === 'valor') this.newExpense.valor = numericValue;
+  else this.newExpense.estimacion = numericValue;
+
+  input.value = this.formatCurrency(numericValue);
+}
+
 }
