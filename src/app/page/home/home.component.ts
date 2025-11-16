@@ -15,23 +15,47 @@ import { LoanService } from '../../services/loans.service';
 import { DateService } from '../../services/date.service';
 import { ExpenseService } from '../../services/expense.service';
 import { IncomeService } from '../../services/income.service';
+import { InvoiceService } from '../../services/invoice.service';
+import { Invoice } from '../../models/invoice.model';
 
 import { WalletAccount } from '../../models/wallet.model';
 import { Debt } from '../../models/debt.model';
+
 import { Loan } from '../../models/loans.model';
 import { CategoriaGasto, Expense } from '../../models/expense.model';
 import { Income } from '../../models/income.model';
 import { FinanzasService } from '../../services/finanzas.service';
+import { BarChartComponent } from '../../shared/components/bar-chart/bar-chart.component';
 
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { inject } from '@angular/core';
 import { FinancialChartComponent } from '../../shared/components/financial-chart/financial-chart.component';
 
+interface DebtWithId extends Debt {
+  id: string;
+}
+
+export interface WalletAccountWithId extends WalletAccount {
+  id: string;
+  showMenu?: boolean;
+}
+
+export interface InvoiceWithId extends Invoice {
+  id: string;
+  showMenu: boolean;
+}
+
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, FinancialChartComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    FinancialChartComponent,
+    BarChartComponent,
+  ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
 })
@@ -45,6 +69,13 @@ export default class HomeComponent implements OnInit, OnDestroy {
   isModalCuentaOpen = false;
   isModalPrestamoOpen = false;
   isModalGastoOpen = false;
+  selectedYear: string = '';
+  selectedMonth: string = '';
+
+  // --- Modal de pago de facturas ---
+  isPayInvoiceModalOpen: boolean = false;
+  payInvoice: any = null;
+  selectedWalletForPayment: string = '';
 
   // Modal de gasto
   nuevaCuenta: WalletAccount = new WalletAccount('', 0);
@@ -54,16 +85,22 @@ export default class HomeComponent implements OnInit, OnDestroy {
 
   estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
 
+  userId!: string;
+
   // Datos
-  wallet: WalletAccount[] = [];
-  debts: Debt[] = [];
+  wallet: WalletAccountWithId[] = [];
+  // debts: Debt[] = [];
+  debts: DebtWithId[] = [];
   loans: Loan[] = [];
   gastos: Expense[] = [];
   ingresos: Income[] = [];
+  invoices: InvoiceWithId[] = [];
 
   // Fecha
-  currentYear: string = '';
-  currentMonth: string = '';
+  currentYear: string = new Date().getFullYear().toString();
+  currentMonth: string = (new Date().getMonth() + 1)
+    .toString()
+    .padStart(2, '0');
 
   // Estado financiero
   saludFinanciera: 'positiva' | 'advertencia' | 'critica' = 'positiva';
@@ -82,7 +119,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
   restanteTotal: number = 0;
   diferenciaSaldo: number = 0;
 
-  // Totales para la gráfica
+  // Totales para la gráfica redonda
   totalBilletera: number = 0;
   gastosTotales: number = 0;
   totalDeuda: number = 0;
@@ -97,12 +134,14 @@ export default class HomeComponent implements OnInit, OnDestroy {
     private expenseService: ExpenseService,
     private incomeService: IncomeService,
     private dateService: DateService,
+    private invoiceService: InvoiceService,
     public router: Router,
     private finanzasService: FinanzasService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit(): void {
+    this.loadInvoices();
     this.dateSubscription = this.dateService.selectedDate$.subscribe(
       ({ year, month }: { year: string; month: string }) => {
         if (year && month) {
@@ -120,6 +159,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
       this.currentMonth
     );
     this.authService.startAutoLogout();
+    this.loadInvoices();
   }
 
   ngOnDestroy(): void {
@@ -174,6 +214,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
       );
       this.evaluarSaludFinanciera();
       this.calcularTotales();
+      this.loadInvoices();
     });
     this.finanzasService.mostrarEstadoFinanciero(
       this,
@@ -295,7 +336,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
     this.router.navigate(['/app/expense']);
   }
 
-  // Abrir modal de gasto
+  // Formatear moneda
   formatCurrency(value: number): string {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -303,118 +344,6 @@ export default class HomeComponent implements OnInit, OnDestroy {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
-  }
-
-  abrirModalCuenta() {
-    this.isModalCuentaOpen = true;
-    this.nuevaCuenta = new WalletAccount('', 0);
-  }
-
-  cerrarModalCuenta() {
-    this.isModalCuentaOpen = false;
-  }
-
-  guardarCuentaDesdeHome() {
-    if (!this.nuevaCuenta.tipo || this.nuevaCuenta.valor <= 0) {
-      alert('Por favor completa todos los campos.');
-      return;
-    }
-
-    this.walletService
-      .addAccount(
-        this.currentUser,
-        this.currentYear,
-        this.currentMonth,
-        this.nuevaCuenta
-      )
-      .subscribe({
-        next: () => {
-          this.loadData(); // Actualiza vista
-          this.cerrarModalCuenta(); // Cierra modal
-          this.calcularTotales();
-        },
-        error: (err) => {
-          console.error('❌ Error al agregar cuenta desde home:', err);
-        },
-      });
-  }
-
-  // Abrir modal de deuda
-  abrirModalDeuda() {
-    this.isModalDeudaOpen = true;
-    this.nuevaDeuda = new Debt('', '', '', 0, 'Pendiente');
-  }
-
-  cerrarModalDeuda() {
-    this.isModalDeudaOpen = false;
-  }
-
-  guardarDeudaDesdeHome() {
-    if (
-      !this.nuevaDeuda.acreedor ||
-      !this.nuevaDeuda.fecha_deuda ||
-      !this.nuevaDeuda.fecha_pago ||
-      this.nuevaDeuda.valor <= 0
-    ) {
-      alert('Por favor completa todos los campos.');
-      return;
-    }
-
-    this.debtService
-      .addDebt(
-        this.currentUser,
-        this.currentYear,
-        this.currentMonth,
-        this.nuevaDeuda
-      )
-      .subscribe({
-        next: () => {
-          this.loadData();
-          this.cerrarModalDeuda();
-        },
-        error: (err) => {
-          console.error('❌ Error al agregar deuda desde home:', err);
-        },
-      });
-  }
-
-  // Abrir modal de préstamo
-  abrirModalPrestamo() {
-    this.isModalPrestamoOpen = true;
-    this.nuevoPrestamo = new Loan('', '', '', 0, 'Pendiente');
-  }
-
-  cerrarModalPrestamo() {
-    this.isModalPrestamoOpen = false;
-  }
-
-  guardarPrestamoDesdeHome() {
-    if (
-      !this.nuevoPrestamo.deudor ||
-      !this.nuevoPrestamo.fecha_prestamo ||
-      !this.nuevoPrestamo.fecha_pago ||
-      this.nuevoPrestamo.valor <= 0
-    ) {
-      alert('Por favor completa todos los campos.');
-      return;
-    }
-
-    this.loanService
-      .addLoan(
-        this.currentUser,
-        this.currentYear,
-        this.currentMonth,
-        this.nuevoPrestamo
-      )
-      .subscribe({
-        next: () => {
-          this.loadData();
-          this.cerrarModalPrestamo();
-        },
-        error: (err) => {
-          console.error('❌ Error al agregar préstamo desde home:', err);
-        },
-      });
   }
 
   // Abrir modal de gasto
@@ -436,5 +365,267 @@ export default class HomeComponent implements OnInit, OnDestroy {
     } else if (tipo === 'prestamo') {
       this.nuevoPrestamo.valor = valorNumerico;
     }
+  }
+
+  // -----------------------------
+  // Cargar deudas (loadDebts)
+  // -----------------------------
+  loadDebts(): void {
+    const userId = this.currentUser; // usa tu getter currentUser
+    if (!userId) {
+      console.warn('loadDebts: no hay userId disponible');
+      this.debts = [];
+      return;
+    }
+
+    this.debtService
+      .getDebts(userId, this.currentYear, this.currentMonth)
+      .subscribe({
+        next: (data: any) => {
+          if (!data) {
+            this.debts = [];
+            return;
+          }
+
+          // data viene como { id1: {...}, id2: {...} }
+          this.debts = Object.entries(data).map(([id, value]) => {
+            return { id, ...(value as Debt) } as DebtWithId;
+          });
+
+          // debugging: ver lo que llegó
+          console.debug('loadDebts -> deudas cargadas:', this.debts);
+
+          // notificaciones sobre vencimientos (opcional, lo tenías antes)
+          const today = new Date().toISOString().split('T')[0];
+          for (const debt of this.debts) {
+            if (debt.estado === 'Pendiente') {
+              if (debt.fecha_pago === today) {
+                this.authService
+                  .addNotification(
+                    this.currentUser,
+                    `Tienes una deuda que vence hoy con ${debt.acreedor}`,
+                    `deuda_vence_hoy_${debt.id}`
+                  )
+                  .subscribe();
+              }
+              if (new Date(debt.fecha_pago) < new Date(today)) {
+                this.authService
+                  .addNotification(
+                    this.currentUser,
+                    `Tienes una deuda vencida con ${debt.acreedor}`,
+                    `deuda_vencida_${debt.id}`
+                  )
+                  .subscribe();
+              }
+            }
+          }
+        },
+        error: (err) => {
+          console.error('Error al cargar deudas (loadDebts):', err);
+          this.debts = [];
+        },
+      });
+  }
+
+  // -----------------------------
+  // Obtener solo pendientes (getPendingDebts)
+  // -----------------------------
+  getPendingDebts(): DebtWithId[] {
+    // aseguramos que devuelva objetos con id
+    return this.debts.filter((d) => d.estado === 'Pendiente');
+  }
+
+  // -----------------------------
+  // Cambiar estado (togglePaymentStatus)
+  // -----------------------------
+  togglePaymentStatus(debt: DebtWithId): void {
+    if (!debt || !debt.id) {
+      console.warn('togglePaymentStatus: deuda inválida', debt);
+      return;
+    }
+
+    const userId = this.currentUser;
+    if (!userId) {
+      console.warn('togglePaymentStatus: no hay userId disponible');
+      return;
+    }
+
+    const nuevoEstado: 'Pendiente' | 'Pagado' =
+      debt.estado === 'Pendiente' ? 'Pagado' : 'Pendiente';
+
+    const payload: Debt = {
+      acreedor: debt.acreedor,
+      fecha_deuda: debt.fecha_deuda,
+      fecha_pago: debt.fecha_pago,
+      valor: debt.valor,
+      estado: nuevoEstado,
+    };
+
+    // actualizar optimísticamente
+    const estadoAnterior = debt.estado;
+    debt.estado = nuevoEstado;
+
+    this.debtService
+      .updateDebt(userId, this.currentYear, this.currentMonth, debt.id, payload)
+      .subscribe({
+        next: () => {
+          this.loadDebts();
+
+          if (nuevoEstado === 'Pagado') {
+            this.authService
+              .addNotification(
+                userId,
+                `Pagaste tu deuda con ${debt.acreedor} correctamente`
+              )
+              .subscribe();
+          }
+        },
+        error: (err) => {
+          console.error('Error al cambiar estado de la deuda:', err);
+          // revertir UI
+          debt.estado = estadoAnterior;
+        },
+      });
+  }
+
+  // -----------------------------
+  // PAGAR FACTURA
+  // -----------------------------
+  openPayInvoiceModal(invoiceId: string) {
+    this.payInvoice = this.invoices.find((i) => i.id === invoiceId) || null;
+    this.selectedWalletForPayment = '';
+    this.isPayInvoiceModalOpen = true;
+  }
+
+  closePayInvoiceModal() {
+    this.isPayInvoiceModalOpen = false;
+    this.payInvoice = null;
+    this.selectedWalletForPayment = '';
+  }
+
+  // Obtener saldo REAL desde Wallet
+  getWalletBalance(id: string) {
+    const account = this.wallet.find((acc) => acc.id === id);
+    return account ? account.valor : 0;
+  }
+
+  confirmPayInvoice() {
+    if (!this.payInvoice || !this.selectedWalletForPayment) return;
+
+    const account = this.wallet.find(
+      (w) => w.id === this.selectedWalletForPayment
+    );
+    if (!account) return;
+
+    if (account.valor < this.payInvoice.valor) {
+      alert('Saldo insuficiente');
+      return;
+    }
+
+    // 1️⃣ Restar de la cartera
+    account.valor -= this.payInvoice.valor;
+    this.walletService
+      .updateAccount(
+        this.currentUser,
+        this.currentYear,
+        this.currentMonth,
+        account.id,
+        account
+      )
+      .subscribe();
+
+    // 2️⃣ Registrar gasto
+    const facturaGasto: Expense = new Expense(
+      this.payInvoice.nombre,
+      CategoriaGasto.Facturas,
+      this.payInvoice.valor,
+      this.payInvoice.valor
+    );
+
+    this.expenseService
+      .addExpense(
+        this.currentUser,
+        this.currentYear,
+        this.currentMonth,
+        facturaGasto
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.payInvoice!.gastoId = res.name || res.id;
+
+          // 3️⃣ Marcar como pagada
+          this.payInvoice!.estado = 'Pagada';
+
+          // 4️⃣ Actualizar factura
+          this.invoiceService
+            .updateInvoice(
+              this.currentUser,
+              this.currentYear,
+              this.currentMonth,
+              this.payInvoice!.id,
+              this.payInvoice!
+            )
+            .subscribe({
+              next: () => {
+                this.closePayInvoiceModal();
+                this.loadData();
+              },
+              error: (err) =>
+                console.error('[PUT] Error al actualizar factura pagada:', err),
+            });
+        },
+      });
+  }
+
+  // Cargar facturas desde Firebase
+  loadInvoices() {
+    const userId = this.currentUser;
+    const year = this.currentYear;
+    const month = this.currentMonth;
+
+    if (!userId || !year || !month) {
+      this.invoices = [];
+      return;
+    }
+
+    this.invoiceService
+      .getInvoices(userId, year, month)
+      .subscribe((res: any) => {
+        if (!res) {
+          this.invoices = [];
+          return;
+        }
+
+        this.invoices = Object.entries(res).map(
+          ([id, item]: [string, any]) => ({
+            id,
+            ...(item as Invoice),
+            showMenu: false,
+          })
+        );
+      });
+  }
+
+  // Ordenar facturas correctamente
+  getSortedInvoices() {
+    if (!this.invoices) return [];
+
+    const hoy = new Date();
+
+    return this.invoices
+      .filter((inv) => inv.estado !== 'Pagada')
+      .sort((a, b) => {
+        const fechaA = new Date(a.fechaPago);
+        const fechaB = new Date(b.fechaPago);
+
+        // 1️⃣ Vencidas primero
+        const vencidaA = fechaA < hoy;
+        const vencidaB = fechaB < hoy;
+        if (vencidaA && !vencidaB) return -1;
+        if (!vencidaA && vencidaB) return 1;
+
+        // 2️⃣ De más cercana a más lejana
+        return fechaA.getTime() - fechaB.getTime();
+      });
   }
 }

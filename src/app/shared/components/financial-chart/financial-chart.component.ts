@@ -71,11 +71,11 @@ export class FinancialChartComponent implements OnChanges {
     } else {
       chartData = dataValues;
       chartColors = [
-        '#04398fff',
-        '#ef4444',
-        '#f59e0b',
-        '#10b981',
-        '#8b5cf6',
+        '#00af4fff',
+        '#ff7b00ff',
+        '#df0f00ff',
+        '#0045dbff',
+        '#753affff',
       ];
       chartLabels = labels;
     }
@@ -117,13 +117,13 @@ export class FinancialChartComponent implements OnChanges {
       },
     });
 
-    console.log('🎨 Renderizando gráfica con datos:', {
-      ingresos: this.ingresosTotales,
-      gastos: this.gastosTotales,
-      deuda: this.totalDeuda,
-      billetera: this.totalBilletera,
-      prestamo: this.totalPrestamo,
-      total,
-    });
+    // console.log('🎨 Renderizando gráfica con datos:', {
+    //   ingresos: this.ingresosTotales,
+    //   gastos: this.gastosTotales,
+    //   deuda: this.totalDeuda,
+    //   billetera: this.totalBilletera,
+    //   prestamo: this.totalPrestamo,
+    //   total,
+    // });
   }
 }

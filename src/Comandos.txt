@@ -10,7 +10,6 @@ ng build --configuration production
 npx angular-cli-ghpages --dir=dist/miCartera
 
 
-⦁	Cuando cree un gastp y le asigne valor decir de que billetera fue
 ⦁	Terminar Home con grafica de Barras
 ⦁	QUe las facturas se guarden para el siguiente mes pero como no pagadas
 ⦁	que los gastos con categoría (fijo) se conserven para el siguiente mes
