@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { Observable, of, from } from 'rxjs';
+import { map, catchError, switchMap } from 'rxjs/operators';
 import { Income } from '../models/income.model';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,27 +11,37 @@ import { Income } from '../models/income.model';
 export class IncomeService {
   private readonly FIREBASE_BASE_URL = 'https://micartera-acd5b-default-rtdb.firebaseio.com';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private auth: AuthService) {}
 
   // 🔹 GET: Obtener todos los ingresos de un mes/año/usuario
   getIncomes(userId: string, year: string, month: string): Observable<{ [key: string]: Income }> {
-    const url = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/ingresos.json`;
-    return this.http.get<{ [key: string]: Income }>(url).pipe(
-      map(data => data || {}),
-      catchError(error => {
-        console.error('[GET] Error al obtener ingresos:', error);
-        return of({});
+    const base = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/ingresos.json`;
+    return from(this.auth.getIdToken()).pipe(
+      switchMap((token) => {
+        const url = token ? `${base}?auth=${token}` : base;
+        return this.http.get<{ [key: string]: Income }>(url).pipe(
+          map(data => data || {}),
+          catchError(error => {
+            console.error('[GET] Error al obtener ingresos:', error);
+            return of({});
+          })
+        );
       })
     );
   }
 
   // 🔹 POST: Agregar un nuevo ingreso
   addIncome(userId: string, year: string, month: string, income: Income): Observable<any> {
-    const url = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/ingresos.json`;
-    return this.http.post(url, income).pipe(
-      catchError(error => {
-        console.error('[POST] Error al agregar ingreso:', error);
-        return of(null);
+    const base = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/ingresos.json`;
+    return from(this.auth.getIdToken()).pipe(
+      switchMap((token) => {
+        const url = token ? `${base}?auth=${token}` : base;
+        return this.http.post(url, income).pipe(
+          catchError(error => {
+            console.error('[POST] Error al agregar ingreso:', error);
+            return of(null);
+          })
+        );
       })
     );
   }
