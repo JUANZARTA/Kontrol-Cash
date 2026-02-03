@@ -89,6 +89,22 @@ export default class RegisterComponent implements OnInit {
     }
   }
 
+  onRegisterWithGoogle(): void {
+    this.authService
+      .loginWithGoogle()
+      .then((result) => {
+        this.showSuccessModal = true;
+        setTimeout(() => {
+          this.showSuccessModal = false;
+          this.router.navigate(['/login']);
+        }, 1500);
+      })
+      .catch((err) => {
+        console.error('Error en registro con Google:', err);
+        this.showErrorModal('No se pudo registrar con Google.');
+      });
+  }
+
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
   }

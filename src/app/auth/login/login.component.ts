@@ -45,11 +45,15 @@ export default class LoginComponent implements OnInit {
 
   // Método para capturar el resultado del login con Google y redirigir si es nuevo login
   ngOnInit(): void {
+    // Compatibilidad: si en algún flujo se usó redirect, procesarlo aquí
     firebase
       .auth()
       .getRedirectResult()
       .then((result: firebase.auth.UserCredential) => {
         if (result && result.user) {
+          // Procesar datos, guardarlos y crear perfil si hace falta
+          this.authService.processGoogleSignIn(result);
+
           this.welcomeName = result.user.displayName || 'Usuario';
           this.showSuccessModal = true;
 
@@ -164,8 +168,19 @@ export default class LoginComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
-  // Método para iniciar sesión con Google
+  // Método para iniciar sesión con Google (maneja popup y muestra mensajes)
   onLoginWithGoogle(): void {
-    this.authService.loginWithGoogle();
+    this.showLoginOverlay = true;
+    this.authService
+      .loginWithGoogle()
+      .then((result) => {
+        const name = result.user?.displayName || 'Usuario';
+        this.showWelcomeModal(name);
+      })
+      .catch((err) => {
+        this.showLoginOverlay = false;
+        console.error('Error en login con Google:', err);
+        this.showErrorModal('No se pudo iniciar sesión con Google.');
+      });
   }
 }

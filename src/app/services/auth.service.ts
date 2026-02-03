@@ -234,10 +234,53 @@ export class AuthService {
     );
   }
 
-  // Método para iniciar sesión con Google
-  loginWithGoogle(): void {
+  // Método para iniciar sesión con Google (usa popup para flujo inmediato y más sencillo)
+  loginWithGoogle(): Promise<firebase.auth.UserCredential> {
     const provider = new firebase.auth.GoogleAuthProvider();
-    firebase.auth().signInWithRedirect(provider);
+    return firebase
+      .auth()
+      .signInWithPopup(provider)
+      .then((result) => {
+        // Guardar y procesar datos del usuario
+        this.processGoogleSignIn(result);
+        return result;
+      })
+      .catch((err) => {
+        console.error('Google sign-in error:', err);
+        throw err;
+      });
+  }
+
+  // Procesar credenciales de Google: guarda en localStorage y crea perfil en RTDB si no existe
+  processGoogleSignIn(result: firebase.auth.UserCredential): void {
+    const user = result.user;
+    if (!user) return;
+
+    user.getIdToken().then((token) => {
+      const userObj: any = {
+        localId: user.uid,
+        idToken: token,
+        email: user.email || '',
+        name: user.displayName || ''
+      };
+
+      localStorage.setItem('user', JSON.stringify(userObj));
+
+      // Si no existe perfil en la base de datos, crear uno básico
+      this.getUserData(user.uid).subscribe((data) => {
+        if (!data || !data.nombre) {
+          this.saveUserProfile(user.uid, user.displayName || '', user.email || '').subscribe({
+            next: () => {
+              // Agregar notificación de bienvenida (silenciosa)
+              this.addNotification(user.uid, 'Bienvenido a MiCartera').subscribe({ next: () => {}, error: () => {} });
+            },
+            error: () => {
+              // no hacemos nada crítico si falla
+            }
+          });
+        }
+      });
+    });
   }
 
   // Método para obtener el token de Firebase
