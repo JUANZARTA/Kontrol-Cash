@@ -3,14 +3,6 @@
   Resumen financiero de {{ nombreMes(currentMonth) }} / {{ currentYear }}
 </h2> -->
 
-<!-- Botón para copiar mes anterior -->
-<div class="flex justify-center mb-4">
-  <button
-    (click)="copiarMesAnterior()"
-    class="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fadeSlideDown">
-    📋 Copiar Mes Anterior
-  </button>
-</div>
 
 <!-- Indicador de salud financiera + estado financiero -->
 <div class="flex justify-center items-center gap-4 flex-wrap mb-6">
@@ -206,6 +198,16 @@
     </div>
   </div>
 
+</div>
+
+
+<!-- Botón para copiar mes anterior -->
+<div class="flex justify-center mb-4">
+  <button
+    (click)="copiarMesAnterior()"
+    class="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fadeSlideDown">
+    📋 Copiar Mes Anterior
+  </button>
 </div>
 
 
