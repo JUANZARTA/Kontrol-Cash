@@ -111,6 +111,12 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
 
   private dateSubscription: Subscription | undefined; // ✅ Nuevo
 
+  get sortedExpenses() {
+    return [...this.expenses].sort((a, b) =>
+      a.categoria.localeCompare(b.categoria)
+    );
+  }
+
   // Variables para el gráfico
   ngOnInit() {
     // ✅ Suscripción reactiva al cambio de año/mes
@@ -573,24 +579,25 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   onNewExpenseValueInput(event: Event, field: 'valor' | 'estimacion'): void {
-  const input = event.target as HTMLInputElement;
-  const rawValue = input.value.replace(/[^\d]/g, '');
-  let numericValue = Number(rawValue) || 0;
+    const input = event.target as HTMLInputElement;
+    const rawValue = input.value.replace(/[^\d]/g, '');
+    let numericValue = Number(rawValue) || 0;
 
-  // Si está editando el valor del gasto, limitar al saldo de la billetera seleccionada
-  if (field === 'valor' && this.selectedWalletExpense) {
-    const wallet = this.wallet.find(w => w.id === this.selectedWalletExpense);
-    if (wallet && numericValue > wallet.valor) {
-      numericValue = wallet.valor;
-      this.showToast('No puedes gastar más que el saldo de la billetera');
+    // Si está editando el valor del gasto, limitar al saldo de la billetera seleccionada
+    if (field === 'valor' && this.selectedWalletExpense) {
+      const wallet = this.wallet.find(
+        (w) => w.id === this.selectedWalletExpense
+      );
+      if (wallet && numericValue > wallet.valor) {
+        numericValue = wallet.valor;
+        this.showToast('No puedes gastar más que el saldo de la billetera');
+      }
     }
+
+    // Asignar valor
+    if (field === 'valor') this.newExpense.valor = numericValue;
+    else this.newExpense.estimacion = numericValue;
+
+    input.value = this.formatCurrency(numericValue);
   }
-
-  // Asignar valor
-  if (field === 'valor') this.newExpense.valor = numericValue;
-  else this.newExpense.estimacion = numericValue;
-
-  input.value = this.formatCurrency(numericValue);
-}
-
 }

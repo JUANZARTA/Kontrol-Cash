@@ -1,4 +1,10 @@
-import { Component, OnInit, OnDestroy, inject, HostListener } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  inject,
+  HostListener,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DateService } from '../../../services/date.service';
 import { Subscription } from 'rxjs';
@@ -10,14 +16,24 @@ import { AuthService } from '../../../services/auth.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './header.component.html',
-  styleUrl: './header.component.css'
+  styleUrl: './header.component.css',
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   showMonthModal = false;
   years: number[] = [];
   months: string[] = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
   ];
 
   selectedYear: number | null = null;
@@ -41,7 +57,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   // Propiedades computadas para el template
   get unreadNotificationsCount(): number {
-    return this.notifications.filter(n => !n.leido).length;
+    return this.notifications.filter((n) => !n.leido).length;
   }
 
   get totalNotificationsCount(): number {
@@ -51,7 +67,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private dateSubscription?: Subscription;
   private routeSubscription?: Subscription;
 
-  constructor(private dateService: DateService, private router: Router,  private authService: AuthService ) {}
+  constructor(
+    private dateService: DateService,
+    private router: Router,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.generateYearRange(2025, 2050);
@@ -73,12 +93,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
       this.dateService.setDate(defaultYear, defaultMonth + 1);
     }
 
-    this.dateSubscription = this.dateService.selectedDate$.subscribe(({ year, month }) => {
-      this.currentYear = year ?? '';
-      this.currentMonth = month ?? '';
-    });
+    this.dateSubscription = this.dateService.selectedDate$.subscribe(
+      ({ year, month }) => {
+        this.currentYear = year ?? '';
+        this.currentMonth = month ?? '';
+      }
+    );
 
-    this.routeSubscription = this.router.events.subscribe(event => {
+    this.routeSubscription = this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
         const path = event.urlAfterRedirects.split('/');
         this.currentRoute = this.mapRouteToTitle(path[path.length - 1]);
@@ -157,17 +179,24 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
   }
 
-
   mapRouteToTitle(route: string): string {
     switch (route) {
-      case 'expense': return 'Gastos';
-      case 'income': return 'Ingresos';
-      case 'wallet': return 'Cartera';
-      case 'saving': return 'Ahorros';
-      case 'loan': return 'Préstamos';
-      case 'debt': return 'Deudas';
-      case 'home': return 'Inicio';
-      default: return this.capitalize(route);
+      case 'expense':
+        return 'Gastos';
+      case 'income':
+        return 'Ingresos';
+      case 'wallet':
+        return 'Cartera';
+      case 'saving':
+        return 'Ahorros';
+      case 'loan':
+        return 'Préstamos';
+      case 'debt':
+        return 'Deudas';
+      case 'home':
+        return 'Inicio';
+      default:
+        return this.capitalize(route);
     }
   }
 
@@ -181,8 +210,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
   // 📩 NOTIFICACIONES
 
-  toggleNotifications(): void {
+  toggleNotifications(event?: MouseEvent): void {
+    if (event) event.stopPropagation(); // 👈 NECESARIO
+
     this.showNotifications = !this.showNotifications;
+
     if (this.showNotifications) {
       this.loadNotifications();
     }
@@ -198,18 +230,20 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.authService.getUserNotifications(uid).subscribe({
       next: (data) => {
         if (data) {
-          this.notifications = Object.entries(data).map(([key, value]: any) => ({
-            id: key,
-            ...value
-          }));
-          this.unreadCount = this.notifications.filter(n => !n.leido).length;
+          this.notifications = Object.entries(data).map(
+            ([key, value]: any) => ({
+              id: key,
+              ...value,
+            })
+          );
+          this.unreadCount = this.notifications.filter((n) => !n.leido).length;
         }
         this.isLoadingNotifications = false;
       },
       error: (error) => {
         console.error('Error al cargar notificaciones:', error);
         this.isLoadingNotifications = false;
-      }
+      },
     });
   }
 
@@ -219,17 +253,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (!uid) return;
 
     this.authService.markNotificationAsRead(uid, notifId).subscribe(() => {
-      this.notifications = this.notifications.map(n => {
+      this.notifications = this.notifications.map((n) => {
         if (n.id === notifId) n.leido = true;
         return n;
       });
-      this.unreadCount = this.notifications.filter(n => !n.leido).length;
+      this.unreadCount = this.notifications.filter((n) => !n.leido).length;
     });
   }
 
   // Marcar todas las notificaciones como leídas
   markAllAsRead(): void {
-    const unreadNotifications = this.notifications.filter(n => !n.leido);
+    const unreadNotifications = this.notifications.filter((n) => !n.leido);
     if (unreadNotifications.length === 0) return;
 
     this.showMarkAllReadModal = true;
@@ -241,14 +275,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
     const uid = user?.localId;
     if (!uid) return;
 
-    const unreadNotifications = this.notifications.filter(n => !n.leido);
-    const markAsReadPromises = unreadNotifications.map(notif =>
+    const unreadNotifications = this.notifications.filter((n) => !n.leido);
+    const markAsReadPromises = unreadNotifications.map((notif) =>
       this.authService.markNotificationAsRead(uid, notif.id)
     );
 
     // Marcar todas como leídas en paralelo
     Promise.all(markAsReadPromises).then(() => {
-      this.notifications = this.notifications.map(n => ({ ...n, leido: true }));
+      this.notifications = this.notifications.map((n) => ({
+        ...n,
+        leido: true,
+      }));
       this.unreadCount = 0;
       this.showMarkAllReadModal = false;
     });
@@ -256,7 +293,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   // Eliminar una notificación específica
   deleteNotification(notifId: string): void {
-    const notification = this.notifications.find(n => n.id === notifId);
+    const notification = this.notifications.find((n) => n.id === notifId);
     if (!notification) return;
 
     this.notificationToDelete = notification;
@@ -269,12 +306,16 @@ export class HeaderComponent implements OnInit, OnDestroy {
     const uid = user?.localId;
     if (!uid || !this.notificationToDelete) return;
 
-    this.authService.deleteNotification(uid, this.notificationToDelete.id).subscribe(() => {
-      this.notifications = this.notifications.filter(n => n.id !== this.notificationToDelete.id);
-      this.unreadCount = this.notifications.filter(n => !n.leido).length;
-      this.showDeleteSingleModal = false;
-      this.notificationToDelete = null;
-    });
+    this.authService
+      .deleteNotification(uid, this.notificationToDelete.id)
+      .subscribe(() => {
+        this.notifications = this.notifications.filter(
+          (n) => n.id !== this.notificationToDelete.id
+        );
+        this.unreadCount = this.notifications.filter((n) => !n.leido).length;
+        this.showDeleteSingleModal = false;
+        this.notificationToDelete = null;
+      });
   }
 
   // Eliminar todas las notificaciones
@@ -313,28 +354,55 @@ export class HeaderComponent implements OnInit, OnDestroy {
   onDocumentClick(event: Event): void {
     const target = event.target as HTMLElement;
 
-    // Cerrar dropdown de notificaciones
-    const notificationButton = document.querySelector('[data-notification-button]');
-    const notificationDropdown = document.querySelector('[data-notification-dropdown]');
+    // -------------------------------------------------------
+    // 🔔 CERRAR DROPDOWN DE NOTIFICACIONES SI CLIC FUERA
+    // -------------------------------------------------------
+    const notificationButton = document.querySelector(
+      '[data-notification-button]'
+    );
+    const notificationDropdown = document.querySelector(
+      '[data-notification-dropdown]'
+    );
 
+    // Si existen ambos (botón + dropdown)
     if (notificationButton && notificationDropdown) {
-      if (!notificationButton.contains(target) && !notificationDropdown.contains(target)) {
+      if (
+        !notificationButton.contains(target) &&
+        !notificationDropdown.contains(target)
+      ) {
+        this.showNotifications = false;
+      }
+    } else {
+      // Si sólo existe dropdown (raro pero puede pasar)
+      if (notificationDropdown && !notificationDropdown.contains(target)) {
+        this.showNotifications = false;
+      }
+
+      // Si sólo existe botón
+      if (notificationButton && !notificationButton.contains(target)) {
         this.showNotifications = false;
       }
     }
 
-    // Cerrar modales si se hace clic fuera de ellos
+    // -------------------------------------------------------
+    // 🧱 CERRAR MODALES SI CLICK FUERA DE ELLOS
+    // -------------------------------------------------------
     const modals = document.querySelectorAll('[data-modal]');
-    modals.forEach(modal => {
-      if (modal.contains(target)) return;
 
-      if (this.showMarkAllReadModal && modal.getAttribute('data-modal') === 'mark-all-read') {
+    modals.forEach((modal) => {
+      if (modal.contains(target)) return; // si el click está dentro, no cerrar
+
+      const modalType = modal.getAttribute('data-modal');
+
+      if (this.showMarkAllReadModal && modalType === 'mark-all-read') {
         this.closeMarkAllReadModal();
       }
-      if (this.showDeleteAllModal && modal.getAttribute('data-modal') === 'delete-all') {
+
+      if (this.showDeleteAllModal && modalType === 'delete-all') {
         this.closeDeleteAllModal();
       }
-      if (this.showDeleteSingleModal && modal.getAttribute('data-modal') === 'delete-single') {
+
+      if (this.showDeleteSingleModal && modalType === 'delete-single') {
         this.closeDeleteSingleModal();
       }
     });
@@ -372,12 +440,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.showDeleteSingleModal = false;
     this.notificationToDelete = null;
   }
-  
-  getRowAnimationDelay(notif: any, index?: number): string {
-  // Usa el índice si viene de *ngFor, o lo calcula desde el array
-  const i = index ?? this.notifications.indexOf(notif);
-  // Retorna un delay progresivo: 0.1s, 0.15s, 0.2s, etc.
-  return `${0.1 + i * 0.05}s`;
-}
 
+  getRowAnimationDelay(notif: any, index?: number): string {
+    // Usa el índice si viene de *ngFor, o lo calcula desde el array
+    const i = index ?? this.notifications.indexOf(notif);
+    // Retorna un delay progresivo: 0.1s, 0.15s, 0.2s, etc.
+    return `${0.1 + i * 0.05}s`;
+  }
 }

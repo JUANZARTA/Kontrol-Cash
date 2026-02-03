@@ -31,7 +31,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let expense of expenses; let i = index"
+      <tr *ngFor="let expense of sortedExpenses; let i = index"
         class="border-t hover:bg-gray-50 opacity-0 animate-fadeSlideDown" [style.animationDelay]="0.1 + i * 0.05 + 's'">
         <td class="py-2 px-3 sm:px-4">{{ expense.descripcion }}</td>
         <td class="py-2 px-3 sm:px-4">{{ expense.categoria }}</td>
