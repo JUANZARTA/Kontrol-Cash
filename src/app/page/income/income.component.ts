@@ -14,6 +14,8 @@ import { WalletAccount } from '../../models/wallet.model';
 import { WalletService } from '../../services/wallet.service';
 import { LoanService } from '../../services/loans.service';
 import { ExpenseService } from '../../services/expense.service';
+import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
+import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 
 // Extiende WalletAccount para agregar id y showMenu
 export interface WalletAccountWithId extends WalletAccount {
@@ -27,7 +29,7 @@ export interface IncomeWithId extends Income {
 @Component({
   selector: 'app-income',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent],
   templateUrl: './income.component.html',
   styleUrls: ['./income.component.css'],
   providers: [DecimalPipe],
@@ -188,14 +190,9 @@ export default class IncomeComponent implements OnInit, OnDestroy {
     );
   }
 
-  // Método para revisar si el total es bajo y notificar
+  // Método para revisar si el total es bajo
   checkLowFunds() {
-    const total = this.getTotalWallet();
-    if (total < 100000) {
-      this.authService
-        .addNotification(this.userId, 'Tu efectivo bajó a menos de $100.000')
-        .subscribe();
-    }
+    this.getTotalWallet();
   }
   // Método para calcular el total de la cartera
   getTotalWallet(): number {

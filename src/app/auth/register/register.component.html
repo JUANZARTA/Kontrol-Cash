@@ -79,30 +79,24 @@
   </div>
 
   <!-- ❌ MODAL DE ERROR -->
-  <div *ngIf="showModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full relative">
+  <app-modal-shell *ngIf="showModal" title="Error al Registrar"
+    panelClass="max-w-sm w-full relative animate-pop-in" [centered]="true">
       <div class="flex justify-center mb-4">
         <div class="w-16 h-16 flex items-center justify-center bg-red-100 rounded-full">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 000 16zm3-10a1 1 0 00-1.414-1.414L10 8.586 8.414 7A1 1 0 007 8.414L8.586 10 7 11.586A1 1 0 108.414 13L10 11.414l1.586 1.586A1 1 0 1013 11.586L11.414 10 13 8.414A1 1 0 0013 8z"
-              clip-rule="evenodd" />
-          </svg>
+          <span class="material-icons text-red-500 text-4xl">report_problem</span>
         </div>
       </div>
-      <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">Error al Registrar</h3>
       <p class="text-gray-600 text-center">{{ errorMessage }}</p>
       <button (click)="closeModal()"
         class="mt-4 w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition">
         Cerrar
       </button>
-    </div>
-  </div>
+  </app-modal-shell>
 
   <!-- ✅ MODAL DE ÉXITO MODERNO -->
-  <div *ngIf="showSuccessModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 relative flex flex-col items-center justify-center
-              animate-pop-in">
+  <app-modal-shell *ngIf="showSuccessModal"
+    panelClass="rounded-3xl max-w-sm w-full p-8 relative flex flex-col items-center justify-center animate-pop-in"
+    [centered]="true">
       <!-- Fondo animado dentro del modal -->
       <span
         class="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-green-200 opacity-50 animate-floating-fast"></span>
@@ -123,8 +117,7 @@
         class="mt-2 bg-green-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-green-700 transition shadow-md">
         Continuar
       </button>
-    </div>
-  </div>
+  </app-modal-shell>
 
 
 </div>

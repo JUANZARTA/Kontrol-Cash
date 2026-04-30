@@ -8,6 +8,9 @@ import { Subscription } from 'rxjs'; // ✅ Nuevo
 import { AuthService } from '../../services/auth.service'; // ✅ nuevo
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
+import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
+import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 export interface SavingWithId extends Saving {
   id: string;
@@ -16,7 +19,7 @@ export interface SavingWithId extends Saving {
 @Component({
   selector: 'app-savings',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
   templateUrl: './savings.component.html',
   styleUrls: ['./savings.component.css'],
   providers: [DecimalPipe],
@@ -89,17 +92,6 @@ export default class SavingsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           this.savings = Object.entries(data).map(([id, s]) => ({ id, ...s }));
-
-          // ✅ Notificación: no has ahorrado este mes
-          if (this.savings.length === 0) {
-            this.authService
-              .addNotification(
-                this.userId,
-                'No has ahorrado este mes',
-                'sin_ahorro_mes'
-              )
-              .subscribe();
-          }
         },
 
         error: (err) => {
@@ -143,9 +135,6 @@ export default class SavingsComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadSavings();
           this.closeModal();
-          this.authService
-            .addNotification(this.userId, 'Has agregado dinero a tus ahorros')
-            .subscribe();
         },
         error: (err) => {
           console.error('Error al agregar ahorro:', err);

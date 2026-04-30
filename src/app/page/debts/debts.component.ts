@@ -8,6 +8,9 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
+import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
+import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 export interface DebtWithId extends Debt {
   id: string;
@@ -16,7 +19,7 @@ export interface DebtWithId extends Debt {
 @Component({
   selector: 'app-debts',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
   templateUrl: './debts.component.html',
   styleUrls: ['./debts.component.css'],
   providers: [DecimalPipe],
@@ -102,33 +105,6 @@ export default class DebtsComponent implements OnInit, OnDestroy {
         next: (data) => {
           this.debts = Object.entries(data).map(([id, d]) => ({ id, ...d }));
 
-          const today = new Date().toISOString().split('T')[0];
-
-          for (const debt of this.debts) {
-            if (debt.estado === 'Pendiente') {
-              // ✅ Deuda vence hoy
-              if (debt.fecha_pago === today) {
-                this.authService
-                  .addNotification(
-                    this.userId,
-                    `Tienes una deuda que vence hoy con ${debt.acreedor}`,
-                    `deuda_vence_hoy_${debt.id}`
-                  )
-                  .subscribe();
-              }
-
-              // ✅ Deuda vencida
-              if (new Date(debt.fecha_pago) < new Date(today)) {
-                this.authService
-                  .addNotification(
-                    this.userId,
-                    `Tienes una deuda vencida con ${debt.acreedor}`,
-                    `deuda_vencida_${debt.id}`
-                  )
-                  .subscribe();
-              }
-            }
-          }
         },
         error: (err) => {
           console.error('Error al cargar deudas:', err);
@@ -342,16 +318,6 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.loadDebts();
-
-          // ✅ Notificar si la deuda fue pagada
-          if (updatedStatus === 'Pagado') {
-            this.authService
-              .addNotification(
-                this.userId,
-                `Pagaste tu deuda con ${debt.acreedor} correctamente`
-              )
-              .subscribe();
-          }
         },
 
         error: (err) => {

@@ -11,6 +11,9 @@ import { Expense, CategoriaGasto } from '../../models/expense.model';
 import { DateService } from '../../services/date.service';
 import { Subscription } from 'rxjs';
 import { MatIconModule } from '@angular/material/icon';
+import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
+import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 export interface WalletAccountWithId extends WalletAccount {
   id: string;
@@ -26,7 +29,7 @@ export interface InvoiceWithId extends Invoice {
 @Component({
   selector: 'app-invoice',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
   templateUrl: './invoice.component.html',
   styleUrls: ['./invoice.component.css'],
   providers: [DecimalPipe],

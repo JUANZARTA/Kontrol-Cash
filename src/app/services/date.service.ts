@@ -1,8 +1,6 @@
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, combineLatest, map } from 'rxjs';
-import { HttpClient } from '@angular/common/http'; // ✅ nuevo
-import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,9 +11,7 @@ export class DateService {
   private isBrowser: boolean;
 
   constructor(
-    @Inject(PLATFORM_ID) platformId: Object,
-    private http: HttpClient, // ✅ nuevo
-    private authService: AuthService
+    @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
 
@@ -89,15 +85,6 @@ export class DateService {
       localStorage.setItem('selectedYear', year);
       localStorage.setItem('selectedMonth', month);
     }
-  }
-
-  // método: Notificar nuevo mes al usuario
-  notifyMonthChange(uid: string, year: string, month: string): void {
-    const mes = this.getMonthName(month);
-    const mensaje = `Nuevo mes detectado: ${mes} ${year}`;
-    
-    // Usar el nuevo sistema de notificaciones con tipo
-    this.authService.addNotification(uid, mensaje, 'cambio_mes').subscribe();
   }
 
   // método: Obtener nombre del mes en español

@@ -9,13 +9,14 @@ import {
 } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { DateService } from '../../services/date.service';
+import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, ModalShellComponent],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css'],
 })
@@ -88,25 +89,6 @@ export default class LoginComponent implements OnInit {
           this.authService.getUserData(uid).subscribe((userData) => {
             const nombre = userData?.nombre || '';
             this.showWelcomeModal(nombre);
-
-            // Notificaciones
-            const recomendaciones = [
-              'Reservá al menos el 10% de tus ingresos como ahorro.',
-              'Evitá gastos pequeños repetitivos, pueden sumar mucho.',
-              'Asigná metas a tus ahorros: eso te motiva más.',
-            ];
-
-            this.authService.getUserNotifications(uid).subscribe((notifs) => {
-              const existentes = notifs
-                ? Object.values(notifs).map((n: any) => n.mensaje)
-                : [];
-
-              recomendaciones.forEach((msg) => {
-                if (!existentes.includes(msg)) {
-                  this.authService.addNotification(uid, msg).subscribe();
-                }
-              });
-            });
 
             // Cerrar overlay después de 1.5s
             setTimeout(() => {

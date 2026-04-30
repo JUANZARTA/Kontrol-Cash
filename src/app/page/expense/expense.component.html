@@ -1,13 +1,4 @@
-<!-- Estado financiero -->
-<div class="px-6 py-4 border-b flex center-end animate-fadeSlideDown">
-  <span [ngClass]="{
-        'bg-orange-600': estadoFinancieroColor === 'rojo',
-        'bg-sky-600': estadoFinancieroColor === 'azul',
-        'bg-teal-600': estadoFinancieroColor === 'verde'
-    }" class="text-white text-sm font-semibold px-4 py-2 rounded-full shadow-md">
-    {{ estadoFinanciero }}
-  </span>
-</div>
+<app-financial-status-badge [label]="estadoFinanciero" [color]="estadoFinancieroColor" />
 
 <!-- Encabezado -->
 <div class="app-page-toolbar animate-fadeSlideDown">
@@ -71,10 +62,8 @@
 
 
 <!-- Modal de agregar gasto -->
-<div *ngIf="isModalOpen" class="app-modal-overlay">
-  <div class="app-modal-panel animate-pop-in">
-    <h2 class="app-modal-title animate-fadeSlideDown">Agregar Nuevo Gasto</h2>
-    <p class="app-modal-description animate-fadeSlideDown">Introduce los detalles del nuevo gasto.</p>
+<app-modal-shell *ngIf="isModalOpen" title="Agregar Nuevo Gasto"
+  description="Introduce los detalles del nuevo gasto." panelClass="animate-pop-in">
 
     <label class="app-field-label animate-fadeIn">Descripción:</label>
     <input type="text" [(ngModel)]="newExpense.descripcion" placeholder="Ejm: Supermercado"
@@ -120,24 +109,20 @@
         Agregar
       </button>
     </div>
-  </div>
-</div>
+</app-modal-shell>
 
 <!-- Modal para adicionar valor a Gasto -->
-<div *ngIf="isAddValueModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-80 animate-pop-in">
-    <h2 class="text-xl font-bold mb-2 animate-fadeSlideDown">Agregar o Restar Valor</h2>
-    <p class="text-gray-600 mb-4 text-sm animate-fadeSlideDown">Introduce un valor para agregar o restar a este gasto.
-    </p>
+<app-modal-shell *ngIf="isAddValueModalOpen" title="Agregar o Restar Valor"
+  description="Introduce un valor para agregar o restar a este gasto." size="sm" panelClass="animate-pop-in">
 
     <!-- Campo de valor -->
-    <label class="block mb-2 font-semibold animate-fadeIn">Valor:</label>
+    <label class="app-field-label-strong animate-fadeIn">Valor:</label>
     <input type="text" [value]="formatCurrency(newValue)" (input)="onValueInput($event)" placeholder="Ej: 2000"
-      class="w-full p-2 border rounded-md mb-4 animate-fadeIn" />
+      class="app-input mb-4 animate-fadeIn" />
 
     <!-- Selección de billetera siempre visible -->
-    <label class="block mb-2 animate-fadeIn">Selecciona billetera:</label>
-    <select [(ngModel)]="selectedWallet" class="w-full p-2 border rounded-md mb-1 animate-fadeIn">
+    <label class="app-field-label animate-fadeIn">Selecciona billetera:</label>
+    <select [(ngModel)]="selectedWallet" class="app-input mb-1 animate-fadeIn">
       <option value="" disabled>Selecciona billetera</option>
       <option *ngFor="let w of wallet" [value]="w.id">{{ w.tipo }}</option>
     </select>
@@ -146,82 +131,57 @@
     </p>
     <div class="flex justify-end gap-2">
       <div class="flex justify-end gap-2">
-        <button (click)="closeAddValueModal()"
-          class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200 animate-fadeIn">
+        <button (click)="closeAddValueModal()" class="app-secondary-button animate-fadeIn">
           Cancelar
         </button>
-        <button (click)="setAction('subtract')"
-          class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700 animate-fadeIn">
+        <button (click)="setAction('subtract')" class="app-primary-button animate-fadeIn">
           Restar
         </button>
-        <button (click)="setAction('add')"
-          class="px-4 py-2 bg-teal-700 text-white rounded-md hover:bg-emerald-800 animate-fadeIn">
+        <button (click)="setAction('add')" class="app-success-button animate-fadeIn">
           Sumar
         </button>
       </div>
 
     </div>
-  </div>
-</div>
+</app-modal-shell>
 
 <!-- Modal para editar gasto -->
-<div *ngIf="isEditModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96 animate-pop-in">
-    <h2 class="text-xl font-bold mb-4 animate-fadeSlideDown">Editar Gasto</h2>
-    <p class="text-gray-600 mb-4 text-sm animate-fadeSlideDown">Edita los detalles del gasto.</p>
+<app-modal-shell *ngIf="isEditModalOpen" title="Editar Gasto"
+  description="Edita los detalles del gasto." panelClass="animate-pop-in">
 
-    <label class="block mb-2 animate-fadeIn">Descripción:</label>
+    <label class="app-field-label animate-fadeIn">Descripción:</label>
     <input type="text" [(ngModel)]="editedExpense.descripcion" placeholder="Ej: Alquiler"
-      class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
+      class="app-input mb-3 animate-fadeIn" />
 
-    <label class="block mb-2 animate-fadeIn">Categoría:</label>
-    <select [(ngModel)]="editedExpense.categoria" class="w-full p-2 border rounded-md mb-3 animate-fadeIn">
+    <label class="app-field-label animate-fadeIn">Categoría:</label>
+    <select [(ngModel)]="editedExpense.categoria" class="app-input mb-3 animate-fadeIn">
       <option *ngFor="let categoria of categorias" [value]="categoria">{{ categoria }}</option>
     </select>
 
-    <label class="block mb-2 animate-fadeIn">Valor:</label>
+    <label class="app-field-label animate-fadeIn">Valor:</label>
     <input type="text" [value]="formatCurrency(editedExpense.valor)" (input)="onEditValueInput($event, 'valor')"
-      placeholder="Ej: 50.000" class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
+      placeholder="Ej: 50.000" class="app-input mb-3 animate-fadeIn" />
 
-    <label class="block mb-2 animate-fadeIn">Estimación:</label>
+    <label class="app-field-label animate-fadeIn">Estimación:</label>
     <input type="text" [value]="formatCurrency(editedExpense.estimacion)"
       (input)="onEditValueInput($event, 'estimacion')" placeholder="Ej: 48.000"
-      class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
+      class="app-input mb-3 animate-fadeIn" />
 
     <div class="flex justify-end gap-2">
-      <button (click)="closeEditModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200 animate-fadeIn">
+      <button (click)="closeEditModal()" class="app-secondary-button animate-fadeIn">
         Cancelar
       </button>
-      <button (click)="saveEditedExpense()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700 animate-fadeIn">
+      <button (click)="saveEditedExpense()" class="app-primary-button animate-fadeIn">
         Guardar
       </button>
     </div>
-  </div>
-</div>
+</app-modal-shell>
 
 <!-- Modal para eliminar gasto -->
-<div *ngIf="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-80 text-center animate-pop-in">
-    <span class="material-icons text-red-600 mx-auto mb-4" style="font-size: 48px;">
-      report_problem
-    </span>
-    <h2 class="text-xl font-bold mt-4 mb-2 animate-fadeSlideDown">¿Eliminar Gasto?</h2>
-    <p class="mb-6 text-gray-700 animate-fadeSlideDown">¿Estás seguro de que deseas eliminar este gasto? Esta acción no
-      se puede deshacer.</p>
-    <div class="flex justify-center gap-2">
-      <button (click)="closeDeleteModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-orange-200 animate-fadeIn">
-        Cancelar
-      </button>
-      <button (click)="confirmDeleteExpense()"
-        class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-red-600 animate-fadeIn">
-        Eliminar
-      </button>
-    </div>
-  </div>
-</div>
+<app-confirm-modal *ngIf="isDeleteModalOpen" title="¿Eliminar Gasto?"
+  message="¿Estás seguro de que deseas eliminar este gasto? Esta acción no se puede deshacer."
+  confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteModal()"
+  (confirm)="confirmDeleteExpense()" />
 
 <!-- Toast  -->
 <div *ngIf="showingToast"

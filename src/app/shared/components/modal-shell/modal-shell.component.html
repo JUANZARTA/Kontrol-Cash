@@ -1,0 +1,15 @@
+<div class="app-modal-overlay">
+  <div [attr.data-modal]="modalId" [ngClass]="['app-modal-panel', size === 'sm' ? 'app-modal-panel-sm' : 'app-modal-panel-md', centered ? 'text-center' : '', panelClass]">
+    <ng-content select="[modal-icon]"></ng-content>
+
+    <h2 *ngIf="title" class="app-modal-title" [class.text-center]="centered">
+      {{ title }}
+    </h2>
+
+    <p *ngIf="description" class="app-modal-description" [class.text-center]="centered">
+      {{ description }}
+    </p>
+
+    <ng-content></ng-content>
+  </div>
+</div>

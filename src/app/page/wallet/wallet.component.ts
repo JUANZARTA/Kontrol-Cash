@@ -16,6 +16,9 @@ import { Income } from '../../models/income.model';
 import { Expense } from '../../models/expense.model';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
+import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
+import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 export interface WalletAccountWithId extends WalletAccount {
   id: string;
@@ -25,7 +28,7 @@ export interface WalletAccountWithId extends WalletAccount {
 @Component({
   selector: 'app-wallet',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
   templateUrl: './wallet.component.html',
   styleUrls: ['./wallet.component.css'],
   providers: [DecimalPipe],
@@ -174,14 +177,9 @@ export default class WalletComponent implements OnInit, OnDestroy {
     );
   }
 
-  // Método para revisar si el total es bajo y notificar
+  // Método para revisar si el total es bajo
   checkLowFunds() {
-    const total = this.getTotalWallet();
-    if (total < 100000) {
-      this.authService
-        .addNotification(this.userId, 'Tu efectivo bajó a menos de $100.000')
-        .subscribe();
-    }
+    this.getTotalWallet();
   }
 
   // ======================

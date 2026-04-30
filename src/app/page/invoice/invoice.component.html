@@ -1,13 +1,4 @@
-<!-- Estado financiero -->
-<div class="px-6 py-4 border-b flex center-end">
-  <span [ngClass]="{
-        'bg-orange-600': estadoFinancieroColor === 'rojo',
-        'bg-sky-600': estadoFinancieroColor === 'azul',
-        'bg-teal-600': estadoFinancieroColor === 'verde'
-    }" class="text-white text-sm font-semibold px-4 py-2 rounded-full shadow-md">
-    {{ estadoFinanciero }}
-  </span>
-</div>
+<app-financial-status-badge [label]="estadoFinanciero" [color]="estadoFinancieroColor" />
 
 <!-- Encabezado -->
 <div class="app-page-toolbar animate-fadeSlideDown">
@@ -70,75 +61,55 @@
 </div>
 
 <!-- Modal Agregar Factura -->
-<div *ngIf="isAddInvoiceModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-    <h2 class="text-xl font-bold mb-4">Agregar Nueva Factura</h2>
-    <label class="block mb-2">Nombre:</label>
+<app-modal-shell *ngIf="isAddInvoiceModalOpen" title="Agregar Nueva Factura">
+    <label class="app-field-label">Nombre:</label>
     <input type="text" [(ngModel)]="newInvoice.nombre" placeholder="Ej: Luz"
-      class="w-full p-2 border rounded-md mb-3" />
-    <label class="block mb-2">Fecha de pago:</label>
-    <input type="date" [(ngModel)]="newInvoice.fechaPago" class="w-full p-2 border rounded-md mb-3" />
-    <label class="block mb-2">Valor:</label>
+      class="app-input mb-3" />
+    <label class="app-field-label">Fecha de pago:</label>
+    <input type="date" [(ngModel)]="newInvoice.fechaPago" class="app-input mb-3" />
+    <label class="app-field-label">Valor:</label>
     <input type="text" [value]="formatCurrency(newInvoice.valor)" (input)="onValueInput($event, 'new')"
-      placeholder="Ej: 100.000" class="w-full p-2 border rounded-md mb-3" />
+      placeholder="Ej: 100.000" class="app-input mb-3" />
     <div class="flex justify-end gap-2">
-      <button (click)="closeAddInvoiceModal()" class="px-4 py-2 border rounded-md hover:bg-slate-200">Cancelar</button>
-      <button (click)="addInvoice()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Agregar</button>
+      <button (click)="closeAddInvoiceModal()" class="app-secondary-button">Cancelar</button>
+      <button (click)="addInvoice()" class="app-primary-button">Agregar</button>
     </div>
-  </div>
-</div>
+</app-modal-shell>
 
 <!-- Modal Editar Factura -->
-<div *ngIf="isEditInvoiceModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-    <h2 class="text-xl font-bold mb-4">Editar Factura</h2>
-    <label class="block mb-2">Nombre:</label>
+<app-modal-shell *ngIf="isEditInvoiceModalOpen" title="Editar Factura">
+    <label class="app-field-label">Nombre:</label>
     <input type="text" [(ngModel)]="editedInvoice.nombre" placeholder="Ej: Agua"
-      class="w-full p-2 border rounded-md mb-3" />
-    <label class="block mb-2">Fecha de pago:</label>
-    <input type="date" [(ngModel)]="editedInvoice.fechaPago" class="w-full p-2 border rounded-md mb-3" />
-    <label class="block mb-2">Valor:</label>
+      class="app-input mb-3" />
+    <label class="app-field-label">Fecha de pago:</label>
+    <input type="date" [(ngModel)]="editedInvoice.fechaPago" class="app-input mb-3" />
+    <label class="app-field-label">Valor:</label>
     <input type="text" [value]="formatCurrency(editedInvoice.valor)" (input)="onValueInput($event, 'edit')"
-      placeholder="Ej: 50.000" class="w-full p-2 border rounded-md mb-3" />
+      placeholder="Ej: 50.000" class="app-input mb-3" />
     <div class="flex justify-end gap-2">
-      <button (click)="closeEditInvoiceModal()" class="px-4 py-2 border rounded-md hover:bg-slate-200">Cancelar</button>
-      <button (click)="saveEditedInvoice()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Guardar</button>
+      <button (click)="closeEditInvoiceModal()" class="app-secondary-button">Cancelar</button>
+      <button (click)="saveEditedInvoice()" class="app-primary-button">Guardar</button>
     </div>
-  </div>
-</div>
+</app-modal-shell>
 
 <!-- Modal Eliminar Factura -->
-<div *ngIf="isDeleteInvoiceModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
-    <span class="material-icons text-red-600 mx-auto mb-4" style="font-size: 48px;">report_problem</span>
-    <h2 class="text-xl font-bold mt-4 mb-2">¿Eliminar Factura?</h2>
-    <p class="mb-6 text-gray-700">¿Estás seguro que deseas eliminar esta factura? Esta acción no se puede deshacer.</p>
-    <div class="flex justify-center gap-2">
-      <button (click)="closeDeleteInvoiceModal()"
-        class="px-4 py-2 border rounded-md hover:bg-orange-200">Cancelar</button>
-      <button (click)="confirmDeleteInvoice()"
-        class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-red-600">Eliminar</button>
-    </div>
-  </div>
-</div>
+<app-confirm-modal *ngIf="isDeleteInvoiceModalOpen" title="¿Eliminar Factura?"
+  message="¿Estás seguro que deseas eliminar esta factura? Esta acción no se puede deshacer."
+  confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteInvoiceModal()"
+  (confirm)="confirmDeleteInvoice()" />
 
 <!-- Modal Pagar Factura -->
-<div *ngIf="isPayInvoiceModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-    <h2 class="text-xl font-bold mb-4">Realizar Pago</h2>
+<app-modal-shell *ngIf="isPayInvoiceModalOpen" title="Realizar Pago">
     <p class="text-gray-600 mb-4 text-sm">Factura: <strong>{{ payInvoice?.nombre }}</strong></p>
     <label class="block mb-2 font-medium">Seleccionar Billetera:</label>
-    <select [(ngModel)]="selectedWalletForPayment" class="w-full p-2 border rounded-md mb-4">
+    <select [(ngModel)]="selectedWalletForPayment" class="app-input mb-4">
       <option value="" disabled selected>Selecciona una billetera</option>
       <option *ngFor="let account of wallet" [value]="account.id">{{ account.tipo }}</option>
     </select>
     <p class="text-sm text-gray-500 mb-4">Dinero disponible: ${{ getWalletBalance(selectedWalletForPayment) }}</p>
     <div class="flex justify-end gap-2">
-      <button (click)="closePayInvoiceModal()" class="px-4 py-2 border rounded-md hover:bg-slate-200">Cancelar</button>
-      <button (click)="confirmPayInvoice()" class="px-4 py-2 bg-teal-700 text-white rounded-md hover:bg-teal-800"
+      <button (click)="closePayInvoiceModal()" class="app-secondary-button">Cancelar</button>
+      <button (click)="confirmPayInvoice()" class="app-success-button"
         [disabled]="!selectedWalletForPayment">Pagar</button>
     </div>
-  </div>
-</div>
+</app-modal-shell>

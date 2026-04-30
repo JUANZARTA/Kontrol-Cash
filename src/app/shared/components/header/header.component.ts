@@ -2,7 +2,6 @@ import {
   Component,
   OnInit,
   OnDestroy,
-  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DateService } from '../../../services/date.service';
@@ -10,11 +9,12 @@ import { Subscription } from 'rxjs';
 import { Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { ThemeService } from '../../../services/theme.service';
+import { ModalShellComponent } from '../modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ModalShellComponent],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css',
 })
@@ -44,26 +44,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   userName: string = ''; // Para mostrar nombre si luego se quiere
 
-  notifications: any[] = [];
-  unreadCount: number = 0;
-  showNotifications: boolean = false;
-  isLoadingNotifications: boolean = false;
-
-  // Modales de confirmación
-  showMarkAllReadModal: boolean = false;
-  showDeleteAllModal: boolean = false;
-  showDeleteSingleModal: boolean = false;
-  notificationToDelete: any = null;
   isDarkMode = false;
-
-  // Propiedades computadas para el template
-  get unreadNotificationsCount(): number {
-    return this.notifications.filter((n) => !n.leido).length;
-  }
-
-  get totalNotificationsCount(): number {
-    return this.notifications.length;
-  }
 
   private dateSubscription?: Subscription;
   private routeSubscription?: Subscription;
@@ -112,42 +93,18 @@ export class HeaderComponent implements OnInit, OnDestroy {
       if (event instanceof NavigationEnd) {
         const path = event.urlAfterRedirects.split('/');
         this.currentRoute = this.mapRouteToTitle(path[path.length - 1]);
-        // Cerrar dropdown de notificaciones al navegar
-        this.showNotifications = false;
-        // Cerrar todos los modales al navegar
-        this.showMarkAllReadModal = false;
-        this.showDeleteAllModal = false;
-        this.showDeleteSingleModal = false;
-        this.notificationToDelete = null;
       }
     });
-
-    this.loadNotifications();
-
-    // Limpiar notificaciones antiguas cada hora
-    setInterval(() => {
-      this.cleanOldNotifications();
-    }, 60 * 60 * 1000); // 1 hora
   }
 
   ngOnDestroy(): void {
     this.dateSubscription?.unsubscribe();
     this.routeSubscription?.unsubscribe();
     this.themeSubscription?.unsubscribe();
-    this.cleanupModals();
   }
 
   toggleTheme(): void {
     this.themeService.toggleTheme();
-  }
-
-  // Limpiar todos los modales
-  private cleanupModals(): void {
-    this.showNotifications = false;
-    this.showMarkAllReadModal = false;
-    this.showDeleteAllModal = false;
-    this.showDeleteSingleModal = false;
-    this.notificationToDelete = null;
   }
 
   generateYearRange(start: number, end: number): void {
@@ -181,15 +138,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.dateService.setDate(this.selectedYear!, mes);
     console.log('Fecha seleccionada →', this.selectedYear, mes);
 
-    // ✅ Notificar cambio de mes
-    const user = this.authService.getUser();
-    const uid = user?.localId;
-
-    if (uid) {
-      const yearStr = this.selectedYear!.toString();
-      const monthStr = mes.toString().padStart(2, '0');
-      this.dateService.notifyMonthChange(uid, yearStr, monthStr);
-    }
   }
 
   mapRouteToTitle(route: string): string {
@@ -218,246 +166,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    this.authService.logout(); // asegúrate de que este método exista
+    this.authService.logout();
     this.router.navigate(['/login']);
-  }
-  // 📩 NOTIFICACIONES
-
-  toggleNotifications(event?: MouseEvent): void {
-    if (event) event.stopPropagation(); // 👈 NECESARIO
-
-    this.showNotifications = !this.showNotifications;
-
-    if (this.showNotifications) {
-      this.loadNotifications();
-    }
-  }
-
-  loadNotifications(): void {
-    const user = this.authService.getUser();
-    const uid = user?.localId;
-    if (!uid) return;
-
-    this.isLoadingNotifications = true;
-
-    this.authService.getUserNotifications(uid).subscribe({
-      next: (data) => {
-        if (data) {
-          this.notifications = Object.entries(data).map(
-            ([key, value]: any) => ({
-              id: key,
-              ...value,
-            })
-          );
-          this.unreadCount = this.notifications.filter((n) => !n.leido).length;
-        }
-        this.isLoadingNotifications = false;
-      },
-      error: (error) => {
-        console.error('Error al cargar notificaciones:', error);
-        this.isLoadingNotifications = false;
-      },
-    });
-  }
-
-  markAsRead(notifId: string): void {
-    const user = this.authService.getUser();
-    const uid = user?.localId;
-    if (!uid) return;
-
-    this.authService.markNotificationAsRead(uid, notifId).subscribe(() => {
-      this.notifications = this.notifications.map((n) => {
-        if (n.id === notifId) n.leido = true;
-        return n;
-      });
-      this.unreadCount = this.notifications.filter((n) => !n.leido).length;
-    });
-  }
-
-  // Marcar todas las notificaciones como leídas
-  markAllAsRead(): void {
-    const unreadNotifications = this.notifications.filter((n) => !n.leido);
-    if (unreadNotifications.length === 0) return;
-
-    this.showMarkAllReadModal = true;
-  }
-
-  // Confirmar marcar todas como leídas
-  confirmMarkAllAsRead(): void {
-    const user = this.authService.getUser();
-    const uid = user?.localId;
-    if (!uid) return;
-
-    const unreadNotifications = this.notifications.filter((n) => !n.leido);
-    const markAsReadPromises = unreadNotifications.map((notif) =>
-      this.authService.markNotificationAsRead(uid, notif.id)
-    );
-
-    // Marcar todas como leídas en paralelo
-    Promise.all(markAsReadPromises).then(() => {
-      this.notifications = this.notifications.map((n) => ({
-        ...n,
-        leido: true,
-      }));
-      this.unreadCount = 0;
-      this.showMarkAllReadModal = false;
-    });
-  }
-
-  // Eliminar una notificación específica
-  deleteNotification(notifId: string): void {
-    const notification = this.notifications.find((n) => n.id === notifId);
-    if (!notification) return;
-
-    this.notificationToDelete = notification;
-    this.showDeleteSingleModal = true;
-  }
-
-  // Confirmar eliminar notificación individual
-  confirmDeleteSingleNotification(): void {
-    const user = this.authService.getUser();
-    const uid = user?.localId;
-    if (!uid || !this.notificationToDelete) return;
-
-    this.authService
-      .deleteNotification(uid, this.notificationToDelete.id)
-      .subscribe(() => {
-        this.notifications = this.notifications.filter(
-          (n) => n.id !== this.notificationToDelete.id
-        );
-        this.unreadCount = this.notifications.filter((n) => !n.leido).length;
-        this.showDeleteSingleModal = false;
-        this.notificationToDelete = null;
-      });
-  }
-
-  // Eliminar todas las notificaciones
-  deleteAllNotifications(): void {
-    if (this.notifications.length === 0) return;
-    this.showDeleteAllModal = true;
-  }
-
-  // Confirmar eliminar todas las notificaciones
-  confirmDeleteAllNotifications(): void {
-    const user = this.authService.getUser();
-    const uid = user?.localId;
-    if (!uid) return;
-
-    this.authService.deleteAllNotifications(uid).subscribe(() => {
-      this.notifications = [];
-      this.unreadCount = 0;
-      this.showDeleteAllModal = false;
-    });
-  }
-
-  // Limpiar notificaciones antiguas
-  cleanOldNotifications(): void {
-    const user = this.authService.getUser();
-    const uid = user?.localId;
-    if (!uid) return;
-
-    this.authService.cleanOldNotifications(uid).subscribe(() => {
-      // Recargar notificaciones después de limpiar
-      this.loadNotifications();
-    });
-  }
-
-  // Cerrar notificaciones cuando se hace clic fuera
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: Event): void {
-    const target = event.target as HTMLElement;
-
-    // -------------------------------------------------------
-    // 🔔 CERRAR DROPDOWN DE NOTIFICACIONES SI CLIC FUERA
-    // -------------------------------------------------------
-    const notificationButton = document.querySelector(
-      '[data-notification-button]'
-    );
-    const notificationDropdown = document.querySelector(
-      '[data-notification-dropdown]'
-    );
-
-    // Si existen ambos (botón + dropdown)
-    if (notificationButton && notificationDropdown) {
-      if (
-        !notificationButton.contains(target) &&
-        !notificationDropdown.contains(target)
-      ) {
-        this.showNotifications = false;
-      }
-    } else {
-      // Si sólo existe dropdown (raro pero puede pasar)
-      if (notificationDropdown && !notificationDropdown.contains(target)) {
-        this.showNotifications = false;
-      }
-
-      // Si sólo existe botón
-      if (notificationButton && !notificationButton.contains(target)) {
-        this.showNotifications = false;
-      }
-    }
-
-    // -------------------------------------------------------
-    // 🧱 CERRAR MODALES SI CLICK FUERA DE ELLOS
-    // -------------------------------------------------------
-    const modals = document.querySelectorAll('[data-modal]');
-
-    modals.forEach((modal) => {
-      if (modal.contains(target)) return; // si el click está dentro, no cerrar
-
-      const modalType = modal.getAttribute('data-modal');
-
-      if (this.showMarkAllReadModal && modalType === 'mark-all-read') {
-        this.closeMarkAllReadModal();
-      }
-
-      if (this.showDeleteAllModal && modalType === 'delete-all') {
-        this.closeDeleteAllModal();
-      }
-
-      if (this.showDeleteSingleModal && modalType === 'delete-single') {
-        this.closeDeleteSingleModal();
-      }
-    });
-  }
-
-  // Cerrar notificaciones con la tecla Escape
-  @HostListener('document:keydown', ['$event'])
-  onKeyDown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      if (this.showNotifications) {
-        this.showNotifications = false;
-      }
-      if (this.showMarkAllReadModal) {
-        this.closeMarkAllReadModal();
-      }
-      if (this.showDeleteAllModal) {
-        this.closeDeleteAllModal();
-      }
-      if (this.showDeleteSingleModal) {
-        this.closeDeleteSingleModal();
-      }
-    }
-  }
-
-  // Cerrar modales
-  closeMarkAllReadModal(): void {
-    this.showMarkAllReadModal = false;
-  }
-
-  closeDeleteAllModal(): void {
-    this.showDeleteAllModal = false;
-  }
-
-  closeDeleteSingleModal(): void {
-    this.showDeleteSingleModal = false;
-    this.notificationToDelete = null;
-  }
-
-  getRowAnimationDelay(notif: any, index?: number): string {
-    // Usa el índice si viene de *ngFor, o lo calcula desde el array
-    const i = index ?? this.notifications.indexOf(notif);
-    // Retorna un delay progresivo: 0.1s, 0.15s, 0.2s, etc.
-    return `${0.1 + i * 0.05}s`;
   }
 }

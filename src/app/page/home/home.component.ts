@@ -33,6 +33,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { inject } from '@angular/core';
 import { FinancialChartComponent } from '../../shared/components/financial-chart/financial-chart.component';
+import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 
 interface DebtWithId extends Debt {
   id: string;
@@ -54,9 +55,10 @@ export interface InvoiceWithId extends Invoice {
   imports: [
     CommonModule,
     RouterModule,
-    FormsModule,
-    FinancialChartComponent,
-    BarChartComponent,
+      FormsModule,
+      FinancialChartComponent,
+      BarChartComponent,
+      ModalShellComponent,
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
@@ -404,30 +406,6 @@ export default class HomeComponent implements OnInit, OnDestroy {
           // debugging: ver lo que llegó
           console.debug('loadDebts -> deudas cargadas:', this.debts);
 
-          // notificaciones sobre vencimientos (opcional, lo tenías antes)
-          const today = new Date().toISOString().split('T')[0];
-          for (const debt of this.debts) {
-            if (debt.estado === 'Pendiente') {
-              if (debt.fecha_pago === today) {
-                this.authService
-                  .addNotification(
-                    this.currentUser,
-                    `Tienes una deuda que vence hoy con ${debt.acreedor}`,
-                    `deuda_vence_hoy_${debt.id}`
-                  )
-                  .subscribe();
-              }
-              if (new Date(debt.fecha_pago) < new Date(today)) {
-                this.authService
-                  .addNotification(
-                    this.currentUser,
-                    `Tienes una deuda vencida con ${debt.acreedor}`,
-                    `deuda_vencida_${debt.id}`
-                  )
-                  .subscribe();
-              }
-            }
-          }
         },
         error: (err) => {
           console.error('Error al cargar deudas (loadDebts):', err);
@@ -479,15 +457,6 @@ export default class HomeComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.loadDebts();
-
-          if (nuevoEstado === 'Pagado') {
-            this.authService
-              .addNotification(
-                userId,
-                `Pagaste tu deuda con ${debt.acreedor} correctamente`
-              )
-              .subscribe();
-          }
         },
         error: (err) => {
           console.error('Error al cambiar estado de la deuda:', err);

@@ -9,6 +9,9 @@ import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
 import { WalletService } from '../../services/wallet.service';
+import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
+import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 import {
   trigger,
@@ -25,7 +28,7 @@ export interface ExpenseWithId extends Expense {
 @Component({
   selector: 'app-expense',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
   templateUrl: './expense.component.html',
   styleUrls: ['./expense.component.css'],
   providers: [DecimalPipe],

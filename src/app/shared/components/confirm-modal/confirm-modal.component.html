@@ -1,0 +1,20 @@
+<app-modal-shell [title]="title" size="sm" panelClass="animate-pop-in" [centered]="true" [modalId]="modalId">
+  <span modal-icon class="material-icons mx-auto mb-4 block" [ngClass]="iconColorClass" style="font-size: 48px;">
+    {{ icon }}
+  </span>
+
+  <p class="mb-6 text-gray-700 animate-fadeSlideDown">
+    {{ message }}
+  </p>
+
+  <ng-content select="[confirm-extra]"></ng-content>
+
+  <div class="flex justify-center gap-2">
+    <button (click)="cancel.emit()" class="app-secondary-button animate-fadeIn">
+      {{ cancelText }}
+    </button>
+    <button (click)="confirm.emit()" [ngClass]="confirmButtonClass" class="animate-fadeIn">
+      {{ confirmText }}
+    </button>
+  </div>
+</app-modal-shell>

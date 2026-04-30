@@ -41,7 +41,11 @@
   }
 
   .app-modal-panel {
-    @apply bg-white p-6 rounded-lg shadow-lg w-96;
+    @apply bg-white p-6 rounded-lg shadow-lg;
+  }
+
+  .app-modal-panel-md {
+    @apply w-96;
   }
 
   .app-modal-panel-sm {

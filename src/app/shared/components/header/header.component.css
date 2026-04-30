@@ -1,5 +1,0 @@
-[data-notification-dropdown] {
-  z-index: 999999999 !important;
-  position: fixed; /* ya lo es, pero reafirma */
-  pointer-events: auto;
-}

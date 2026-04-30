@@ -1,13 +1,4 @@
-<!-- Estado financiero -->
-<div class="px-6 py-4 border-b flex center-end animate-fadeSlideDown">
-  <span [ngClass]="{
-        'bg-orange-600': estadoFinancieroColor === 'rojo',
-        'bg-sky-600': estadoFinancieroColor === 'azul',
-        'bg-teal-600': estadoFinancieroColor === 'verde'
-    }" class="text-white text-sm font-semibold px-4 py-2 rounded-full shadow-md">
-    {{ estadoFinanciero }}
-  </span>
-</div>
+<app-financial-status-badge [label]="estadoFinanciero" [color]="estadoFinancieroColor" />
 
 <!-- Encabezado -->
 <div class="app-page-toolbar animate-fadeSlideDown" style="animation-delay:0.1s">
@@ -79,124 +70,76 @@
 </div>
 
 <!-- Modal para agregar cuenta -->
-<div *ngIf="isModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-    <h2 class="text-xl font-bold mb-4">Agregar Nueva Cuenta</h2>
-    <p class="text-gray-600 mb-4 text-sm">Introduce los detalles de la nueva cuenta.</p>
+<app-modal-shell *ngIf="isModalOpen" title="Agregar Nueva Cuenta"
+  description="Introduce los detalles de la nueva cuenta.">
 
-    <label class="block mb-2">Dinero en:</label>
+    <label class="app-field-label">Dinero en:</label>
     <input type="text" [(ngModel)]="newAccount.tipo" placeholder="Ej: Cuenta de ahorros"
-      class="w-full p-2 border rounded-md mb-3" />
+      class="app-input mb-3" />
 
-    <label class="block mb-2">Valor:</label>
+    <label class="app-field-label">Valor:</label>
     <input type="text" [value]="formatCurrency(newAccount.valor)" (input)="onValueInput($event, 'new')"
-      placeholder="Ej: 1.000.000" class="w-full p-2 border rounded-md mb-3" />
+      placeholder="Ej: 1.000.000" class="app-input mb-3" />
 
     <div class="flex justify-end gap-2">
-      <button (click)="closeModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200">Cancelar</button>
-      <button (click)="addAccount()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Agregar</button>
+      <button (click)="closeModal()" class="app-secondary-button">Cancelar</button>
+      <button (click)="addAccount()" class="app-primary-button">Agregar</button>
     </div>
-  </div>
-</div>
+</app-modal-shell>
 
 <!-- Modal para agregar valor a cuenta -->
-<div *ngIf="isAddValueModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-80">
-    <h2 class="text-xl font-bold mb-2">Agregar o Restar Valor</h2>
-    <p class="text-gray-600 mb-4 text-sm">Introduce un valor para adicionar o restar a esta cuenta.</p>
+<app-modal-shell *ngIf="isAddValueModalOpen" title="Agregar o Restar Valor"
+  description="Introduce un valor para adicionar o restar a esta cuenta." size="sm">
 
-    <label class="block mb-2 font-semibold">Valor:</label>
+    <label class="app-field-label-strong">Valor:</label>
     <input type="text" [value]="formatCurrency(newValue)" (input)="onValueInput($event, 'add')" placeholder="Ej: 5000"
-      class="w-full p-2 border rounded-md mb-4" />
+      class="app-input mb-4" />
 
     <div class="flex justify-end gap-2">
-      <button (click)="closeAddValueModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200">Cancelar</button>
-      <button (click)="applyValue('subtract')"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Restar</button>
-      <button (click)="applyValue('add')"
-        class="px-4 py-2 bg-teal-700 text-white rounded-md hover:bg-emerald-800">Sumar</button>
+      <button (click)="closeAddValueModal()" class="app-secondary-button">Cancelar</button>
+      <button (click)="applyValue('subtract')" class="app-primary-button">Restar</button>
+      <button (click)="applyValue('add')" class="app-success-button">Sumar</button>
     </div>
-  </div>
-</div>
+</app-modal-shell>
 
 <!-- Modal para editar cuenta -->
-<div *ngIf="isEditModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-    <h2 class="text-xl font-bold mb-4">Editar Cuenta</h2>
-    <p class="text-gray-600 mb-4 text-sm">Edita los detalles de la cuenta.</p>
+<app-modal-shell *ngIf="isEditModalOpen" title="Editar Cuenta"
+  description="Edita los detalles de la cuenta.">
 
-    <label class="block mb-2">Dinero en:</label>
+    <label class="app-field-label">Dinero en:</label>
     <input type="text" [(ngModel)]="editedAccount.tipo" placeholder="Ej: Efectivo"
-      class="w-full p-2 border rounded-md mb-3" />
+      class="app-input mb-3" />
 
-    <label class="block mb-2">Valor:</label>
+    <label class="app-field-label">Valor:</label>
     <input type="text" [value]="formatCurrency(editedAccount.valor)" (input)="onEditValueInput($event)"
-      placeholder="Ej: 750.000" class="w-full p-2 border rounded-md mb-3" />
+      placeholder="Ej: 750.000" class="app-input mb-3" />
 
     <div class="flex justify-end gap-2">
-      <button (click)="closeEditModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200">Cancelar</button>
-      <button (click)="saveEditedAccount()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Guardar</button>
+      <button (click)="closeEditModal()" class="app-secondary-button">Cancelar</button>
+      <button (click)="saveEditedAccount()" class="app-primary-button">Guardar</button>
     </div>
-  </div>
-</div>
+</app-modal-shell>
 
 <!-- Modal para vaciar cuenta -->
-<div *ngIf="isEmptyModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 animate-fadeIn">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-80 text-center animate-fadeSlideDown">
-    <span class="material-icons text-orange-600 mx-auto mb-4" style="font-size: 48px;">
-      warning_amber
-    </span>
-    <h2 class="text-xl font-bold mt-4 mb-2">¿Vaciar Cuenta?</h2>
-    <p class="mb-6 text-gray-700">
-      ¿Estás seguro de que deseas vaciar esta billetera? <br>
-      Si lo haces, el dinero registrado se igualará a $0.
-    </p>
-    <div class="flex justify-center gap-2">
-      <button (click)="closeEmptyModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-gray-200 transition">
-        Cancelar
-      </button>
-      <button (click)="confirmEmptyAccount()"
-        class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition">
-        Aceptar
-      </button>
-    </div>
-  </div>
-</div>
+<app-confirm-modal *ngIf="isEmptyModalOpen" title="¿Vaciar Cuenta?"
+  message="¿Estás seguro de que deseas vaciar esta billetera? Si lo haces, el dinero registrado se igualará a $0."
+  confirmText="Aceptar" tone="warning" icon="warning_amber" (cancel)="closeEmptyModal()"
+  (confirm)="confirmEmptyAccount()" />
 
 <!-- Modal para eliminar cuenta -->
-<div *ngIf="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
-    <span class="material-icons text-red-600 mx-auto mb-4" style="font-size: 48px;">
-      report_problem
-    </span>
-    <h2 class="text-xl font-bold mt-4 mb-2">¿Eliminar Cuenta?</h2>
-    <p class="mb-6 text-gray-700">¿Estás seguro de que deseas eliminar esta cuenta? Esta acción no se puede
-      deshacer.</p>
-    <div class="flex justify-center gap-2">
-      <button (click)="closeDeleteModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-orange-200">Cancelar</button>
-      <button (click)="confirmDeleteAccount()" class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-red-600">
-        Eliminar
-      </button>
-    </div>
-  </div>
-</div>
+<app-confirm-modal *ngIf="isDeleteModalOpen" title="¿Eliminar Cuenta?"
+  message="¿Estás seguro de que deseas eliminar esta cuenta? Esta acción no se puede deshacer."
+  confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteModal()"
+  (confirm)="confirmDeleteAccount()" />
 
 <!-- Modal de Transacción -->
-<div *ngIf="isTransactionModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-    <h2 class="text-xl font-bold mb-4">Mover Dinero</h2>
+<app-modal-shell *ngIf="isTransactionModalOpen" title="Mover Dinero"
+  panelClass="animate-pop-in">
     <p class="text-gray-600 mb-4 text-sm">Cuenta origen: <strong>{{ sourceWallet?.tipo }}</strong></p>
 
     <!-- Cuenta Destino -->
     <label class="block mb-2 font-medium">Hacia:</label>
-    <select [(ngModel)]="selectedWallet" class="w-full p-2 border rounded-md mb-4">
+    <select [(ngModel)]="selectedWallet" class="app-input mb-4">
       <option value="" disabled selected>Selecciona cuenta destino</option>
       <option *ngFor="let account of wallet" [value]="account.id" [disabled]="account.id === sourceWalletId">
         {{ account.tipo }}
@@ -206,7 +149,7 @@
     <!-- Valor a transferir -->
     <label class="block mb-2 font-medium">Valor a asignar:</label>
     <input type="text" [value]="formatCurrency(assignedValue || 0)" (input)="onAssignedValueInput($event)"
-      placeholder="Ej: 50,000" class="w-full p-2 border rounded-md mb-1" />
+      placeholder="Ej: 50,000" class="app-input mb-1" />
 
 
     <p class="text-xs text-gray-500 mb-4">
@@ -215,14 +158,11 @@
 
     <!-- Botones -->
     <div class="flex justify-end gap-2">
-      <button (click)="closeTransactionModal()"
-        class="px-4 py-2 border rounded-md bg-white hover:bg-slate-200 transition">
+      <button (click)="closeTransactionModal()" class="app-secondary-button bg-white">
         Cancelar
       </button>
-      <button (click)="confirmTransaction()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-sky-800 transition">
+      <button (click)="confirmTransaction()" class="app-primary-button hover:bg-sky-800">
         Aceptar
       </button>
     </div>
-  </div>
-</div>
+</app-modal-shell>

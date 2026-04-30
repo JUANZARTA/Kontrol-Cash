@@ -9,6 +9,9 @@ import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { WalletService } from '../../services/wallet.service';
 import { MatIconModule } from '@angular/material/icon';
+import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
+import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 export interface LoanWithId extends Loan {
   id: string;
@@ -17,7 +20,7 @@ export interface LoanWithId extends Loan {
 @Component({
   selector: 'app-loans',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
   templateUrl: './loans.component.html',
   styleUrls: ['./loans.component.css'],
   providers: [DecimalPipe],
@@ -106,31 +109,6 @@ export default class LoansComponent implements OnInit, OnDestroy {
             ...loan,
           }));
 
-          const today = new Date().toISOString().split('T')[0];
-
-          for (const loan of this.loans) {
-            if (loan.estado === 'Pendiente') {
-              // ✅ Préstamo vencido
-              if (new Date(loan.fecha_pago) < new Date(today)) {
-                this.authService
-                  .addNotification(
-                    this.userId,
-                    `Venció el préstamo a ${loan.deudor}`,
-                    `prestamo_vencido_${loan.id}`
-                  )
-                  .subscribe();
-              }
-
-              // ✅ Recordatorio de cobro (solo una vez por día)
-              this.authService
-                .addNotification(
-                  this.userId,
-                  `Recordá que ${loan.deudor} te debe $${loan.valor}`,
-                  `recordatorio_prestamo_${loan.id}`
-                )
-                .subscribe();
-            }
-          }
         },
         error: (err) => {
           console.error('Error al cargar préstamos:', err);

@@ -1,17 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, throwError, forkJoin, of, from } from 'rxjs';
-import { catchError, tap, map, switchMap } from 'rxjs/operators';
+import { Observable, throwError, from } from 'rxjs';
+import { catchError, tap, switchMap } from 'rxjs/operators';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
-
-export interface Notificacion {
-  mensaje: string;
-  leido: boolean;
-  fecha: string;
-  tipo?: string; // Para identificar el tipo de notificación
-  idUnico?: string; // Para evitar duplicados por día
-}
 
 @Injectable({
   providedIn: 'root',
@@ -86,13 +78,6 @@ export class AuthService {
         return this.http.put(target, {
           nombre: name,
           correo: correo,
-          notificaciones: {
-            '-notif1': {
-              mensaje: 'Bienvenido a MiCartera',
-              leido: false,
-              fecha: new Date().toLocaleString(),
-            },
-          },
         }).pipe(
           tap(() => {
             const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -125,168 +110,6 @@ export class AuthService {
       switchMap((token) => {
         const target = token ? `${url}?auth=${token}` : url;
         return this.http.get<any>(target);
-      })
-    );
-  }
-
-  // método: Obtener notificaciones del usuario (adjunta token)
-  getUserNotifications(uid: string): Observable<Record<string, Notificacion>> {
-    const url = `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones.json`;
-    return from(this.getIdToken()).pipe(
-      switchMap((token) => {
-        const target = token ? `${url}?auth=${token}` : url;
-        return this.http.get<Record<string, Notificacion>>(target);
-      })
-    );
-  }
-
-  // método: Marcar una notificación como leída (adjunta token)
-  markNotificationAsRead(uid: string, notifId: string): Observable<any> {
-    return from(this.getIdToken()).pipe(
-      switchMap((token) => {
-        const url = token
-          ? `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones/${notifId}/leido.json?auth=${token}`
-          : `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones/${notifId}/leido.json`;
-        return this.http.put(url, true);
-      })
-    );
-  }
-
-  // método: Eliminar una notificación específica (adjunta token)
-  deleteNotification(uid: string, notifId: string): Observable<any> {
-    return from(this.getIdToken()).pipe(
-      switchMap((token) => {
-        const url = token
-          ? `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones/${notifId}.json?auth=${token}`
-          : `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones/${notifId}.json`;
-        return this.http.delete(url);
-      })
-    );
-  }
-
-  // método: Eliminar todas las notificaciones del usuario (adjunta token)
-  deleteAllNotifications(uid: string): Observable<any> {
-    return from(this.getIdToken()).pipe(
-      switchMap((token) => {
-        const url = token
-          ? `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones.json?auth=${token}`
-          : `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones.json`;
-        return this.http.delete(url);
-      })
-    );
-  }
-
-  // método: Verificar si ya existe una notificación del mismo tipo hoy
-  checkNotificationExists(uid: string, tipo: string): Observable<boolean> {
-    return this.getUserNotifications(uid).pipe(
-      map((data) => {
-        if (!data) return false;
-
-        const today = new Date().toISOString().split('T')[0];
-        return Object.values(data).some((notif: any) => {
-          const notifDate = new Date(notif.fecha).toISOString().split('T')[0];
-          return notif.tipo === tipo && notifDate === today;
-        });
-      })
-    );
-  }
-
-  // método: Agregar nueva notificación con control de duplicados
-  addNotification(uid: string, mensaje: string, tipo?: string): Observable<any> {
-    // Si se especifica un tipo, verificar si ya existe hoy
-    if (tipo) {
-      return this.checkNotificationExists(uid, tipo).pipe(
-        switchMap((exists) => {
-          if (exists) {
-            // Ya existe una notificación de este tipo hoy, no agregar
-            return of(null);
-          }
-          return this.addNotificationInternal(uid, mensaje, tipo);
-        })
-      );
-    }
-
-    return this.addNotificationInternal(uid, mensaje, tipo);
-  }
-
-  // método interno para agregar notificación (adjunta token a todas las requests)
-  private addNotificationInternal(uid: string, mensaje: string, tipo?: string): Observable<any> {
-    const baseUrl = `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones`;
-
-    return from(this.getIdToken()).pipe(
-      switchMap((token) => {
-        const listUrl = token ? `${baseUrl}.json?auth=${token}` : `${baseUrl}.json`;
-        return this.http.get<any>(listUrl).pipe(
-          switchMap((data) => {
-            const allNotifs = data ? Object.entries(data) : [];
-            const total = allNotifs.length;
-
-            const postUrl = token ? `${baseUrl}.json?auth=${token}` : `${baseUrl}.json`;
-
-            // Si hay más de 19 notificaciones, eliminar la más antigua
-            if (total >= 20) {
-              const sorted = allNotifs.sort(
-                (a: any, b: any) => new Date(a[1].fecha).getTime() - new Date(b[1].fecha).getTime()
-              );
-              const oldestKey = sorted[0][0];
-              const deleteUrl = token
-                ? `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones/${oldestKey}.json?auth=${token}`
-                : `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones/${oldestKey}.json`;
-
-              return this.http.delete(deleteUrl).pipe(
-                switchMap(() => {
-                  return this.http.post(postUrl, {
-                    mensaje,
-                    leido: false,
-                    fecha: new Date().toLocaleString(),
-                    tipo: tipo || 'general',
-                    idUnico: tipo ? `${tipo}_${new Date().toISOString().split('T')[0]}` : undefined,
-                  });
-                })
-              );
-            } else {
-              return this.http.post(postUrl, {
-                mensaje,
-                leido: false,
-                fecha: new Date().toLocaleString(),
-                tipo: tipo || 'general',
-                idUnico: tipo ? `${tipo}_${new Date().toISOString().split('T')[0]}` : undefined,
-              });
-            }
-          })
-        );
-      })
-    );
-  }
-
-  // método: Borrar notificaciones con más de 7 días de antigüedad (adjunta token)
-  cleanOldNotifications(uid: string): Observable<any> {
-    const baseUrl = `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones`;
-
-    return from(this.getIdToken()).pipe(
-      switchMap((token) => {
-        const listUrl = token ? `${baseUrl}.json?auth=${token}` : `${baseUrl}.json`;
-        return this.http.get<any>(listUrl).pipe(
-          switchMap((data) => {
-            if (!data) return of(null);
-
-            const now = new Date();
-            const deletions = Object.entries(data)
-              .filter(([key, notif]: any) => {
-                const fecha = new Date(notif.fecha);
-                const diffDays = Math.floor((now.getTime() - fecha.getTime()) / (1000 * 60 * 60 * 24));
-                return diffDays >= 7;
-              })
-              .map(([key]) => {
-                const delUrl = token
-                  ? `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones/${key}.json?auth=${token}`
-                  : `https://micartera-acd5b-default-rtdb.firebaseio.com/${uid}/notificaciones/${key}.json`;
-                return this.http.delete(delUrl);
-              });
-
-            return deletions.length > 0 ? forkJoin(deletions) : of(null);
-          })
-        );
       })
     );
   }
@@ -328,8 +151,6 @@ export class AuthService {
         if (!data || !data.nombre) {
           this.saveUserProfile(user.uid, user.displayName || '', user.email || '').subscribe({
             next: () => {
-              // Agregar notificación de bienvenida (silenciosa)
-              this.addNotification(user.uid, 'Bienvenido a MiCartera').subscribe({ next: () => {}, error: () => {} });
             },
             error: () => {
               // no hacemos nada crítico si falla
