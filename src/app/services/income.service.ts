@@ -48,22 +48,32 @@ export class IncomeService {
 
   // 🔹 PUT: Actualizar un ingreso existente
   updateIncome(userId: string, year: string, month: string, incomeId: string, income: Income): Observable<any> {
-    const url = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/ingresos/${incomeId}.json`;
-    return this.http.put(url, income).pipe(
-      catchError(error => {
-        console.error('[PUT] Error al actualizar ingreso:', error);
-        return of(null);
+    const base = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/ingresos/${incomeId}.json`;
+    return from(this.auth.getIdToken()).pipe(
+      switchMap((token) => {
+        const url = token ? `${base}?auth=${token}` : base;
+        return this.http.put(url, income).pipe(
+          catchError(error => {
+            console.error('[PUT] Error al actualizar ingreso:', error);
+            return of(null);
+          })
+        );
       })
     );
   }
 
   // 🔹 DELETE: Eliminar un ingreso
   deleteIncome(userId: string, year: string, month: string, incomeId: string): Observable<any> {
-    const url = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/ingresos/${incomeId}.json`;
-    return this.http.delete(url).pipe(
-      catchError(error => {
-        console.error('[DELETE] Error al eliminar ingreso:', error);
-        return of(null);
+    const base = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/ingresos/${incomeId}.json`;
+    return from(this.auth.getIdToken()).pipe(
+      switchMap((token) => {
+        const url = token ? `${base}?auth=${token}` : base;
+        return this.http.delete(url).pipe(
+          catchError(error => {
+            console.error('[DELETE] Error al eliminar ingreso:', error);
+            return of(null);
+          })
+        );
       })
     );
   }

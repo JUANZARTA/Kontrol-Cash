@@ -5,15 +5,14 @@
 
 
 <!-- Indicador de salud financiera + estado financiero -->
-<div class="flex justify-center items-center gap-4 flex-wrap mb-6">
+<div class="mb-6 flex flex-wrap items-center gap-3">
 
   <!-- Mensaje de salud financiera -->
   <span [ngClass]="{
     'from-teal-600 to-teal-600': saludFinanciera === 'positiva',
     'from-yellow-600 to-yellow-600': saludFinanciera === 'advertencia',
     'from-orange-600 to-orange-600': saludFinanciera === 'critica'
-  }" class="bg-gradient-to-r text-white text-sm font-semibold px-6 py-3 rounded-full shadow-lg
-         transform transition-all duration-300 hover:scale-105 animate-fadeSlideDown animate-floating-slower">
+  }" class="app-status-pill bg-gradient-to-r px-5 py-2.5 animate-fadeSlideDown">
     {{ mensajeSaludFinanciera || 'Estado desconocido' }}
   </span>
   <!-- Estado financiero (cuadre/descuadre) -->
@@ -21,32 +20,46 @@
       'bg-gradient-to-r from-orange-600 to-orange-600': estadoFinanciero.toLowerCase().includes('descuadre'),
       'bg-gradient-to-r from-sky-600 to-sky-600': estadoFinanciero.toLowerCase().includes('sin justificar'),
       'bg-gradient-to-r from-teal-600 to-teal-600': estadoFinanciero.toLowerCase().includes('al día')
-    }" class="text-white text-sm font-semibold px-6 py-3 rounded-full shadow-lg
-           transform transition-all duration-300 hover:scale-105 animate-fadeSlideDown
-           animate-floating-slower">
+    }" class="app-status-pill px-5 py-2.5 animate-fadeSlideDown">
     {{ estadoFinanciero || 'Sin información' }}
   </span>
 
 </div>
 
+<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+  <div class="app-kpi-card animate-fadeSlideUp">
+    <p class="app-kpi-label">Saldo Actual</p>
+    <p class="app-kpi-value text-sky-800">{{ restanteActualmente | currency }}</p>
+  </div>
+
+  <div class="app-kpi-card animate-fadeSlideUp">
+    <p class="app-kpi-label">Gasto del Mes</p>
+    <p class="app-kpi-value text-orange-600">{{ gastadoActualmente | currency }}</p>
+  </div>
+
+  <div class="app-kpi-card animate-fadeSlideUp">
+    <p class="app-kpi-label">Deuda Pendiente</p>
+    <p class="app-kpi-value text-rose-600">{{ totalPendingDebts | currency }}</p>
+  </div>
+</div>
+
 <!-- Resumen Financiero Compacto -->
-<div class="mt-6 w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+<div class="mt-6 grid w-full max-w-6xl grid-cols-1 items-stretch gap-6 xl:grid-cols-[1.15fr_0.85fr]">
 
   <!-- 🥧 Gráfica circular -->
-  <div class="flex justify-center items-center animate-pop-in">
+  <div class="app-section-card flex items-center justify-center animate-pop-in">
     <app-financial-chart [ingresosTotales]="ingresosTotales" [gastosTotales]="gastosTotales" [totalDeuda]="totalDeuda"
       [totalBilletera]="totalBilletera" [totalPrestamo]="totalPrestamo">
     </app-financial-chart>
   </div>
 
   <!-- 📊 Resumen General -->
-  <div
-    class="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-lg p-5 mt-6 transform transition-all duration-500 hover:shadow-xl hover:scale-[1.01] animate-fadeSlideUp">
-    <h3 class="text-sky-800 text-lg font-semibold mb-4 text-center">
+  <div class="app-section-card animate-fadeSlideUp">
+    <h3 class="mb-4 text-lg font-semibold text-slate-900">
       Resumen General
     </h3>
 
-    <div class="overflow-hidden rounded-xl border border-gray-100">
+    <div class="overflow-hidden rounded-2xl border border-gray-100">
       <table class="w-full text-sm text-gray-700">
         <tbody>
           <tr class="border-b hover:bg-sky-50 transition-colors duration-200">
@@ -94,31 +107,24 @@
   </div>
 </div>
 
-<!-- Totales Sobrios -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
 
   <!-- Total en Cartera -->
-  <div class="bg-white text-sky-800 p-4 rounded-lg shadow-md
-              transform transition-all duration-300 hover:scale-105 hover:shadow-lg
-              animate-pop-in animate-floating-slower">
-    <h3 class="text-base font-semibold mb-1 text-center">Total en Cartera</h3>
-    <p class="text-xl font-bold text-center">{{ totalWallet | currency }}</p>
+  <div class="app-kpi-card animate-pop-in">
+    <p class="app-kpi-label">Total en Cartera</p>
+    <p class="app-kpi-value text-sky-800">{{ totalWallet | currency }}</p>
   </div>
 
   <!-- Total Deudas Pendientes -->
-  <div class="bg-white text-sky-800 p-4 rounded-lg shadow-md
-              transform transition-all duration-300 hover:scale-105 hover:shadow-lg
-              animate-pop-in animate-floating-slow">
-    <h3 class="text-base font-semibold mb-1 text-center">Total Deudas Pendientes</h3>
-    <p class="text-xl font-bold text-center">{{ totalPendingDebts | currency }}</p>
+  <div class="app-kpi-card animate-pop-in">
+    <p class="app-kpi-label">Deudas Pendientes</p>
+    <p class="app-kpi-value text-rose-600">{{ totalPendingDebts | currency }}</p>
   </div>
 
   <!-- Total Préstamos Pendientes -->
-  <div class="bg-white text-sky-800 p-4 rounded-lg shadow-md
-              transform transition-all duration-300 hover:scale-105 hover:shadow-lg
-              animate-pop-in animate-floating">
-    <h3 class="text-base font-semibold mb-1 text-center">Total Préstamos Pendientes</h3>
-    <p class="text-xl font-bold text-center">{{ totalPendingLoans | currency }}</p>
+  <div class="app-kpi-card animate-pop-in">
+    <p class="app-kpi-label">Préstamos Pendientes</p>
+    <p class="app-kpi-value text-teal-700">{{ totalPendingLoans | currency }}</p>
   </div>
 
 </div>
@@ -129,8 +135,8 @@
   <div class="flex flex-col gap-4">
 
     <!-- Tarjeta 1: Deudas Pendientes -->
-    <div class="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-lg p-5">
-      <h4 class="text-sky-700 font-semibold mb-4">Deudas Pendientes</h4>
+    <div class="app-section-card">
+      <h4 class="mb-4 text-lg font-semibold text-slate-900">Deudas Pendientes</h4>
 
       <!-- Si no hay deudas pendientes -->
       <div *ngIf="getPendingDebts().length === 0" class="text-gray-500 text-sm text-center">
@@ -155,8 +161,8 @@
     </div>
 
     <!-- Tarjeta 2: Facturas -->
-    <div class="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-lg p-5">
-      <h4 class="text-sky-700 font-semibold mb-4">Facturas</h4>
+    <div class="app-section-card">
+      <h4 class="mb-4 text-lg font-semibold text-slate-900">Facturas</h4>
 
       <!-- Si no hay facturas -->
       <div *ngIf="getSortedInvoices().length === 0" class="text-gray-500 text-sm text-center">
@@ -187,8 +193,8 @@
   </div>
 
   <!-- 🟥 Lado derecho: Gráfica -->
-  <div class="p-2">
-    <h3 class="text-sky-800 text-lg font-semibold mb-4 text-center">
+  <div class="app-section-card p-5">
+    <h3 class="mb-4 text-lg font-semibold text-slate-900">
       Ingresos vs Gastos vs Ahorros
     </h3>
 
@@ -205,7 +211,7 @@
 <div class="flex justify-center mb-4">
   <button
     (click)="copiarMesAnterior()"
-    class="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fadeSlideDown">
+    class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:shadow-xl animate-fadeSlideDown">
     📋 Copiar Mes Anterior
   </button>
 </div>

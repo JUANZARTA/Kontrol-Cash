@@ -1,6 +1,6 @@
 <!-- BOTÓN DE MENÚ HAMBURGUESA (MÓVILES) -->
 <button *ngIf="isMobile()" (click)="toggleSidebar()"
-  class="fixed top-4 left-4 z-50 bg-sky-600 text-white p-2 rounded-lg shadow-lg hover:bg-sky-700 transition-colors xl:hidden">
+  class="fixed left-4 top-4 z-50 rounded-2xl border border-white/10 bg-slate-900/90 p-3 text-white shadow-xl backdrop-blur-md transition-colors hover:bg-slate-800 xl:hidden">
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"
     class="w-6 h-6">
     <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
@@ -9,7 +9,7 @@
 
 <!-- SIDEBAR -->
 <aside [class.translate-x-[-100%]]="!isSidebarOpen && isMobile()"
-  class="bg-gradient-to-b from-sky-700 to-sky-500 fixed top-0 left-0 z-50 h-full w-72 overflow-hidden shadow-2xl rounded-r-2xl transform transition-transform duration-300 ease-in-out">
+  class="fixed left-0 top-0 z-50 h-full w-72 overflow-hidden rounded-r-[2rem] border-r border-white/10 bg-gradient-to-b from-slate-950 via-slate-900 to-sky-950 shadow-2xl transform transition-transform duration-300 ease-in-out">
   <!-- CONTENEDOR SCROLLABLE -->
   <div class="h-full overflow-y-auto scrollbar-hide">
     <!-- aquí va TODO el contenido actual del sidebar:
@@ -26,29 +26,36 @@
       style="top:20%; left:75%; width:90px; height:90px; background: rgba(255,255,255,0.12);"></div>
 
     <!-- HEADER -->
-    <div class="relative z-10 flex items-center justify-between p-6 border-b border-gray-200 text-white">
-      <h6 class="text-lg font-bold">Mi Cartera</h6>
+    <div class="relative z-10 border-b border-white/10 px-6 py-6 text-white">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs uppercase tracking-[0.25em] text-sky-200/70">Mi Cartera</p>
+          <h6 class="mt-2 text-xl font-semibold tracking-tight">Panel financiero</h6>
+        </div>
       <button *ngIf="isMobile()" (click)="toggleSidebar()"
-        class="p-2 rounded-full bg-white/20 hover:bg-white/30 transition">
+        class="rounded-full bg-white/10 p-2 transition hover:bg-white/20">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"
           class="w-5 h-5 text-white">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
+      </div>
     </div>
 
     <!-- MENÚ PRINCIPAL -->
-    <nav class="relative z-10 mt-4 px-4 flex flex-col gap-2">
+    <nav class="relative z-10 mt-5 flex flex-col gap-2 px-4">
       <a routerLink="/app/home" (click)="closeSidebar()"
-        class="flex items-center gap-3 p-3 rounded-lg font-medium text-white hover:bg-white/20 transition opacity-0 animate-fadeSlideLeft"
+        routerLinkActive="app-sidebar-link-active" [routerLinkActiveOptions]="{ exact: true }"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.1s">
-        <!-- icono svg -->
+        <span class="material-icons text-[20px]">home</span>
         Inicio
       </a>
 
       <!-- Tabla de Ingresos -->
       <a routerLink="/app/income" (click)="closeSidebar()"
-        class="flex items-center gap-3 p-3 rounded-lg font-medium text-white hover:bg-sky-50 hover:text-sky-700 transition opacity-0 animate-fadeSlideLeft"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.2s">
         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
           <path
@@ -59,7 +66,8 @@
 
       <!-- Mi Cartera -->
       <a routerLink="/app/wallet" (click)="closeSidebar()"
-        class="flex items-center gap-3 p-3 rounded-lg font-medium text-white hover:bg-sky-50 hover:text-sky-700 transition opacity-0 animate-fadeSlideLeft"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.25s">
         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
           <path
@@ -70,7 +78,8 @@
 
       <!-- Tabla Facturas -->
       <a routerLink="/app/invoice" (click)="closeSidebar()"
-        class="flex items-center gap-3 p-3 rounded-lg font-medium text-white hover:bg-sky-50 hover:text-sky-700 transition opacity-0 animate-fadeSlideLeft"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.3s">
         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
           <path d="M5 4h14v2H5V4zm0 4h14v2H5V8zm0 4h14v2H5v-2zm0 4h14v2H5v-2z" />
@@ -80,7 +89,8 @@
 
       <!-- Tabla de Gastos -->
       <a routerLink="/app/expense" (click)="closeSidebar()"
-        class="flex items-center gap-3 p-3 rounded-lg font-medium text-white hover:bg-sky-50 hover:text-sky-700 transition opacity-0 animate-fadeSlideLeft"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.15s">
         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
           <path
@@ -88,11 +98,10 @@
         </svg>
         Tabla de Gastos
       </a>
-      <br>
-
       <!-- Mis Ahorros -->
       <a routerLink="/app/saving" (click)="closeSidebar()"
-        class="flex items-center gap-3 p-3 rounded-lg font-medium text-white hover:bg-sky-50 hover:text-sky-700 transition opacity-0 animate-fadeSlideLeft"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.35s">
         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
           <path
@@ -103,7 +112,8 @@
 
       <!-- Préstamos -->
       <a routerLink="/app/loan" (click)="closeSidebar()"
-        class="flex items-center gap-3 p-3 rounded-lg font-medium text-white hover:bg-sky-50 hover:text-sky-700 transition opacity-0 animate-fadeSlideLeft"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.4s">
         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
           <path
@@ -114,7 +124,8 @@
 
       <!-- Deudas -->
       <a routerLink="/app/debt" (click)="closeSidebar()"
-        class="flex items-center gap-3 p-3 rounded-lg font-medium text-white hover:bg-sky-50 hover:text-sky-700 transition opacity-0 animate-fadeSlideLeft"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.45s">
         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
           <path
@@ -126,13 +137,16 @@
     </nav>
 
     <!-- CUENTA -->
-    <div class="relative z-10 mt-6 px-4">
-      <p class="text-sm font-bold text-white uppercase mb-2">Cuenta</p>
+    <div class="relative z-10 mt-8 px-4 pb-6">
+      <div class="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+      <p class="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-sky-100/70">Cuenta</p>
       <button (click)="logout()"
-        class="flex items-center gap-3 p-3 w-full rounded-lg text-white hover:bg-red-500/30 transition font-medium opacity-0 animate-fadeSlideLeft"
+        class="flex w-full items-center justify-center gap-2 rounded-2xl bg-white/8 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-500/30 opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.5s">
+        <span class="material-icons text-[18px]">logout</span>
         Salir
       </button>
+      </div>
     </div>
 
   </div>
