@@ -10,23 +10,22 @@
 </div>
 
 <!-- Encabezado con botón -->
-<div class="flex items-center justify-between p-4 opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
+<div class="app-page-toolbar opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
   <div>
     <h6 class="text-lg font-semibold text-white">Deudores</h6>
     <p class="text-sm flex items-center gap-2 opacity-90">
       <strong>Estado de Deudores</strong>
     </p>
   </div>
-  <button (click)="openModal()"
-    class="bg-sky-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-slate-700 transition">
+  <button (click)="openModal()" class="app-primary-button shadow-md">
     Agregar Deudor +
   </button>
 </div>
 
 <!-- Tabla de Deudores -->
 <div class="overflow-x-auto">
-  <table class="w-full min-w-[640px] border-collapse text-sm">
-    <thead class="bg-sky-200 border-b">
+  <table class="app-table">
+    <thead class="app-table-head">
       <tr>
         <th class="text-left py-2 px-3 sm:px-4">Nombre Deudor</th>
         <th class="text-center py-2 px-3 sm:px-4">Fecha de Préstamo</th>
@@ -37,7 +36,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let loan of loans; let i = index" class="border-t hover:bg-gray-50 opacity-0 animate-fadeSlideDown"
+      <tr *ngFor="let loan of loans; let i = index" class="app-table-row opacity-0 animate-fadeSlideDown"
         [style.animationDelay]="getRowAnimationDelay(loan)">
         <td class="py-2 px-3 sm:px-4 font-semibold">{{ loan.deudor }}</td>
         <td class="py-2 px-3 sm:px-4 text-center">{{ loan.fecha_prestamo }}</td>
@@ -69,7 +68,7 @@
 
     <!-- Total Deudores Pendientes -->
     <tfoot>
-      <tr class="bg-teal-50 font-bold text-teal-900 opacity-0 animate-fadeSlideDown">
+      <tr class="app-table-total-positive opacity-0 animate-fadeSlideDown">
         <td class="py-3 px-3 sm:px-4 text-left">Total Deudores Pendientes</td>
         <td class="py-3 px-3 sm:px-4"></td>
         <td class="py-3 px-3 sm:px-4"></td>
@@ -84,19 +83,19 @@
 </div>
 
 <!-- Modal para agregar Deudor -->
-<div *ngIf="isModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96 animate-pop-in">
-    <h2 class="text-xl font-bold mb-4 animate-fadeSlideDown">Agregar Nuevo Deudor</h2>
-    <p class="text-gray-600 mb-4 text-sm animate-fadeSlideDown">Introduce los detalles del nuevo Deudor.</p>
+<div *ngIf="isModalOpen" class="app-modal-overlay">
+  <div class="app-modal-panel animate-pop-in">
+    <h2 class="app-modal-title animate-fadeSlideDown">Agregar Nuevo Deudor</h2>
+    <p class="app-modal-description animate-fadeSlideDown">Introduce los detalles del nuevo Deudor.</p>
 
     <!-- Nombre deudor -->
-    <label class="block mb-2 animate-fadeIn">Nombre Deudor:</label>
+    <label class="app-field-label animate-fadeIn">Nombre Deudor:</label>
     <input type="text" [(ngModel)]="newLoan.deudor" placeholder="Ejm: Juan Pérez"
-      class="w-full p-2 border rounded-md mb-3 animate-fadeIn">
+      class="app-input mb-3 animate-fadeIn">
 
     <!-- Selección de billetera -->
-    <label class="block mb-2 animate-fadeIn">Billetera de origen:</label>
-    <select [(ngModel)]="selectedWallet" class="w-full p-2 border rounded-md mb-1 animate-fadeIn">
+    <label class="app-field-label animate-fadeIn">Billetera de origen:</label>
+    <select [(ngModel)]="selectedWallet" class="app-input mb-1 animate-fadeIn">
       <option value="" disabled selected>Selecciona la billetera</option>
       <option *ngFor="let account of wallet" [value]="account.id">
         {{ account.tipo }}
@@ -109,24 +108,24 @@
     </div>
 
     <!-- Fecha de Préstamo -->
-    <label class="block mb-2 animate-fadeIn">Fecha de Préstamo:</label>
-    <input type="date" [(ngModel)]="newLoan.fecha_prestamo" class="w-full p-2 border rounded-md mb-3 animate-fadeIn">
+    <label class="app-field-label animate-fadeIn">Fecha de Préstamo:</label>
+    <input type="date" [(ngModel)]="newLoan.fecha_prestamo" class="app-input mb-3 animate-fadeIn">
 
     <!-- Fecha de Pago -->
-    <label class="block mb-2 animate-fadeIn">Fecha de Pago:</label>
-    <input type="date" [(ngModel)]="newLoan.fecha_pago" class="w-full p-2 border rounded-md mb-3 animate-fadeIn">
+    <label class="app-field-label animate-fadeIn">Fecha de Pago:</label>
+    <input type="date" [(ngModel)]="newLoan.fecha_pago" class="app-input mb-3 animate-fadeIn">
 
     <!-- Valor a prestar -->
-    <label class="block mb-2 animate-fadeIn">Valor:</label>
+    <label class="app-field-label animate-fadeIn">Valor:</label>
     <input type="text" [value]="formatCurrency(newLoan.valor)" (input)="onValueInput($event, 'new')"
-      placeholder="Ejm: 250.000" class="w-full p-2 border rounded-md mb-3 animate-fadeIn">
+      placeholder="Ejm: 250.000" class="app-input mb-3 animate-fadeIn">
 
     <!-- Botones -->
     <div class="flex justify-end gap-2">
-      <button (click)="closeModal()" class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200 animate-fadeIn">
+      <button (click)="closeModal()" class="app-secondary-button animate-fadeIn">
         Cancelar
       </button>
-      <button (click)="addLoan()" class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700 animate-fadeIn">
+      <button (click)="addLoan()" class="app-primary-button animate-fadeIn">
         Agregar
       </button>
     </div>
@@ -217,12 +216,12 @@
 </div>
 
 <!-- Modal para Pagar Deudor -->
-<div *ngIf="isPaymentModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96 animate-pop-in">
-    <h2 class="text-xl font-bold mb-4">Selecciona la billetera para el pago</h2>
+<div *ngIf="isPaymentModalOpen" class="app-modal-overlay">
+  <div class="app-modal-panel animate-pop-in">
+    <h2 class="app-modal-title">Selecciona la billetera para el pago</h2>
 
-    <label class="block mb-2">Billetera:</label>
-    <select [(ngModel)]="selectedPaymentWallet" class="w-full p-2 border rounded-md mb-3">
+    <label class="app-field-label">Billetera:</label>
+    <select [(ngModel)]="selectedPaymentWallet" class="app-input mb-3">
       <option value="" disabled selected>Selecciona la billetera</option>
       <option *ngFor="let account of wallet" [value]="account.id">
         {{ account.tipo }}
@@ -235,10 +234,8 @@
 
 
     <div class="flex justify-end gap-2">
-      <button (click)="isPaymentModalOpen=false; loanToPay=null; selectedPaymentWallet=''"
-        class="px-4 py-2 border rounded-md bg-white hover:bg-gray-200">Cancelar</button>
-      <button (click)="confirmLoanPayment()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Confirmar</button>
+      <button (click)="isPaymentModalOpen=false; loanToPay=null; selectedPaymentWallet=''" class="app-secondary-button">Cancelar</button>
+      <button (click)="confirmLoanPayment()" class="app-primary-button">Confirmar</button>
     </div>
   </div>
 </div>

@@ -10,9 +10,9 @@
 </div>
 
 <!-- Encabezado -->
-<div class="flex items-center justify-between p-4 animate-fadeSlideDown" style="animation-delay:0.1s">
+<div class="app-page-toolbar animate-fadeSlideDown" style="animation-delay:0.1s">
   <h6 class="text-lg font-semibold text-gray-800">Mi Billetera</h6>
-  <button (click)="openModal()" class="text-sky-700 font-medium px-3 py-1.5 rounded-md hover:bg-sky-50 transition">
+  <button (click)="openModal()" class="app-link-button app-link-button-primary">
     Agregar +
   </button>
 </div>
@@ -24,11 +24,11 @@
 
 <!-- Contenedor de tarjetas -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-  <div *ngFor="let account of wallet" class="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition bg-white
+  <div *ngFor="let account of wallet" class="app-card
               transform opacity-0 animate-fadeIn" [style.animationDelay]="getAnimationDelay(account)">
 
     <!-- Encabezado -->
-    <div class="flex items-center justify-between p-4 border-b border-gray-100">
+    <div class="app-card-header">
       <h3 class="text-sm font-bold text-gray-800">{{ account.tipo }}</h3> <!-- Nombre en bold -->
 
       <!-- Menú de acciones -->
@@ -40,22 +40,21 @@
         </button>
 
         <!-- Menú desplegable -->
-        <div *ngIf="account.showMenu"
-          class="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-md z-10">
+        <div *ngIf="account.showMenu" class="app-menu-panel">
           <button (click)="openAddModal(account.id); account.showMenu = false"
-            class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100" type="button">
+            class="app-menu-item" type="button">
             Operar
           </button>
           <button (click)="openEditModal(account.id); account.showMenu = false"
-            class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100" type="button">
+            class="app-menu-item" type="button">
             Editar
           </button>
           <button (click)="openEmptyModal(account.id); account.showMenu = false"
-            class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100" type="button">
+            class="app-menu-item" type="button">
             Vaciar
           </button>
           <button (click)="openDeleteModal(account.id); account.showMenu = false"
-            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100" type="button">
+            class="app-menu-item text-red-600" type="button">
             Eliminar
           </button>
         </div>
@@ -70,9 +69,9 @@
     </div>
 
     <!-- Pie de tarjeta -->
-    <div class="p-3 border-t border-gray-100 text-center">
+    <div class="app-card-footer">
       <button (click)="openTransactionModal(account.id)"
-        class="bg-sky-200 text-sky-800 font-semibold px-5 py-2 rounded-md hover:bg-sky-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
+        class="app-accent-button disabled:opacity-50 disabled:cursor-not-allowed">
         Mover
       </button>
     </div>

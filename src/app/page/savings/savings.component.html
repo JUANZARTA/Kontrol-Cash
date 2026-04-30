@@ -10,23 +10,22 @@
 </div>
 
 <!-- Encabezado con botón -->
-<div class="flex items-center justify-between p-4 opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
+<div class="app-page-toolbar opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
   <div>
     <h6 class="text-lg font-semibold text-white">Mis Ahorros</h6>
     <p class="text-sm flex items-center gap-2 opacity-90">
       <strong>Estado Actual</strong>
     </p>
   </div>
-  <button (click)="openModal()"
-    class="bg-blue-600 text-white px-4 py-2 rounded-md shadow-md hover:bg-teal-500 transition">
+  <button (click)="openModal()" class="app-primary-button shadow-md hover:bg-teal-500">
     Agregar Ahorro +
   </button>
 </div>
 
 <!-- Tabla de Ahorros -->
 <div class="overflow-x-auto">
-  <table class="w-full min-w-[640px] border-collapse text-sm">
-    <thead class="bg-sky-200 border-b">
+  <table class="app-table">
+    <thead class="app-table-head">
       <tr>
         <th class="text-left py-2 px-3 sm:px-4">Ahorro en</th>
         <th class="text-right py-2 px-3 sm:px-4">Valor</th>
@@ -35,7 +34,7 @@
     </thead>
     <tbody>
       <tr *ngFor="let account of savings; let i = index"
-        class="border-t hover:bg-gray-50 opacity-0 animate-fadeSlideDown"
+        class="app-table-row opacity-0 animate-fadeSlideDown"
         [style.animationDelay]="getRowAnimationDelay(account, i)">
         <td class="py-2 px-3 sm:px-4 font-semibold">{{ account.tipo }}</td>
         <td class="py-2 px-3 sm:px-4 text-right font-semibold text-teal-700">
@@ -55,7 +54,7 @@
       </tr>
 
       <!-- Total Final -->
-      <tr class="bg-teal-50 font-bold text-teal-900 opacity-0 animate-fadeSlideDown"
+      <tr class="app-table-total-positive opacity-0 animate-fadeSlideDown"
         [style.animationDelay]="getRowAnimationDelay('total', savings.length)">
         <td class="py-3 px-3 sm:px-4 text-left">Total</td>
         <td class="py-3 px-3 sm:px-4 text-right">

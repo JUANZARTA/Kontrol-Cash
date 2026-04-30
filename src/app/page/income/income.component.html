@@ -10,17 +10,17 @@
 </div>
 
 <!-- Encabezado con botón -->
-<div class="flex items-center justify-between p-4 opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
+<div class="app-page-toolbar opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
   <h6 class="text-lg font-semibold">Tabla de Ingresos</h6>
-  <button (click)="openModal()" class="text-blue-600 font-medium px-3 py-1 rounded-md hover:bg-blue-50 transition">
+  <button (click)="openModal()" class="app-link-button app-link-button-primary">
     Agregar +
   </button>
 </div>
 
 <!-- Tabla de Ingresos -->
 <div class="overflow-x-auto">
-  <table class="w-full min-w-[640px] border-collapse text-sm">
-    <thead class="bg-sky-200 border-b">
+  <table class="app-table">
+    <thead class="app-table-head">
       <tr>
         <th class="text-left py-2 px-3 sm:px-4">Nombre</th>
         <th class="text-left py-2 px-3 sm:px-4">Categoría</th>
@@ -29,7 +29,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let income of incomes" class="border-t hover:bg-gray-50 opacity-0 animate-fadeSlideDown"
+      <tr *ngFor="let income of incomes" class="app-table-row opacity-0 animate-fadeSlideDown"
         [style.animationDelay]="getRowAnimationDelay(income)">
         <td class="py-2 px-3 sm:px-4">{{ income.nombre }}</td>
         <td class="py-2 px-3 sm:px-4">{{ income.categoria }}</td>
@@ -52,7 +52,7 @@
 
     <!-- Fila de totales -->
     <tfoot>
-      <tr class="bg-gray-100 font-bold text-blue-900 border-t animate-fadeSlideDown">
+      <tr class="app-table-total animate-fadeSlideDown">
         <td class="py-3 px-3 sm:px-4 text-left" colspan="2">Total General</td>
         <td class="py-3 px-3 sm:px-4 text-right">
           ${{ formatCurrency(getTotalIncome()) }}
@@ -72,59 +72,55 @@
     </span>
   </p>
   <button (click)="openTransactionModal()" [disabled]="cuadreDescuadre >= 0"
-    class="bg-sky-200 text-sky-800 font-semibold px-5 py-2 rounded-md hover:bg-sky-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
+    class="app-accent-button disabled:opacity-50 disabled:cursor-not-allowed">
     Asignar
   </button>
   <!-- Botón + Billetera si no hay billeteras -->
   <button *ngIf="!wallet || wallet.length === 0" (click)="openModalW()"
-    class="bg-sky-200 text-sky-800 font-semibold px-5 py-2 rounded-md hover:bg-sky-300 transition">
+    class="app-accent-button">
     + Billetera
   </button>
 </div>
 
 <!-- Modal para agregar ingreso -->
-<div *ngIf="isModalOpen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96 animate-pop-in">
-    <h2 class="text-xl font-bold mb-4 animate-fadeSlideDown">Agregar Nuevo Ingreso</h2>
-    <p class="text-gray-600 mb-4 text-sm animate-fadeSlideDown">Introduce los detalles del nuevo ingreso.</p>
+<div *ngIf="isModalOpen" class="app-modal-overlay">
+  <div class="app-modal-panel animate-pop-in">
+    <h2 class="app-modal-title animate-fadeSlideDown">Agregar Nuevo Ingreso</h2>
+    <p class="app-modal-description animate-fadeSlideDown">Introduce los detalles del nuevo ingreso.</p>
 
-    <label class="block mb-2 animate-fadeIn ">Nombre:</label>
+    <label class="app-field-label animate-fadeIn ">Nombre:</label>
     <input type="text" [(ngModel)]="newIncome.nombre" placeholder="Ej: Sueldo"
-      class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
+      class="app-input mb-3 animate-fadeIn" />
 
-    <label class="block mb-2 animate-fadeIn">Categoría:</label>
-    <select [(ngModel)]="newIncome.categoria" class="w-full p-2 border rounded-md mb-3 animate-fadeIn">
+    <label class="app-field-label animate-fadeIn">Categoría:</label>
+    <select [(ngModel)]="newIncome.categoria" class="app-input mb-3 animate-fadeIn">
       <option *ngFor="let categoria of categorias" [value]="categoria">{{ categoria }}</option>
     </select>
 
-    <label class="block mb-2 animate-fadeIn">Valor:</label>
+    <label class="app-field-label animate-fadeIn">Valor:</label>
     <input type="text" [value]="formatCurrency(newIncome.valor)" (input)="onValueInput($event, 'valor')"
-      placeholder="Ej: 1.000.000" class="w-full p-2 border rounded-md mb-3 animate-fadeIn" />
+      placeholder="Ej: 1.000.000" class="app-input mb-3 animate-fadeIn" />
 
     <div class="flex justify-end gap-2">
-      <button (click)="closeModal()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200 animate-fadeIn">Cancelar</button>
-      <button (click)="addIncome()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700 animate-fadeIn">Agregar</button>
+      <button (click)="closeModal()" class="app-secondary-button animate-fadeIn">Cancelar</button>
+      <button (click)="addIncome()" class="app-primary-button animate-fadeIn">Agregar</button>
     </div>
   </div>
 </div>
 
 <!-- Modal para agregar billetera -->
-<div *ngIf="isModalOpenW" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-    <h2 class="text-xl font-bold mb-4">Agregar Nueva Cuenta</h2>
-    <p class="text-gray-600 mb-4 text-sm">Introduce los detalles de la nueva cuenta.</p>
+<div *ngIf="isModalOpenW" class="app-modal-overlay">
+  <div class="app-modal-panel">
+    <h2 class="app-modal-title">Agregar Nueva Cuenta</h2>
+    <p class="app-modal-description">Introduce los detalles de la nueva cuenta.</p>
 
-    <label class="block mb-2">Dinero en:</label>
+    <label class="app-field-label">Dinero en:</label>
     <input type="text" [(ngModel)]="newAccount.tipo" placeholder="Ej: Cuenta de ahorros"
-      class="w-full p-2 border rounded-md mb-3" />
+      class="app-input mb-3" />
 
     <div class="flex justify-end gap-2">
-      <button (click)="closeModalW()"
-        class="px-4 py-2 border rounded-md bg-white-700 hover:bg-slate-200">Cancelar</button>
-      <button (click)="addAccountW()"
-        class="px-4 py-2 bg-sky-700 text-white rounded-md hover:bg-slate-700">Agregar</button>
+      <button (click)="closeModalW()" class="app-secondary-button">Cancelar</button>
+      <button (click)="addAccountW()" class="app-primary-button">Agregar</button>
     </div>
   </div>
 </div>

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
+import { ThemeService } from './services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -11,9 +12,11 @@ import { RouterOutlet, Router } from '@angular/router';
 export class AppComponent implements OnInit {
   title = 'Mi Cartera';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private themeService: ThemeService) {}
 
   ngOnInit(): void {
+    this.themeService.initTheme();
+
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');
     if (redirect) {

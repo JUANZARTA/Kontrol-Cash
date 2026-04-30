@@ -2,7 +2,6 @@ import {
   Component,
   OnInit,
   OnDestroy,
-  inject,
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -10,6 +9,7 @@ import { DateService } from '../../../services/date.service';
 import { Subscription } from 'rxjs';
 import { Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { ThemeService } from '../../../services/theme.service';
 
 @Component({
   selector: 'app-header',
@@ -54,6 +54,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   showDeleteAllModal: boolean = false;
   showDeleteSingleModal: boolean = false;
   notificationToDelete: any = null;
+  isDarkMode = false;
 
   // Propiedades computadas para el template
   get unreadNotificationsCount(): number {
@@ -66,14 +67,21 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   private dateSubscription?: Subscription;
   private routeSubscription?: Subscription;
+  private themeSubscription?: Subscription;
 
   constructor(
     private dateService: DateService,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private themeService: ThemeService
   ) {}
 
   ngOnInit(): void {
+    this.isDarkMode = this.themeService.isDarkMode();
+    this.themeSubscription = this.themeService.theme$.subscribe((theme) => {
+      this.isDarkMode = theme === 'dark';
+    });
+
     this.generateYearRange(2025, 2050);
 
     const today = new Date();
@@ -125,7 +133,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.dateSubscription?.unsubscribe();
     this.routeSubscription?.unsubscribe();
+    this.themeSubscription?.unsubscribe();
     this.cleanupModals();
+  }
+
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
   }
 
   // Limpiar todos los modales
@@ -206,7 +219,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   logout(): void {
     this.authService.logout(); // asegúrate de que este método exista
-    this.router.navigate(['/auth/login']); // o la ruta a tu pantalla de login
+    this.router.navigate(['/login']);
   }
   // 📩 NOTIFICACIONES
 

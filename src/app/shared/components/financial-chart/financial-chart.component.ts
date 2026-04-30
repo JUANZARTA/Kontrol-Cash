@@ -2,12 +2,16 @@ import {
   Component,
   Input,
   OnChanges,
+  OnDestroy,
+  OnInit,
   SimpleChanges,
   Inject,
   PLATFORM_ID,
 } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { Chart, registerables } from 'chart.js';
+import { Subscription } from 'rxjs';
+import { ThemeService } from '../../../services/theme.service';
 
 Chart.register(...registerables);
 
@@ -18,7 +22,7 @@ Chart.register(...registerables);
   templateUrl: './financial-chart.component.html',
   styleUrls: ['./financial-chart.component.css'],
 })
-export class FinancialChartComponent implements OnChanges {
+export class FinancialChartComponent implements OnInit, OnChanges, OnDestroy {
   @Input() ingresosTotales = 0;
   @Input() gastosTotales = 0;
   @Input() totalDeuda = 0;
@@ -26,11 +30,26 @@ export class FinancialChartComponent implements OnChanges {
   @Input() totalPrestamo = 0;
 
   private chart: Chart | null = null;
+  private themeSubscription?: Subscription;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private themeService: ThemeService
+  ) {}
 
-  ngOnChanges(changes: SimpleChanges): void {
+  ngOnInit(): void {
+    this.themeSubscription = this.themeService.theme$.subscribe(() => {
+      this.renderChart();
+    });
+  }
+
+  ngOnChanges(_: SimpleChanges): void {
     this.renderChart();
+  }
+
+  ngOnDestroy(): void {
+    this.themeSubscription?.unsubscribe();
+    this.chart?.destroy();
   }
 
   private renderChart() {
@@ -66,7 +85,7 @@ export class FinancialChartComponent implements OnChanges {
 
     if (total === 0) {
       chartData = [1]; // valor ficticio para renderizar
-      chartColors = ['#e5e7eb']; // gris claro
+      chartColors = [this.themeService.isDarkMode() ? '#334155' : '#e5e7eb'];
       chartLabels = ['Sin datos'];
     } else {
       chartData = dataValues;
@@ -101,7 +120,7 @@ export class FinancialChartComponent implements OnChanges {
           legend: {
             position: 'bottom',
             labels: {
-              color: '#374151',
+              color: this.themeService.isDarkMode() ? '#e2e8f0' : '#374151',
               font: { size: 13 },
             },
           },
