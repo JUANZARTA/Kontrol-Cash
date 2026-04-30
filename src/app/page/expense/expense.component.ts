@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ExpenseService } from '../../services/expense.service';
 import { CategoriaGasto, Expense } from '../../models/expense.model';
 import { DateService } from '../../services/date.service';
-import { Subscription } from 'rxjs';
+import { Subscription, of } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,6 +12,8 @@ import { WalletService } from '../../services/wallet.service';
 import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
+import { PlannerService } from '../../services/planner.service';
+import { RecurrentItem } from '../../models/planner.model';
 
 import {
   trigger,
@@ -47,6 +49,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService); // ✅ nuevo
   private finanzasService = inject(FinanzasService);
   private walletService = inject(WalletService);
+  private plannerService = inject(PlannerService);
 
   // Propiedades
   incomes: any[] = [];
@@ -87,7 +90,17 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   expenseToDeleteId: string | null = null;
   newValue: number = 0;
 
-  categorias: string[] = Object.values(CategoriaGasto);
+  defaultCategorias: string[] = Object.values(CategoriaGasto);
+  categorias: string[] = [...this.defaultCategorias];
+  customCategoryName = '';
+  recurringItems: RecurrentItem[] = [];
+  newRecurringExpense: RecurrentItem = {
+    nombre: '',
+    categoria: CategoriaGasto.Variable,
+    monto: 0,
+    tipo: 'expense',
+    activo: true,
+  };
 
   // Gasto nuevo (modal)
   newExpense: Expense = new Expense(
@@ -127,7 +140,18 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       if (date.year && date.month) {
         this.currentYear = date.year;
         this.currentMonth = date.month;
-        this.loadExpenses();
+        this.plannerService
+          .ensureRecurringItemsApplied(
+            this.userId,
+            this.currentYear,
+            this.currentMonth,
+            this.incomeServiceProxy(),
+            this.expenseService
+          )
+          .subscribe(() => {
+            this.loadPlannerConfig();
+            this.loadExpenses();
+          });
       }
     });
     this.finanzasService.mostrarEstadoFinanciero(
@@ -184,6 +208,84 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
           console.error('Error al cargar billeteras:', err);
         },
       });
+  }
+
+  private incomeServiceProxy() {
+    return {
+      addIncome: () => {
+        return of(null);
+      },
+    };
+  }
+
+  loadPlannerConfig() {
+    this.plannerService.getCustomCategories(this.userId, 'expense').subscribe((categories) => {
+      this.categorias = [...this.defaultCategorias, ...categories];
+      if (!this.categorias.includes(this.newExpense.categoria)) {
+        this.newExpense.categoria = this.categorias[0] || CategoriaGasto.Variable;
+      }
+      if (!this.categorias.includes(this.editedExpense.categoria)) {
+        this.editedExpense.categoria = this.categorias[0] || CategoriaGasto.Variable;
+      }
+      if (!this.categorias.includes(this.newRecurringExpense.categoria)) {
+        this.newRecurringExpense.categoria = this.categorias[0] || CategoriaGasto.Variable;
+      }
+    });
+
+    this.plannerService.getRecurringItems(this.userId, 'expense').subscribe((items) => {
+      this.recurringItems = items;
+    });
+  }
+
+  addCustomCategory() {
+    const category = this.customCategoryName.trim();
+    if (!category) return;
+
+    const normalized = category.toLowerCase();
+    const exists = this.categorias.some((item) => item.toLowerCase() === normalized);
+    if (exists) {
+      this.customCategoryName = '';
+      return;
+    }
+
+    const updatedCategories = [...this.categorias, category].filter(
+      (value) => !this.defaultCategorias.includes(value)
+    );
+
+    this.plannerService.saveCustomCategories(this.userId, 'expense', updatedCategories).subscribe(() => {
+      this.customCategoryName = '';
+      this.loadPlannerConfig();
+    });
+  }
+
+  addRecurringExpense() {
+    if (!this.newRecurringExpense.nombre.trim() || this.newRecurringExpense.monto <= 0) {
+      return;
+    }
+
+    this.plannerService.addRecurringItem(this.userId, {
+      ...this.newRecurringExpense,
+      nombre: this.newRecurringExpense.nombre.trim(),
+      categoria: this.newRecurringExpense.categoria,
+      tipo: 'expense',
+      activo: true,
+    }).subscribe(() => {
+      this.newRecurringExpense = {
+        nombre: '',
+        categoria: this.categorias[0] || CategoriaGasto.Variable,
+        monto: 0,
+        tipo: 'expense',
+        activo: true,
+      };
+      this.loadPlannerConfig();
+    });
+  }
+
+  deleteRecurringExpense(itemId?: string) {
+    if (!itemId) return;
+    this.plannerService.deleteRecurringItem(this.userId, itemId).subscribe(() => {
+      this.loadPlannerConfig();
+    });
   }
   setAction(action: 'add' | 'subtract'): void {
     this.currentAction = action;

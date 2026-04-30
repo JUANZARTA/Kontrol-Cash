@@ -13,7 +13,7 @@ export enum CategoriaGasto {
   export class Expense {
     constructor(
       public descripcion: string,
-      public categoria: CategoriaGasto,
+      public categoria: string,
       public valor: number,
       public estimacion: number
     ) {}

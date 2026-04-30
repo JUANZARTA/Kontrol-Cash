@@ -34,6 +34,8 @@ import { AuthService } from '../../services/auth.service';
 import { inject } from '@angular/core';
 import { FinancialChartComponent } from '../../shared/components/financial-chart/financial-chart.component';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { PlannerService } from '../../services/planner.service';
+import { MonthlyHistoryItem, SavingGoal } from '../../models/planner.model';
 
 interface DebtWithId extends Debt {
   id: string;
@@ -67,6 +69,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
   // Subscripción
   private dateSubscription: Subscription | undefined;
   private authService = inject(AuthService);
+  private plannerService = inject(PlannerService);
 
   // Modal
   isModalDeudaOpen = false;
@@ -99,6 +102,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
   gastos: Expense[] = [];
   ingresos: Income[] = [];
   invoices: InvoiceWithId[] = [];
+  savings: Saving[] = [];
 
   // Fecha
   currentYear: string = new Date().getFullYear().toString();
@@ -130,6 +134,8 @@ export default class HomeComponent implements OnInit, OnDestroy {
   totalPrestamo: number = 0;
   ingresosTotales: number = 0;
   totalAhorro: number = 0;
+  savingGoal: SavingGoal | null = null;
+  monthlyHistory: MonthlyHistoryItem[] = [];
 
   constructor(
     private walletService: WalletService,
@@ -156,7 +162,19 @@ export default class HomeComponent implements OnInit, OnDestroy {
         if (year && month) {
           this.currentYear = year;
           this.currentMonth = month;
-          this.loadData();
+          this.plannerService
+            .ensureRecurringItemsApplied(
+              this.currentUser,
+              this.currentYear,
+              this.currentMonth,
+              this.incomeService,
+              this.expenseService
+            )
+            .subscribe(() => {
+              this.loadData();
+              this.loadSavingGoal();
+              this.loadMonthlyHistory();
+            });
           // Verificar nuevamente cuando cambia la fecha
           this.verificarYCopiarMesAnteriorAutomatico();
         }
@@ -207,7 +225,12 @@ export default class HomeComponent implements OnInit, OnDestroy {
         this.currentYear,
         this.currentMonth
       ),
-    }).subscribe(({ wallet, debts, loans, expenses, incomes }) => {
+      savings: this.savingsService.getSavings(
+        userId,
+        this.currentYear,
+        this.currentMonth
+      ),
+    }).subscribe(({ wallet, debts, loans, expenses, incomes, savings }) => {
       this.wallet = Object.entries(wallet || {}).map(
         ([id, item]: [string, any]) => ({ id, ...item })
       );
@@ -221,6 +244,9 @@ export default class HomeComponent implements OnInit, OnDestroy {
         ([id, item]: [string, any]) => ({ id, ...item })
       );
       this.ingresos = Object.entries(incomes || {}).map(
+        ([id, item]: [string, any]) => ({ id, ...item })
+      );
+      this.savings = Object.entries(savings || {}).map(
         ([id, item]: [string, any]) => ({ id, ...item })
       );
       this.evaluarSaludFinanciera();
@@ -256,9 +282,55 @@ export default class HomeComponent implements OnInit, OnDestroy {
     }
 
     // 🔹 Calcula ahorro estimado
-    this.totalAhorro =
-      this.estimacionDineroRestanteMes ||
-      Math.max(this.ingresosTotales - this.gastosTotales, 0);
+    this.totalAhorro = this.savings?.reduce((sum, item) => sum + (item.valor || 0), 0);
+  }
+
+  loadSavingGoal() {
+    this.plannerService.getSavingGoal(this.currentUser).subscribe((goal) => {
+      this.savingGoal = goal;
+    });
+  }
+
+  get savingGoalProgress(): number {
+    if (!this.savingGoal?.montoObjetivo) return 0;
+    return Math.min(100, Math.round((this.totalAhorro / this.savingGoal.montoObjetivo) * 100));
+  }
+
+  loadMonthlyHistory() {
+    const periods = this.buildRecentPeriods(6);
+    const requests = periods.map((period) =>
+      forkJoin({
+        incomes: this.incomeService.getIncomes(this.currentUser, period.year, period.month),
+        expenses: this.expenseService.getExpenses(this.currentUser, period.year, period.month),
+        savings: this.savingsService.getSavings(this.currentUser, period.year, period.month),
+        wallet: this.walletService.getWallet(this.currentUser, period.year, period.month),
+      })
+    );
+
+    forkJoin(requests).subscribe((results) => {
+      this.monthlyHistory = results.map((result, index) => ({
+        period: `${periods[index].month}/${periods[index].year}`,
+        ingresos: Object.values(result.incomes || {}).reduce((sum: number, item: any) => sum + (item.valor || 0), 0),
+        gastos: Object.values(result.expenses || {}).reduce((sum: number, item: any) => sum + (item.valor || 0), 0),
+        ahorro: Object.values(result.savings || {}).reduce((sum: number, item: any) => sum + (item.valor || 0), 0),
+        saldo: Object.values(result.wallet || {}).reduce((sum: number, item: any) => sum + (item.valor || 0), 0),
+      })).reverse();
+    });
+  }
+
+  private buildRecentPeriods(count: number): Array<{ year: string; month: string }> {
+    const periods: Array<{ year: string; month: string }> = [];
+    const baseDate = new Date(Number(this.currentYear), Number(this.currentMonth) - 1, 1);
+
+    for (let i = 0; i < count; i++) {
+      const date = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
+      periods.push({
+        year: `${date.getFullYear()}`,
+        month: `${date.getMonth() + 1}`.padStart(2, '0'),
+      });
+    }
+
+    return periods;
   }
 
   // Usuario actual

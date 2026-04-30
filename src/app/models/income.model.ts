@@ -7,7 +7,7 @@ export enum CategoriaIngreso {
 export class Income {
   constructor(
     public nombre: string,
-    public categoria: CategoriaIngreso,
+    public categoria: string,
     public valor: number
   ) {}
 }

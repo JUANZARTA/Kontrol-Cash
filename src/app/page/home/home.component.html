@@ -43,6 +43,60 @@
   </div>
 </div>
 
+<div class="mt-6 grid gap-6 lg:grid-cols-[1fr_0.95fr]">
+  <div class="app-section-card">
+    <div class="flex items-center justify-between gap-4 mb-4">
+      <div>
+        <h3 class="text-lg font-semibold text-slate-900">Meta de ahorro</h3>
+        <p class="text-sm text-slate-500">Mirá cuánto falta para alcanzar tu objetivo.</p>
+      </div>
+      <div class="text-right">
+        <p class="app-kpi-label">Progreso</p>
+        <p class="text-2xl font-semibold text-teal-700">{{ savingGoalProgress }}%</p>
+      </div>
+    </div>
+
+    <div *ngIf="savingGoal; else noGoal" class="grid items-center gap-6 md:grid-cols-[1fr_160px]">
+      <div>
+        <p class="text-xl font-semibold text-slate-900">{{ savingGoal?.titulo }}</p>
+        <p class="mt-2 text-sm text-slate-500">{{ totalAhorro | currency }} de {{ savingGoal?.montoObjetivo | currency }}</p>
+        <div class="mt-4 h-3 rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-full rounded-full bg-gradient-to-r from-teal-500 to-sky-500 transition-all duration-500"
+            [style.width.%]="savingGoalProgress"></div>
+        </div>
+      </div>
+
+      <div class="relative mx-auto flex h-44 w-32 items-end justify-center rounded-[3rem] border-4 border-slate-200 bg-slate-100 overflow-hidden">
+        <div class="absolute inset-x-3 bottom-3 rounded-[2rem] bg-gradient-to-t from-teal-600 to-sky-400 transition-all duration-500"
+          [style.height.%]="savingGoalProgress"></div>
+        <div class="absolute inset-0 flex items-center justify-center text-5xl">🐷</div>
+      </div>
+    </div>
+
+    <ng-template #noGoal>
+      <p class="text-sm text-slate-500">Definí tu meta desde la sección de ahorros para verla acá.</p>
+    </ng-template>
+  </div>
+
+  <div class="app-section-card">
+    <h3 class="text-lg font-semibold text-slate-900 mb-2">Historial mensual</h3>
+    <p class="text-sm text-slate-500 mb-4">Resumen de tus últimos meses para ver evolución real.</p>
+
+    <div class="space-y-3" *ngIf="monthlyHistory.length > 0; else noHistory">
+      <div *ngFor="let month of monthlyHistory" class="grid grid-cols-[90px_1fr_1fr_1fr] items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3 text-sm">
+        <span class="font-semibold text-slate-700">{{ month.period }}</span>
+        <span class="text-sky-700">+ {{ month.ingresos | currency }}</span>
+        <span class="text-rose-600">- {{ month.gastos | currency }}</span>
+        <span class="text-teal-700">{{ month.ahorro | currency }}</span>
+      </div>
+    </div>
+
+    <ng-template #noHistory>
+      <p class="text-sm text-slate-500">Todavía no hay suficiente historial para mostrar.</p>
+    </ng-template>
+  </div>
+</div>
+
 <!-- Resumen Financiero Compacto -->
 <div class="mt-6 grid w-full max-w-6xl grid-cols-1 items-stretch gap-6 xl:grid-cols-[1.15fr_0.85fr]">
 

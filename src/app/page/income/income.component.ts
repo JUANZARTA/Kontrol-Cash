@@ -16,6 +16,8 @@ import { LoanService } from '../../services/loans.service';
 import { ExpenseService } from '../../services/expense.service';
 import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { PlannerService } from '../../services/planner.service';
+import { RecurrentItem } from '../../models/planner.model';
 
 // Extiende WalletAccount para agregar id y showMenu
 export interface WalletAccountWithId extends WalletAccount {
@@ -45,6 +47,7 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   private expenseService = inject(ExpenseService);
   private finanzasService = inject(FinanzasService);
   private walletService = inject(WalletService);
+  private plannerService = inject(PlannerService);
 
   // Propiedades
   incomes: IncomeWithId[] = [];
@@ -89,7 +92,17 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   isEditModalOpen: boolean = false;
 
   // Categorías disponibles
-  categorias: string[] = Object.values(CategoriaIngreso);
+  defaultCategorias: string[] = Object.values(CategoriaIngreso);
+  categorias: string[] = [...this.defaultCategorias];
+  customCategoryName = '';
+  recurringItems: RecurrentItem[] = [];
+  newRecurringIncome: RecurrentItem = {
+    nombre: '',
+    categoria: CategoriaIngreso.Fijo,
+    monto: 0,
+    tipo: 'income',
+    activo: true,
+  };
 
   // Ingreso nuevo (modal)
   newIncome: Income = new Income('', CategoriaIngreso.Fijo, null as any);
@@ -111,8 +124,19 @@ export default class IncomeComponent implements OnInit, OnDestroy {
       if (date.year && date.month) {
         this.currentYear = date.year;
         this.currentMonth = date.month;
-        this.loadIncomes();
-        this.loadWallets(); // ✅ carga billeteras al iniciar
+        this.plannerService
+          .ensureRecurringItemsApplied(
+            this.userId,
+            this.currentYear,
+            this.currentMonth,
+            this.incomeService,
+            this.expenseService
+          )
+          .subscribe(() => {
+            this.loadPlannerConfig();
+            this.loadIncomes();
+            this.loadWallets();
+          });
       }
     });
 
@@ -233,6 +257,76 @@ export default class IncomeComponent implements OnInit, OnDestroy {
           showMenu: false,
         }));
       });
+  }
+
+  loadPlannerConfig() {
+    this.plannerService.getCustomCategories(this.userId, 'income').subscribe((categories) => {
+      this.categorias = [...this.defaultCategorias, ...categories];
+      if (!this.categorias.includes(this.newIncome.categoria)) {
+        this.newIncome.categoria = this.categorias[0] || CategoriaIngreso.Fijo;
+      }
+      if (!this.categorias.includes(this.editedIncome.categoria)) {
+        this.editedIncome.categoria = this.categorias[0] || CategoriaIngreso.Fijo;
+      }
+      if (!this.categorias.includes(this.newRecurringIncome.categoria)) {
+        this.newRecurringIncome.categoria = this.categorias[0] || CategoriaIngreso.Fijo;
+      }
+    });
+
+    this.plannerService.getRecurringItems(this.userId, 'income').subscribe((items) => {
+      this.recurringItems = items;
+    });
+  }
+
+  addCustomCategory() {
+    const category = this.customCategoryName.trim();
+    if (!category) return;
+
+    const normalized = category.toLowerCase();
+    const exists = this.categorias.some((item) => item.toLowerCase() === normalized);
+    if (exists) {
+      this.customCategoryName = '';
+      return;
+    }
+
+    const updatedCategories = [...this.categorias, category].filter(
+      (value) => !this.defaultCategorias.includes(value)
+    );
+
+    this.plannerService.saveCustomCategories(this.userId, 'income', updatedCategories).subscribe(() => {
+      this.customCategoryName = '';
+      this.loadPlannerConfig();
+    });
+  }
+
+  addRecurringIncome() {
+    if (!this.newRecurringIncome.nombre.trim() || this.newRecurringIncome.monto <= 0) {
+      return;
+    }
+
+    this.plannerService.addRecurringItem(this.userId, {
+      ...this.newRecurringIncome,
+      nombre: this.newRecurringIncome.nombre.trim(),
+      categoria: this.newRecurringIncome.categoria,
+      tipo: 'income',
+      activo: true,
+    }).subscribe(() => {
+      this.newRecurringIncome = {
+        nombre: '',
+        categoria: this.categorias[0] || CategoriaIngreso.Fijo,
+        monto: 0,
+        tipo: 'income',
+        activo: true,
+      };
+      this.loadPlannerConfig();
+    });
+  }
+
+  deleteRecurringIncome(itemId?: string) {
+    if (!itemId) return;
+    this.plannerService.deleteRecurringItem(this.userId, itemId).subscribe(() => {
+      this.loadPlannerConfig();
+    });
   }
 
   // ======================

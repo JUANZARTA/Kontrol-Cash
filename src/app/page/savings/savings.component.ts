@@ -11,6 +11,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
+import { PlannerService } from '../../services/planner.service';
+import { SavingGoal } from '../../models/planner.model';
 
 export interface SavingWithId extends Saving {
   id: string;
@@ -31,6 +33,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   private dateService = inject(DateService);
   private authService = inject(AuthService);
   private finanzasService = inject(FinanzasService);
+  private plannerService = inject(PlannerService);
   // Variables para modales de agregar valor y eliminar
   isAddValueModalOpen: boolean = false;
   isDeleteModalOpen: boolean = false;
@@ -59,6 +62,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   // Ahorro en edición
   editedSaving: Saving = new Saving('', 0);
   editedId: string | null = null;
+  savingGoal: SavingGoal = { titulo: 'Mi meta principal', montoObjetivo: 0 };
 
   readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
 
@@ -72,6 +76,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
         this.currentYear = date.year;
         this.currentMonth = date.month;
         this.loadSavings();
+        this.loadSavingGoal();
       }
     });
     this.finanzasService.mostrarEstadoFinanciero(
@@ -103,7 +108,31 @@ export default class SavingsComponent implements OnInit, OnDestroy {
       this.userId,
       this.currentYear,
       this.currentMonth
-    );
+      );
+  }
+
+  loadSavingGoal() {
+    this.plannerService.getSavingGoal(this.userId).subscribe((goal) => {
+      if (goal) {
+        this.savingGoal = goal;
+      }
+    });
+  }
+
+  saveSavingGoal() {
+    if (this.savingGoal.montoObjetivo <= 0 || !this.savingGoal.titulo.trim()) {
+      return;
+    }
+
+    this.plannerService.saveSavingGoal(this.userId, {
+      titulo: this.savingGoal.titulo.trim(),
+      montoObjetivo: this.savingGoal.montoObjetivo,
+    }).subscribe();
+  }
+
+  get savingProgress(): number {
+    if (!this.savingGoal.montoObjetivo) return 0;
+    return Math.min(100, Math.round((this.getTotalSavings() / this.savingGoal.montoObjetivo) * 100));
   }
 
   // ======================
