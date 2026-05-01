@@ -135,6 +135,8 @@ export default class HomeComponent implements OnInit, OnDestroy {
   ingresosTotales: number = 0;
   totalAhorro: number = 0;
   savingGoal: SavingGoal | null = null;
+  isEditingSavingGoal = false;
+  draftSavingGoal: SavingGoal = { titulo: '', montoObjetivo: 0 };
   monthlyHistory: MonthlyHistoryItem[] = [];
 
   constructor(
@@ -288,7 +290,57 @@ export default class HomeComponent implements OnInit, OnDestroy {
   loadSavingGoal() {
     this.plannerService.getSavingGoal(this.currentUser).subscribe((goal) => {
       this.savingGoal = goal;
+      this.draftSavingGoal = goal
+        ? { ...goal }
+        : { titulo: 'Mi meta principal', montoObjetivo: 0 };
     });
+  }
+
+  startSavingGoalEdit() {
+    this.isEditingSavingGoal = true;
+    this.draftSavingGoal = this.savingGoal
+      ? { ...this.savingGoal }
+      : { titulo: 'Mi meta principal', montoObjetivo: 0 };
+  }
+
+  cancelSavingGoalEdit() {
+    this.isEditingSavingGoal = false;
+    this.draftSavingGoal = this.savingGoal
+      ? { ...this.savingGoal }
+      : { titulo: 'Mi meta principal', montoObjetivo: 0 };
+  }
+
+  saveSavingGoal() {
+    if (!this.draftSavingGoal.titulo.trim() || this.draftSavingGoal.montoObjetivo <= 0) {
+      return;
+    }
+
+    this.plannerService
+      .saveSavingGoal(this.currentUser, {
+        titulo: this.draftSavingGoal.titulo.trim(),
+        montoObjetivo: this.draftSavingGoal.montoObjetivo,
+      })
+      .subscribe(() => {
+        this.savingGoal = { ...this.draftSavingGoal, titulo: this.draftSavingGoal.titulo.trim() };
+        this.isEditingSavingGoal = false;
+      });
+  }
+
+  onDraftSavingGoalAmountInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/\D/g, '');
+    const value = Number(raw) || 0;
+    this.draftSavingGoal.montoObjetivo = value;
+    input.value = value ? value.toLocaleString('es-CO') : '';
+  }
+
+  get historyMaxValue(): number {
+    return Math.max(
+      1,
+      ...this.monthlyHistory.map((item) =>
+        Math.max(item.ingresos || 0, item.gastos || 0, item.ahorro || 0, item.saldo || 0)
+      )
+    );
   }
 
   get savingGoalProgress(): number {

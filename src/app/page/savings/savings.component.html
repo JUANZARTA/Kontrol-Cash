@@ -28,7 +28,7 @@
 
     <div class="grid gap-3 md:grid-cols-[1fr_0.8fr_auto]">
       <input [(ngModel)]="savingGoal.titulo" class="app-input" placeholder="Ej: Fondo de emergencia" />
-      <input type="number" [(ngModel)]="savingGoal.montoObjetivo" class="app-input" placeholder="Monto objetivo" />
+      <input type="text" [value]="formatCurrency(savingGoal.montoObjetivo)" (input)="onSavingGoalAmountInput($event)" class="app-input" placeholder="Monto objetivo" />
       <button (click)="saveSavingGoal()" class="app-primary-button">Guardar</button>
     </div>
   </div>

@@ -368,7 +368,9 @@ textarea {
 }
 
 .dark-theme .bg-gray-50,
-.dark-theme .bg-gray-100 {
+.dark-theme .bg-gray-100,
+.dark-theme .bg-slate-100,
+.dark-theme .bg-slate-100\/90 {
   background-color: var(--app-bg-soft) !important;
 }
 

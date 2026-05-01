@@ -94,8 +94,10 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   // Categorías disponibles
   defaultCategorias: string[] = Object.values(CategoriaIngreso);
   categorias: string[] = [...this.defaultCategorias];
+  customCategories: string[] = [];
   customCategoryName = '';
   recurringItems: RecurrentItem[] = [];
+  editingRecurringIncomeId: string | null = null;
   newRecurringIncome: RecurrentItem = {
     nombre: '',
     categoria: CategoriaIngreso.Fijo,
@@ -261,6 +263,7 @@ export default class IncomeComponent implements OnInit, OnDestroy {
 
   loadPlannerConfig() {
     this.plannerService.getCustomCategories(this.userId, 'income').subscribe((categories) => {
+      this.customCategories = categories;
       this.categorias = [...this.defaultCategorias, ...categories];
       if (!this.categorias.includes(this.newIncome.categoria)) {
         this.newIncome.categoria = this.categorias[0] || CategoriaIngreso.Fijo;
@@ -299,34 +302,87 @@ export default class IncomeComponent implements OnInit, OnDestroy {
     });
   }
 
+  removeCustomCategory(category: string) {
+    const updatedCategories = this.customCategories.filter((item) => item !== category);
+    this.plannerService.saveCustomCategories(this.userId, 'income', updatedCategories).subscribe(() => {
+      this.loadPlannerConfig();
+    });
+  }
+
   addRecurringIncome() {
     if (!this.newRecurringIncome.nombre.trim() || this.newRecurringIncome.monto <= 0) {
       return;
     }
 
-    this.plannerService.addRecurringItem(this.userId, {
+    const payload: RecurrentItem = {
       ...this.newRecurringIncome,
       nombre: this.newRecurringIncome.nombre.trim(),
       categoria: this.newRecurringIncome.categoria,
       tipo: 'income',
       activo: true,
-    }).subscribe(() => {
-      this.newRecurringIncome = {
-        nombre: '',
-        categoria: this.categorias[0] || CategoriaIngreso.Fijo,
-        monto: 0,
-        tipo: 'income',
-        activo: true,
-      };
+    };
+
+    const request = this.editingRecurringIncomeId
+      ? this.plannerService.updateRecurringItem(this.userId, this.editingRecurringIncomeId, payload)
+      : this.plannerService.addRecurringItem(this.userId, payload);
+
+    request.subscribe(() => {
+      this.resetRecurringIncomeForm();
       this.loadPlannerConfig();
     });
+  }
+
+  onRecurringIncomeAmountInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/\D/g, '');
+    const value = Number(raw) || 0;
+    this.newRecurringIncome.monto = value;
+    input.value = this.formatCurrency(value);
+  }
+
+  startEditRecurringIncome(item: RecurrentItem) {
+    this.editingRecurringIncomeId = item.id || null;
+    this.newRecurringIncome = {
+      nombre: item.nombre,
+      categoria: item.categoria,
+      monto: item.monto,
+      tipo: 'income',
+      activo: item.activo,
+    };
+  }
+
+  toggleRecurringIncome(item: RecurrentItem) {
+    if (!item.id) return;
+    this.plannerService
+      .updateRecurringItem(this.userId, item.id, { ...item, activo: !item.activo })
+      .subscribe(() => this.loadPlannerConfig());
+  }
+
+  resetRecurringIncomeForm() {
+    this.editingRecurringIncomeId = null;
+    this.newRecurringIncome = {
+      nombre: '',
+      categoria: this.categorias[0] || CategoriaIngreso.Fijo,
+      monto: 0,
+      tipo: 'income',
+      activo: true,
+    };
   }
 
   deleteRecurringIncome(itemId?: string) {
     if (!itemId) return;
     this.plannerService.deleteRecurringItem(this.userId, itemId).subscribe(() => {
+      if (this.editingRecurringIncomeId === itemId) {
+        this.resetRecurringIncomeForm();
+      }
       this.loadPlannerConfig();
     });
+  }
+
+  isCustomCategoryInUse(category: string): boolean {
+    const usedInIncomes = this.incomes.some((item) => item.categoria === category);
+    const usedInRecurring = this.recurringItems.some((item) => item.categoria === category);
+    return usedInIncomes || usedInRecurring;
   }
 
   // ======================

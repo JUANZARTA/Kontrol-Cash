@@ -64,6 +64,16 @@ export class PlannerService {
     );
   }
 
+  updateRecurringItem(userId: string, itemId: string, item: RecurrentItem): Observable<any> {
+    const base = `${this.FIREBASE_BASE_URL}/${userId}/config/recurringItems/${itemId}.json`;
+    return from(this.auth.getIdToken()).pipe(
+      switchMap((token) => {
+        const url = token ? `${base}?auth=${token}` : base;
+        return this.http.put(url, item).pipe(catchError(() => of(null)));
+      })
+    );
+  }
+
   deleteRecurringItem(userId: string, itemId: string): Observable<any> {
     const base = `${this.FIREBASE_BASE_URL}/${userId}/config/recurringItems/${itemId}.json`;
     return from(this.auth.getIdToken()).pipe(
@@ -101,14 +111,6 @@ export class PlannerService {
     incomeService: { addIncome: (userId: string, year: string, month: string, income: Income) => Observable<any> },
     expenseService: { addExpense: (userId: string, year: string, month: string, expense: Expense) => Observable<any> }
   ): Observable<boolean> {
-    const now = new Date();
-    const currentYear = now.getFullYear().toString();
-    const currentMonth = `${now.getMonth() + 1}`.padStart(2, '0');
-
-    if (year !== currentYear || month !== currentMonth) {
-      return of(false);
-    }
-
     const flagBase = `${this.FIREBASE_BASE_URL}/${userId}/config/recurringApplications/${year}-${month}.json`;
 
     return from(this.auth.getIdToken()).pipe(

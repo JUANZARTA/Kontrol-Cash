@@ -92,8 +92,10 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
 
   defaultCategorias: string[] = Object.values(CategoriaGasto);
   categorias: string[] = [...this.defaultCategorias];
+  customCategories: string[] = [];
   customCategoryName = '';
   recurringItems: RecurrentItem[] = [];
+  editingRecurringExpenseId: string | null = null;
   newRecurringExpense: RecurrentItem = {
     nombre: '',
     categoria: CategoriaGasto.Variable,
@@ -220,6 +222,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
 
   loadPlannerConfig() {
     this.plannerService.getCustomCategories(this.userId, 'expense').subscribe((categories) => {
+      this.customCategories = categories;
       this.categorias = [...this.defaultCategorias, ...categories];
       if (!this.categorias.includes(this.newExpense.categoria)) {
         this.newExpense.categoria = this.categorias[0] || CategoriaGasto.Variable;
@@ -258,34 +261,87 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     });
   }
 
+  removeCustomCategory(category: string) {
+    const updatedCategories = this.customCategories.filter((item) => item !== category);
+    this.plannerService.saveCustomCategories(this.userId, 'expense', updatedCategories).subscribe(() => {
+      this.loadPlannerConfig();
+    });
+  }
+
   addRecurringExpense() {
     if (!this.newRecurringExpense.nombre.trim() || this.newRecurringExpense.monto <= 0) {
       return;
     }
 
-    this.plannerService.addRecurringItem(this.userId, {
+    const payload: RecurrentItem = {
       ...this.newRecurringExpense,
       nombre: this.newRecurringExpense.nombre.trim(),
       categoria: this.newRecurringExpense.categoria,
       tipo: 'expense',
       activo: true,
-    }).subscribe(() => {
-      this.newRecurringExpense = {
-        nombre: '',
-        categoria: this.categorias[0] || CategoriaGasto.Variable,
-        monto: 0,
-        tipo: 'expense',
-        activo: true,
-      };
+    };
+
+    const request = this.editingRecurringExpenseId
+      ? this.plannerService.updateRecurringItem(this.userId, this.editingRecurringExpenseId, payload)
+      : this.plannerService.addRecurringItem(this.userId, payload);
+
+    request.subscribe(() => {
+      this.resetRecurringExpenseForm();
       this.loadPlannerConfig();
     });
+  }
+
+  onRecurringExpenseAmountInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const rawValue = input.value.replace(/\D/g, '');
+    const numericValue = Number(rawValue) || 0;
+    this.newRecurringExpense.monto = numericValue;
+    input.value = this.formatCurrency(numericValue);
+  }
+
+  startEditRecurringExpense(item: RecurrentItem) {
+    this.editingRecurringExpenseId = item.id || null;
+    this.newRecurringExpense = {
+      nombre: item.nombre,
+      categoria: item.categoria,
+      monto: item.monto,
+      tipo: 'expense',
+      activo: item.activo,
+    };
+  }
+
+  toggleRecurringExpense(item: RecurrentItem) {
+    if (!item.id) return;
+    this.plannerService
+      .updateRecurringItem(this.userId, item.id, { ...item, activo: !item.activo })
+      .subscribe(() => this.loadPlannerConfig());
+  }
+
+  resetRecurringExpenseForm() {
+    this.editingRecurringExpenseId = null;
+    this.newRecurringExpense = {
+      nombre: '',
+      categoria: this.categorias[0] || CategoriaGasto.Variable,
+      monto: 0,
+      tipo: 'expense',
+      activo: true,
+    };
   }
 
   deleteRecurringExpense(itemId?: string) {
     if (!itemId) return;
     this.plannerService.deleteRecurringItem(this.userId, itemId).subscribe(() => {
+      if (this.editingRecurringExpenseId === itemId) {
+        this.resetRecurringExpenseForm();
+      }
       this.loadPlannerConfig();
     });
+  }
+
+  isCustomCategoryInUse(category: string): boolean {
+    const usedInExpenses = this.expenses.some((item) => item.categoria === category);
+    const usedInRecurring = this.recurringItems.some((item) => item.categoria === category);
+    return usedInExpenses || usedInRecurring;
   }
   setAction(action: 'add' | 'subtract'): void {
     this.currentAction = action;

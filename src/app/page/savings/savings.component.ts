@@ -130,6 +130,14 @@ export default class SavingsComponent implements OnInit, OnDestroy {
     }).subscribe();
   }
 
+  onSavingGoalAmountInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/\D/g, '');
+    const value = Number(raw) || 0;
+    this.savingGoal.montoObjetivo = value;
+    input.value = this.formatCurrency(value);
+  }
+
   get savingProgress(): number {
     if (!this.savingGoal.montoObjetivo) return 0;
     return Math.min(100, Math.round((this.getTotalSavings() / this.savingGoal.montoObjetivo) * 100));

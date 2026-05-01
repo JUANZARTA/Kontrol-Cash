@@ -11,15 +11,20 @@
 <div class="mb-6 grid gap-6 lg:grid-cols-2">
   <div class="app-section-card">
     <h3 class="text-lg font-semibold text-slate-900">Ingresos recurrentes</h3>
-    <p class="mb-4 text-sm text-slate-500">Se aplican automáticamente en el mes actual.</p>
+    <p class="mb-2 text-sm text-slate-500">Se copian automáticamente una sola vez al primer ingreso en cada mes que abras.</p>
+    <p class="mb-4 text-xs font-medium text-sky-700">Ejemplo: si tenés sueldo fijo, cuando entrás a junio se agrega una vez a junio. Si abrís julio, se agrega a julio.</p>
 
     <div class="grid gap-3 md:grid-cols-[1.4fr_1fr_0.8fr_auto]">
       <input [(ngModel)]="newRecurringIncome.nombre" class="app-input" placeholder="Ej: Sueldo" />
       <select [(ngModel)]="newRecurringIncome.categoria" class="app-input">
         <option *ngFor="let categoria of categorias" [value]="categoria">{{ categoria }}</option>
       </select>
-      <input type="number" [(ngModel)]="newRecurringIncome.monto" class="app-input" placeholder="Monto" />
-      <button (click)="addRecurringIncome()" class="app-primary-button">Agregar</button>
+      <input type="text" [value]="formatCurrency(newRecurringIncome.monto)" (input)="onRecurringIncomeAmountInput($event)" class="app-input" placeholder="Monto" />
+      <button (click)="addRecurringIncome()" class="app-primary-button">{{ editingRecurringIncomeId ? 'Guardar' : 'Agregar' }}</button>
+    </div>
+
+    <div class="mt-3" *ngIf="editingRecurringIncomeId">
+      <button (click)="resetRecurringIncomeForm()" class="text-sm font-medium text-slate-500 hover:text-slate-700">Cancelar edición</button>
     </div>
 
     <div class="mt-4 space-y-3" *ngIf="recurringItems.length > 0; else noRecurringIncome">
@@ -27,8 +32,15 @@
         <div>
           <p class="font-semibold text-slate-900">{{ item.nombre }}</p>
           <p class="text-sm text-slate-500">{{ item.categoria }} · {{ item.monto | currency }}</p>
+          <p class="mt-1 text-xs font-semibold" [class.text-teal-700]="item.activo" [class.text-slate-400]="!item.activo">
+            {{ item.activo ? 'Activo' : 'Pausado' }}
+          </p>
         </div>
-        <button (click)="deleteRecurringIncome(item.id)" class="app-secondary-button">Quitar</button>
+        <div class="flex gap-2">
+          <button (click)="toggleRecurringIncome(item)" class="app-secondary-button">{{ item.activo ? 'Pausar' : 'Activar' }}</button>
+          <button (click)="startEditRecurringIncome(item)" class="app-secondary-button">Editar</button>
+          <button (click)="deleteRecurringIncome(item.id)" class="app-secondary-button">Quitar</button>
+        </div>
       </div>
     </div>
 
@@ -50,6 +62,16 @@
       <span *ngFor="let categoria of categorias" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
         {{ categoria }}
       </span>
+    </div>
+
+    <div class="mt-4 space-y-2" *ngIf="customCategories.length > 0">
+      <div *ngFor="let categoria of customCategories" class="flex items-center justify-between rounded-2xl border border-gray-200 px-3 py-2">
+        <span class="text-sm font-medium text-slate-700">{{ categoria }}</span>
+        <button (click)="removeCustomCategory(categoria)" [disabled]="isCustomCategoryInUse(categoria)"
+          class="text-sm font-semibold text-rose-600 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
+          {{ isCustomCategoryInUse(categoria) ? 'En uso' : 'Eliminar' }}
+        </button>
+      </div>
     </div>
   </div>
 </div>
