@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1777597496550,
+  "timestamp": 1777598185891,
   "index": "/miCartera/index.html",
   "assetGroups": [
     {
@@ -55,7 +55,8 @@
         "/miCartera/icons/icon-384x384.png",
         "/miCartera/icons/icon-512x512.png",
         "/miCartera/icons/icon-72x72.png",
-        "/miCartera/icons/icon-96x96.png"
+        "/miCartera/icons/icon-96x96.png",
+        "/miCartera/icons/logoIcono.png"
       ],
       "patterns": []
     }
@@ -90,9 +91,10 @@
     "/miCartera/icons/icon-512x512.png": "1de182f76f7329dfa8f9fcdd1fdcdd695bea6a99",
     "/miCartera/icons/icon-72x72.png": "aa88a6096bd973be7f6d7a5489bfa6bc2463f8c4",
     "/miCartera/icons/icon-96x96.png": "7fb8f59c30ce2ff12c700321a0b39e14b3dc8f95",
+    "/miCartera/icons/logoIcono.png": "0c2c880a1cdf3e293a9ae4ea960c07dd0d3eb567",
     "/miCartera/index.html": "799a5519ee1bdb0e0662ac3a53327b2a70d2a81b",
     "/miCartera/main.37ad1c5f300859b7.js": "92d79b17997735060a4c7a1aea7ddc5e50f95697",
-    "/miCartera/manifest.webmanifest": "963f821899877d65e043a693bee8ef5355b9767b",
+    "/miCartera/manifest.webmanifest": "8a2ac637cb4bee43fc7c1dfa3e575322e1438f41",
     "/miCartera/polyfills.b27c06a689c54c5c.js": "e13c8729e25ee26064745fb90f35f516f44fa85c",
     "/miCartera/runtime.03c1d565008ab771.js": "293d0f03b68b0abcc4431d23841d8add9f0950aa",
     "/miCartera/styles.ed7b917054fb22d9.css": "4910b5371afbcd70e75c55475e8e37b7dcd96a44"
