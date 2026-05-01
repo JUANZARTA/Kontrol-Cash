@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1777598185891,
+  "timestamp": 1777598533757,
   "index": "/miCartera/index.html",
   "assetGroups": [
     {
@@ -55,8 +55,7 @@
         "/miCartera/icons/icon-384x384.png",
         "/miCartera/icons/icon-512x512.png",
         "/miCartera/icons/icon-72x72.png",
-        "/miCartera/icons/icon-96x96.png",
-        "/miCartera/icons/logoIcono.png"
+        "/miCartera/icons/icon-96x96.png"
       ],
       "patterns": []
     }
@@ -83,15 +82,14 @@
     "/miCartera/assets/img/logoIcono.png": "17f4d4f763ab11b0e675c6184de53cf4e8932877",
     "/miCartera/common.7ce909fc90435ce7.js": "7b14b8a7a8cb9de1ea2a41706548be4c38f6382b",
     "/miCartera/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
-    "/miCartera/icons/icon-128x128.png": "f912963bdc6d5a38d8f1dd0afbaab2ce8d657acb",
-    "/miCartera/icons/icon-144x144.png": "b155fd5f2fd5d2ea7760721063003c4cd95fd783",
-    "/miCartera/icons/icon-152x152.png": "eae6e0f0c8afb8aaae339e2a569b43e9238e5e6c",
-    "/miCartera/icons/icon-192x192.png": "15c4180454633880d98674aa7394656196c91584",
-    "/miCartera/icons/icon-384x384.png": "94a915751ef6c9282df9aea405ad679230631814",
-    "/miCartera/icons/icon-512x512.png": "1de182f76f7329dfa8f9fcdd1fdcdd695bea6a99",
-    "/miCartera/icons/icon-72x72.png": "aa88a6096bd973be7f6d7a5489bfa6bc2463f8c4",
-    "/miCartera/icons/icon-96x96.png": "7fb8f59c30ce2ff12c700321a0b39e14b3dc8f95",
-    "/miCartera/icons/logoIcono.png": "0c2c880a1cdf3e293a9ae4ea960c07dd0d3eb567",
+    "/miCartera/icons/icon-128x128.png": "a9c017e8abe5d779a9bc3b02264f5e6f7d585825",
+    "/miCartera/icons/icon-144x144.png": "e23a30f14ee83123e5769d46a0756e7f0582a425",
+    "/miCartera/icons/icon-152x152.png": "60256764690ea08003189ef34a45093d18dc260f",
+    "/miCartera/icons/icon-192x192.png": "e3122571045f108f9d1f726f087cdeaf8c9eb7ea",
+    "/miCartera/icons/icon-384x384.png": "17f83e06cfa7760574b0e82f7d47ea13f112dcbb",
+    "/miCartera/icons/icon-512x512.png": "20a2a1bdb76a675c6ca152069de06810efcef263",
+    "/miCartera/icons/icon-72x72.png": "77709e4398d8bba93b034550d1513d768d6db65d",
+    "/miCartera/icons/icon-96x96.png": "689fa4ddac882541a8a541cbb976a8388b27364c",
     "/miCartera/index.html": "799a5519ee1bdb0e0662ac3a53327b2a70d2a81b",
     "/miCartera/main.37ad1c5f300859b7.js": "92d79b17997735060a4c7a1aea7ddc5e50f95697",
     "/miCartera/manifest.webmanifest": "8a2ac637cb4bee43fc7c1dfa3e575322e1438f41",
