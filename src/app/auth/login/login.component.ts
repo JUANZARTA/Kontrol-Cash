@@ -36,6 +36,10 @@ export default class LoginComponent implements OnInit {
   loginError = false;
   loginSuccess = false;
   showLoginOverlay = false;
+  canInstallApp = false;
+  appInstalled = false;
+  installHelpVisible = false;
+  private deferredInstallPrompt: any = null;
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -46,6 +50,24 @@ export default class LoginComponent implements OnInit {
 
   // Método para capturar el resultado del login con Google y redirigir si es nuevo login
   ngOnInit(): void {
+    if (typeof window !== 'undefined') {
+      this.appInstalled = window.matchMedia('(display-mode: standalone)').matches;
+
+      window.addEventListener('beforeinstallprompt', (event: Event) => {
+        event.preventDefault();
+        this.deferredInstallPrompt = event;
+        this.canInstallApp = true;
+        this.installHelpVisible = false;
+      });
+
+      window.addEventListener('appinstalled', () => {
+        this.appInstalled = true;
+        this.canInstallApp = false;
+        this.installHelpVisible = false;
+        this.deferredInstallPrompt = null;
+      });
+    }
+
     // Compatibilidad: si en algún flujo se usó redirect, procesarlo aquí
     firebase
       .auth()
@@ -66,6 +88,23 @@ export default class LoginComponent implements OnInit {
       .catch((error: any) => {
         console.error('Error en getRedirectResult:', error);
       });
+  }
+
+  async installApp(): Promise<void> {
+    if (!this.deferredInstallPrompt) {
+      this.installHelpVisible = true;
+      return;
+    }
+
+    this.deferredInstallPrompt.prompt();
+    const choice = await this.deferredInstallPrompt.userChoice;
+
+    if (choice?.outcome !== 'accepted') {
+      this.installHelpVisible = true;
+    }
+
+    this.deferredInstallPrompt = null;
+    this.canInstallApp = false;
   }
 
   isInvalid(controlName: string): boolean {

@@ -1,0 +1,23 @@
+{
+  "name": "Mi Cartera",
+  "short_name": "Mi Cartera",
+  "theme_color": "#1d4f91",
+  "background_color": "#020617",
+  "display": "standalone",
+  "scope": "./",
+  "start_url": "./",
+  "icons": [
+    {
+      "src": "icons/logoIcono.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/logoIcono.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}
