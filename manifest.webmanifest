@@ -6,6 +6,28 @@
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
+  "shortcuts": [
+    {
+      "name": "Cargar gasto",
+      "short_name": "Gasto",
+      "url": "/app/expense"
+    },
+    {
+      "name": "Cargar ingreso",
+      "short_name": "Ingreso",
+      "url": "/app/income"
+    },
+    {
+      "name": "Ver alertas",
+      "short_name": "Alertas",
+      "url": "/app/home?focus=alerts"
+    },
+    {
+      "name": "Cierre mensual",
+      "short_name": "Cierre",
+      "url": "/app/month-close"
+    }
+  ],
   "icons": [
     {
       "src": "icons/logoIcono.png",
