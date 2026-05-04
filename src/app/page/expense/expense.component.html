@@ -9,6 +9,67 @@
   </button>
 </div>
 
+<!-- Tabla de Gastos en una sola tabla -->
+<div class="overflow-x-auto">
+  <table class="app-table app-table-bordered">
+    <thead class="app-table-head">
+      <tr>
+        <th class="text-left py-2 px-3 sm:px-4">Descripción</th>
+        <th class="text-left py-2 px-3 sm:px-4">Categoría</th>
+        <th class="text-right py-2 px-3 sm:px-4">Gastado</th>
+        <th class="text-right py-2 px-3 sm:px-4">Estimación</th>
+        <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let expense of sortedExpenses; let i = index"
+        class="app-table-row opacity-0 animate-fadeSlideDown" [style.animationDelay]="0.1 + i * 0.05 + 's'">
+        <td class="py-2 px-3 sm:px-4">{{ expense.descripcion }}</td>
+        <td class="py-2 px-3 sm:px-4">{{ expense.categoria }}</td>
+        <!-- Columna Gastado con colores según estimación -->
+        <td class="py-2 px-3 sm:px-4 text-right" [ngClass]="{
+              'text-red-600 font-bold': expense.valor > expense.estimacion,
+              'text-teal-600 font-semibold': expense.valor === expense.estimacion
+            }">
+          ${{ formatCurrency(expense.valor) }}
+        </td>
+        <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(expense.estimacion) }}</td>
+        <td class="py-2 px-3 sm:px-4 text-center">
+          <button (click)="openAddModal(expense.id)" class="text-lime-600 mr-2">
+            <span class="material-icons">add</span>
+          </button>
+          <button (click)="openEditModal(expense.id)" class="text-sky-700 mr-2">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <label class="text-indigo-600 mr-2 cursor-pointer" title="Adjuntar comprobante">
+            <mat-icon>attach_file</mat-icon>
+            <input type="file" class="hidden" (change)="onUploadAttachment(expense.id, $event)" />
+          </label>
+          <button (click)="openDeleteModal(expense.id)" class="text-orange-600">
+            <mat-icon>delete</mat-icon>
+          </button>
+          <div *ngIf="getAttachments(expense.id).length" class="mt-1 text-left">
+            <div *ngFor="let att of getAttachments(expense.id)" class="text-xs text-slate-600">
+              <button class="underline mr-1" (click)="openAttachment(att.downloadUrl)">{{ att.fileName }}</button>
+              <button class="text-red-500" (click)="removeAttachment(expense.id, att.id || '')">x</button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr class="app-table-total opacity-0 animate-fadeSlideDown"
+        style="animation-delay:0.2s">
+        <td class="py-3 px-3 sm:px-4 text-left">Totales Generales</td>
+        <td></td>
+        <td class="py-3 px-3 sm:px-4 text-right">Gastado: ${{ formatCurrency(getTotalExpenses()) }}</td>
+        <td class="py-3 px-3 sm:px-4 text-right">Estimado: ${{ formatCurrency(getTotalEstimations()) }}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
 <div class="mb-6 grid gap-6 lg:grid-cols-2">
   <div class="app-section-card">
     <h3 class="text-lg font-semibold text-slate-900">Gastos recurrentes</h3>
@@ -75,67 +136,6 @@
       </div>
     </div>
   </div>
-</div>
-
-<!-- Tabla de Gastos en una sola tabla -->
-<div class="overflow-x-auto">
-  <table class="app-table app-table-bordered">
-    <thead class="app-table-head">
-      <tr>
-        <th class="text-left py-2 px-3 sm:px-4">Descripción</th>
-        <th class="text-left py-2 px-3 sm:px-4">Categoría</th>
-        <th class="text-right py-2 px-3 sm:px-4">Gastado</th>
-        <th class="text-right py-2 px-3 sm:px-4">Estimación</th>
-        <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let expense of sortedExpenses; let i = index"
-        class="app-table-row opacity-0 animate-fadeSlideDown" [style.animationDelay]="0.1 + i * 0.05 + 's'">
-        <td class="py-2 px-3 sm:px-4">{{ expense.descripcion }}</td>
-        <td class="py-2 px-3 sm:px-4">{{ expense.categoria }}</td>
-        <!-- Columna Gastado con colores según estimación -->
-        <td class="py-2 px-3 sm:px-4 text-right" [ngClass]="{
-              'text-red-600 font-bold': expense.valor > expense.estimacion,
-              'text-teal-600 font-semibold': expense.valor === expense.estimacion
-            }">
-          ${{ formatCurrency(expense.valor) }}
-        </td>
-        <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(expense.estimacion) }}</td>
-        <td class="py-2 px-3 sm:px-4 text-center">
-          <button (click)="openAddModal(expense.id)" class="text-lime-600 mr-2">
-            <span class="material-icons">add</span>
-          </button>
-          <button (click)="openEditModal(expense.id)" class="text-sky-700 mr-2">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <label class="text-indigo-600 mr-2 cursor-pointer" title="Adjuntar comprobante">
-            <mat-icon>attach_file</mat-icon>
-            <input type="file" class="hidden" (change)="onUploadAttachment(expense.id, $event)" />
-          </label>
-          <button (click)="openDeleteModal(expense.id)" class="text-orange-600">
-            <mat-icon>delete</mat-icon>
-          </button>
-          <div *ngIf="getAttachments(expense.id).length" class="mt-1 text-left">
-            <div *ngFor="let att of getAttachments(expense.id)" class="text-xs text-slate-600">
-              <button class="underline mr-1" (click)="openAttachment(att.downloadUrl)">{{ att.fileName }}</button>
-              <button class="text-red-500" (click)="removeAttachment(expense.id, att.id || '')">x</button>
-            </div>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-    <tfoot>
-      <tr class="app-table-total opacity-0 animate-fadeSlideDown"
-        style="animation-delay:0.2s">
-        <td class="py-3 px-3 sm:px-4 text-left">Totales Generales</td>
-        <td></td>
-        <td class="py-3 px-3 sm:px-4 text-right">Gastado: ${{ formatCurrency(getTotalExpenses()) }}</td>
-        <td class="py-3 px-3 sm:px-4 text-right">Estimado: ${{ formatCurrency(getTotalEstimations()) }}</td>
-        <td></td>
-      </tr>
-    </tfoot>
-  </table>
 </div>
 
 
