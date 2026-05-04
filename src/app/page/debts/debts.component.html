@@ -13,6 +13,17 @@
   </button>
 </div>
 
+<div class="app-section-card mb-4" *ngIf="rankedDebts.length">
+  <h3 class="text-lg font-semibold">Prioridad inteligente de deudas</h3>
+  <p class="text-sm text-slate-500 mb-2">Ordenadas por costo/riesgo de pago.</p>
+  <ol class="list-decimal pl-5">
+    <li *ngFor="let item of rankedDebts" class="mb-2">
+      <strong>{{ item.debt.acreedor }}</strong> — score {{ item.score.total | number:'1.2-2' }}
+      <span class="text-xs text-slate-500">(interés {{ item.score.factors.interest | number:'1.2-2' }}, mora {{ item.score.factors.penalty | number:'1.2-2' }})</span>
+    </li>
+  </ol>
+</div>
+
 <!-- Tabla de Deudas -->
 <div class="overflow-x-auto">
   <table class="app-table">

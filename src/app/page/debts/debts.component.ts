@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
+import { DebtPriorityService, RankedDebt } from '../../services/debt-priority.service';
 
 export interface DebtWithId extends Debt {
   id: string;
@@ -31,6 +32,7 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   private dateService = inject(DateService); // ✅ Nuevo
   private authService = inject(AuthService); // ✅ nuevo
   private finanzasService = inject(FinanzasService);
+  private debtPriorityService = inject(DebtPriorityService);
 
   // Variables
   selectedDebtId: string | null = null;
@@ -56,6 +58,7 @@ export default class DebtsComponent implements OnInit, OnDestroy {
 
   // Datos
   debts: DebtWithId[] = [];
+  rankedDebts: RankedDebt[] = [];
 
   // Modales
   isModalOpen = false;
@@ -104,6 +107,7 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           this.debts = Object.entries(data).map(([id, d]) => ({ id, ...d }));
+          this.rankedDebts = this.debtPriorityService.rank(this.debts);
 
         },
         error: (err) => {

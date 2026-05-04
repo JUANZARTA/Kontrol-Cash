@@ -14,6 +14,8 @@ import { ModalShellComponent } from '../../shared/components/modal-shell/modal-s
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 import { PlannerService } from '../../services/planner.service';
 import { RecurrentItem } from '../../models/planner.model';
+import { AttachmentsService } from '../../services/attachments.service';
+import { MovementAttachment } from '../../models/attachment.model';
 
 import {
   trigger,
@@ -50,6 +52,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   private finanzasService = inject(FinanzasService);
   private walletService = inject(WalletService);
   private plannerService = inject(PlannerService);
+  private attachmentsService = inject(AttachmentsService);
 
   // Propiedades
   incomes: any[] = [];
@@ -121,6 +124,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   );
 
   editedId: string | null = null;
+  movementAttachments: Record<string, MovementAttachment[]> = {};
 
   readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
 
@@ -179,6 +183,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
             id,
             ...exp,
           }));
+          this.refreshAttachments();
         },
         error: (err) => {
           console.error('❌ Error al cargar gastos:', err);
@@ -616,8 +621,9 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
         this.currentMonth,
         this.expenseToDeleteId
       )
-      .subscribe({
+        .subscribe({
         next: () => {
+          this.removeAllAttachments(this.expenseToDeleteId as string);
           this.loadExpenses();
           this.closeDeleteModal();
         },
@@ -625,6 +631,63 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
           console.error('Error al eliminar gasto:', err);
         },
       });
+  }
+
+  private refreshAttachments(): void {
+    this.movementAttachments = {};
+    this.expenses.forEach((expense) => {
+      this.movementAttachments[expense.id] = this.attachmentsService.list(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        expense.id
+      );
+    });
+  }
+
+  onUploadAttachment(expenseId: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.attachmentsService
+      .upload(this.userId, this.currentYear, this.currentMonth, expenseId, file)
+      .then(() => this.refreshAttachments());
+
+    input.value = '';
+  }
+
+  getAttachments(expenseId: string): MovementAttachment[] {
+    return this.movementAttachments[expenseId] || [];
+  }
+
+  openAttachment(url: string): void {
+    window.open(url, '_blank');
+  }
+
+  removeAttachment(expenseId: string, attachmentId: string): void {
+    const deleted = this.attachmentsService.delete(
+      this.userId,
+      this.currentYear,
+      this.currentMonth,
+      expenseId,
+      attachmentId
+    );
+    if (deleted) this.refreshAttachments();
+  }
+
+  private removeAllAttachments(expenseId: string): void {
+    this.getAttachments(expenseId).forEach((item) => {
+      if (item.id) {
+        this.attachmentsService.delete(
+          this.userId,
+          this.currentYear,
+          this.currentMonth,
+          expenseId,
+          item.id
+        );
+      }
+    });
   }
 
   // Método para eliminar todos los gastos

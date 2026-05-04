@@ -4,7 +4,11 @@ export class Debt {
     public fecha_deuda: string,
     public fecha_pago: string,
     public valor: number,
-    public estado: 'Pendiente' | 'Pagado'
+    public estado: 'Pendiente' | 'Pagado',
+    public interestRate?: number,
+    public penaltyFee?: number,
+    public minPayment?: number,
+    public daysPastDue?: number
   ) {}
 }
 

@@ -5,7 +5,7 @@
 
 
 <!-- Indicador de salud financiera + estado financiero -->
-<div class="mb-6 flex flex-wrap items-center gap-3">
+<div id="alerts-panel" class="mb-6 flex flex-wrap items-center gap-3">
 
   <!-- Mensaje de salud financiera -->
   <span [ngClass]="{
@@ -40,6 +40,16 @@
   <div class="app-kpi-card animate-fadeSlideUp">
     <p class="app-kpi-label">Deuda Pendiente</p>
     <p class="app-kpi-value text-rose-600">{{ totalPendingDebts | currency }}</p>
+  </div>
+</div>
+
+<div class="mt-4 app-section-card" *ngIf="projection">
+  <h3 class="text-lg font-semibold text-slate-900">Proyección de fin de mes</h3>
+  <p class="text-sm text-slate-500">Estimación por ritmo actual.</p>
+  <div class="mt-3 grid gap-2 md:grid-cols-3">
+    <p><strong>Saldo proyectado:</strong> {{ projection.projectedEndBalance | currency }}</p>
+    <p><strong>Desvío:</strong> {{ projection.variancePct | percent:'1.0-1' }}</p>
+    <p><strong>Confianza:</strong> {{ projection.confidence }}</p>
   </div>
 </div>
 

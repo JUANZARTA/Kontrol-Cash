@@ -6,7 +6,7 @@ import {
   PLATFORM_ID,
 } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { Subscription, forkJoin } from 'rxjs';
 
 import { WalletService } from '../../services/wallet.service';
@@ -36,6 +36,7 @@ import { FinancialChartComponent } from '../../shared/components/financial-chart
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import { PlannerService } from '../../services/planner.service';
 import { MonthlyHistoryItem, SavingGoal } from '../../models/planner.model';
+import { Projection, ProjectionService } from '../../services/projection.service';
 
 interface DebtWithId extends Debt {
   id: string;
@@ -138,6 +139,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
   isEditingSavingGoal = false;
   draftSavingGoal: SavingGoal = { titulo: '', montoObjetivo: 0 };
   monthlyHistory: MonthlyHistoryItem[] = [];
+  projection: Projection | null = null;
 
   constructor(
     private walletService: WalletService,
@@ -149,7 +151,9 @@ export default class HomeComponent implements OnInit, OnDestroy {
     private invoiceService: InvoiceService,
     private savingsService: SavingsService,
     public router: Router,
+    private route: ActivatedRoute,
     private finanzasService: FinanzasService,
+    private projectionService: ProjectionService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -191,6 +195,14 @@ export default class HomeComponent implements OnInit, OnDestroy {
     );
     this.authService.startAutoLogout();
     this.loadInvoices();
+
+    this.route.queryParamMap.subscribe((params) => {
+      if (params.get('focus') === 'alerts' && isPlatformBrowser(this.platformId)) {
+        setTimeout(() => {
+          document.getElementById('alerts-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0);
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -253,6 +265,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
       );
       this.evaluarSaludFinanciera();
       this.calcularTotales();
+      this.refreshProjection();
       this.loadInvoices();
     });
     this.finanzasService.mostrarEstadoFinanciero(
@@ -285,6 +298,21 @@ export default class HomeComponent implements OnInit, OnDestroy {
 
     // 🔹 Calcula ahorro estimado
     this.totalAhorro = this.savings?.reduce((sum, item) => sum + (item.valor || 0), 0);
+  }
+
+  private refreshProjection(): void {
+    const today = new Date();
+    const elapsedDays = Math.max(1, today.getDate());
+    const totalDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    this.projection = this.projectionService.calculate({
+      period: `${this.currentYear}-${this.currentMonth}`,
+      currentBalance: this.restanteActualmente,
+      monthIncome: this.ingresosTotales,
+      monthExpense: this.gastosTotales,
+      elapsedDays,
+      totalDays,
+      currentPlan: this.estimacionDineroRestanteMes,
+    });
   }
 
   loadSavingGoal() {

@@ -1,0 +1,28 @@
+<div class="app-page-toolbar">
+  <h6 class="text-lg font-semibold">Cierres mensuales</h6>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="app-table" *ngIf="snapshots.length; else empty">
+    <thead class="app-table-head">
+      <tr>
+        <th>Periodo</th>
+        <th class="text-right">Neto</th>
+        <th class="text-center">PDF</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let snapshot of snapshots" class="app-table-row">
+        <td>{{ snapshot.period }}</td>
+        <td class="text-right">{{ snapshot.totals.net | currency }}</td>
+        <td class="text-center">
+          <button class="app-secondary-button" (click)="download(snapshot)">Descargar</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<ng-template #empty>
+  <p class="text-sm text-slate-500">Todavía no hay cierres mensuales.</p>
+</ng-template>

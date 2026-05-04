@@ -109,9 +109,19 @@
           <button (click)="openEditModal(expense.id)" class="text-sky-700 mr-2">
             <mat-icon>edit</mat-icon>
           </button>
+          <label class="text-indigo-600 mr-2 cursor-pointer" title="Adjuntar comprobante">
+            <mat-icon>attach_file</mat-icon>
+            <input type="file" class="hidden" (change)="onUploadAttachment(expense.id, $event)" />
+          </label>
           <button (click)="openDeleteModal(expense.id)" class="text-orange-600">
             <mat-icon>delete</mat-icon>
           </button>
+          <div *ngIf="getAttachments(expense.id).length" class="mt-1 text-left">
+            <div *ngFor="let att of getAttachments(expense.id)" class="text-xs text-slate-600">
+              <button class="underline mr-1" (click)="openAttachment(att.downloadUrl)">{{ att.fileName }}</button>
+              <button class="text-red-500" (click)="removeAttachment(expense.id, att.id || '')">x</button>
+            </div>
+          </div>
         </td>
       </tr>
     </tbody>
