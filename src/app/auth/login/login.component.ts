@@ -41,6 +41,16 @@ export default class LoginComponent implements OnInit {
   installHelpVisible = false;
   private deferredInstallPrompt: any = null;
 
+  private getGlobalInstallPrompt(): any {
+    return typeof window !== 'undefined' ? (window as any).__deferredInstallPrompt ?? null : null;
+  }
+
+  private setGlobalInstallPrompt(prompt: any): void {
+    if (typeof window !== 'undefined') {
+      (window as any).__deferredInstallPrompt = prompt;
+    }
+  }
+
   constructor() {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -52,10 +62,13 @@ export default class LoginComponent implements OnInit {
   ngOnInit(): void {
     if (typeof window !== 'undefined') {
       this.appInstalled = window.matchMedia('(display-mode: standalone)').matches;
+      this.deferredInstallPrompt = this.getGlobalInstallPrompt();
+      this.canInstallApp = !!this.deferredInstallPrompt;
 
       window.addEventListener('beforeinstallprompt', (event: Event) => {
         event.preventDefault();
         this.deferredInstallPrompt = event;
+        this.setGlobalInstallPrompt(event);
         this.canInstallApp = true;
         this.installHelpVisible = false;
       });
@@ -65,6 +78,7 @@ export default class LoginComponent implements OnInit {
         this.canInstallApp = false;
         this.installHelpVisible = false;
         this.deferredInstallPrompt = null;
+        this.setGlobalInstallPrompt(null);
       });
     }
 
@@ -104,6 +118,7 @@ export default class LoginComponent implements OnInit {
     }
 
     this.deferredInstallPrompt = null;
+    this.setGlobalInstallPrompt(null);
     this.canInstallApp = false;
   }
 

@@ -20,20 +20,20 @@
     <h2 class="app-auth-title">Iniciar Sesión</h2>
     <p class="app-auth-subtitle">Controlá tu dinero con una vista clara y profesional.</p>
 
-    <div class="mb-6 rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-4" *ngIf="!appInstalled">
+    <div class="mb-6 rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-4 install-hint-card" *ngIf="!appInstalled">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="text-sm font-semibold text-sky-900">Instalá Mi Cartera</p>
-          <p class="mt-1 text-xs leading-5 text-sky-800">
+          <p class="text-sm font-semibold text-sky-900 install-hint-title">Instalá Mi Cartera</p>
+          <p class="mt-1 text-xs leading-5 text-sky-800 install-hint-text">
             Podés usarla como app en tu teléfono desde esta misma pantalla.
           </p>
         </div>
-        <button *ngIf="canInstallApp" type="button" (click)="installApp()" class="app-primary-button whitespace-nowrap">
-          Instalar app
+        <button type="button" (click)="installApp()" class="app-primary-button whitespace-nowrap">
+          Descargar app
         </button>
       </div>
 
-      <p *ngIf="!canInstallApp || installHelpVisible" class="mt-3 text-xs text-sky-800">
+      <p *ngIf="!canInstallApp || installHelpVisible" class="mt-3 text-xs text-sky-800 install-hint-text">
         Si no aparece el botón, abrí el menú del navegador y elegí <strong>Instalar app</strong> o <strong>Agregar a pantalla de inicio</strong>.
       </p>
     </div>

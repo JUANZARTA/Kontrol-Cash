@@ -1,0 +1,25 @@
+.install-hint-card {
+  border-color: rgba(125, 211, 252, 0.6);
+  background-color: rgba(240, 249, 255, 0.9);
+}
+
+.install-hint-title {
+  color: #0c4a6e;
+}
+
+.install-hint-text {
+  color: #075985;
+}
+
+:host-context(.dark-theme) .install-hint-card {
+  border-color: rgba(125, 211, 252, 0.35);
+  background-color: rgba(14, 116, 144, 0.2);
+}
+
+:host-context(.dark-theme) .install-hint-title {
+  color: #e0f2fe;
+}
+
+:host-context(.dark-theme) .install-hint-text {
+  color: #bae6fd;
+}

@@ -140,6 +140,20 @@ export default class HomeComponent implements OnInit, OnDestroy {
   draftSavingGoal: SavingGoal = { titulo: '', montoObjetivo: 0 };
   monthlyHistory: MonthlyHistoryItem[] = [];
   projection: Projection | null = null;
+  canInstallApp = false;
+  appInstalled = false;
+  installHelpVisible = false;
+  private deferredInstallPrompt: any = null;
+
+  private getGlobalInstallPrompt(): any {
+    return isPlatformBrowser(this.platformId) ? (window as any).__deferredInstallPrompt ?? null : null;
+  }
+
+  private setGlobalInstallPrompt(prompt: any): void {
+    if (isPlatformBrowser(this.platformId)) {
+      (window as any).__deferredInstallPrompt = prompt;
+    }
+  }
 
   constructor(
     private walletService: WalletService,
@@ -158,6 +172,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.setupInstallPrompt();
     this.loadInvoices();
     
     // Verificar si es el día 1 del mes y ejecutar copia automática
@@ -207,6 +222,48 @@ export default class HomeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.dateSubscription?.unsubscribe();
+  }
+
+  private setupInstallPrompt(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    this.appInstalled = window.matchMedia('(display-mode: standalone)').matches;
+    this.deferredInstallPrompt = this.getGlobalInstallPrompt();
+    this.canInstallApp = !!this.deferredInstallPrompt;
+
+    window.addEventListener('beforeinstallprompt', (event: Event) => {
+      event.preventDefault();
+      this.deferredInstallPrompt = event;
+      this.setGlobalInstallPrompt(event);
+      this.canInstallApp = true;
+      this.installHelpVisible = false;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      this.appInstalled = true;
+      this.canInstallApp = false;
+      this.installHelpVisible = false;
+      this.deferredInstallPrompt = null;
+      this.setGlobalInstallPrompt(null);
+    });
+  }
+
+  async installApp(): Promise<void> {
+    if (!this.deferredInstallPrompt) {
+      this.installHelpVisible = true;
+      return;
+    }
+
+    this.deferredInstallPrompt.prompt();
+    const choice = await this.deferredInstallPrompt.userChoice;
+
+    if (choice?.outcome !== 'accepted') {
+      this.installHelpVisible = true;
+    }
+
+    this.deferredInstallPrompt = null;
+    this.setGlobalInstallPrompt(null);
+    this.canInstallApp = false;
   }
 
   // Cargar datos

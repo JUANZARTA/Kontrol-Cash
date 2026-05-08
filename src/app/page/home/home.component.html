@@ -321,6 +321,25 @@
   </button>
 </div>
 
+<div class="mt-6 rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-4 home-install-card" *ngIf="!appInstalled">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="text-sm font-semibold text-sky-900 home-install-title">Descargá Mi Cartera en tu celular</p>
+      <p class="mt-1 text-xs leading-5 text-sky-800 home-install-text">
+        Instalála como app para entrar más rápido desde la pantalla de inicio.
+      </p>
+    </div>
+    <button type="button" (click)="installApp()" class="app-primary-button whitespace-nowrap">
+      Descargar app
+    </button>
+  </div>
+
+  <p *ngIf="!canInstallApp || installHelpVisible" class="mt-3 text-xs text-sky-800 home-install-text">
+    Si no aparece el diálogo automático, abrí el menú del navegador y elegí
+    <strong>Instalar app</strong> o <strong>Agregar a pantalla de inicio</strong>.
+  </p>
+</div>
+
 
 <!-- Modal Pagar Factura -->
 <app-modal-shell *ngIf="isPayInvoiceModalOpen" title="Realizar Pago">
