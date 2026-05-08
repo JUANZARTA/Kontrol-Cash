@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { DebtService } from '../../services/debts.service';
 import { Debt } from '../../models/debt.model';
 import { DateService } from '../../services/date.service';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -50,6 +50,8 @@ export default class DebtsComponent implements OnInit, OnDestroy {
 
   // Nuevo Modal de Eliminar
   isDeleteModalOpen = false;
+  selectedIds = new Set<string>();
+  showBulkDeleteConfirm = false;
   debtToDeleteId: string | null = null;
 
   // Nuevo Modal de Agregar Valor
@@ -579,9 +581,31 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       });
   }
   getRowAnimationDelay(item: any, index?: number): string {
-    // Si pasas el index desde *ngFor, úsalo directamente
     const i = index ?? this.debts.indexOf(item);
-    // Retorna un delay incremental: 0.1s, 0.15s, 0.2s, ...
     return `${0.1 + i * 0.05}s`;
+  }
+
+  get hasSelection(): boolean { return this.selectedIds.size > 0; }
+  get selectionCount(): number { return this.selectedIds.size; }
+  get allSelected(): boolean { return this.debts.length > 0 && this.debts.every(d => this.selectedIds.has(d.id)); }
+
+  toggleSelect(id: string): void {
+    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
+    else this.selectedIds.add(id);
+  }
+
+  toggleSelectAll(): void {
+    if (this.allSelected) this.selectedIds.clear();
+    else this.debts.forEach(d => this.selectedIds.add(d.id));
+  }
+
+  confirmBulkDelete(): void {
+    const ids = Array.from(this.selectedIds);
+    const ops = ids.map(id => this.debtService.deleteDebt(this.userId, this.currentYear, this.currentMonth, id));
+    forkJoin(ops).subscribe(() => {
+      this.selectedIds.clear();
+      this.showBulkDeleteConfirm = false;
+      this.loadDebts();
+    });
   }
 }

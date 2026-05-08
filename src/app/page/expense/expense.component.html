@@ -3,10 +3,14 @@
 <!-- Encabezado -->
 <div class="app-page-toolbar animate-fadeSlideDown">
   <h6 class="text-lg font-semibold text-gray-800">Tabla de Gastos</h6>
-
-  <button (click)="openModal()" class="app-link-button app-link-button-primary">
-    Agregar +
-  </button>
+  <div class="flex items-center gap-2">
+    <button *ngIf="hasSelection" (click)="showBulkDeleteConfirm = true" class="app-warning-button">
+      Eliminar ({{ selectionCount }})
+    </button>
+    <button (click)="openModal()" class="app-link-button app-link-button-primary">
+      Agregar +
+    </button>
+  </div>
 </div>
 
 <!-- Tabla de Gastos en una sola tabla -->
@@ -14,6 +18,9 @@
   <table class="app-table app-table-bordered">
     <thead class="app-table-head">
       <tr>
+        <th class="w-10 py-2 px-2 text-center">
+          <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll()" class="cursor-pointer" />
+        </th>
         <th class="text-left py-2 px-3 sm:px-4">Descripción</th>
         <th class="text-left py-2 px-3 sm:px-4">Categoría</th>
         <th class="text-right py-2 px-3 sm:px-4">Gastado</th>
@@ -24,6 +31,9 @@
     <tbody>
       <tr *ngFor="let expense of sortedExpenses; let i = index"
         class="app-table-row opacity-0 animate-fadeSlideDown" [style.animationDelay]="0.1 + i * 0.05 + 's'">
+        <td class="py-2 px-2 text-center">
+          <input type="checkbox" [checked]="selectedIds.has(expense.id)" (change)="toggleSelect(expense.id)" class="cursor-pointer" />
+        </td>
         <td class="py-2 px-3 sm:px-4">{{ expense.descripcion }}</td>
         <td class="py-2 px-3 sm:px-4">{{ expense.categoria }}</td>
         <!-- Columna Gastado con colores según estimación -->
@@ -60,6 +70,7 @@
     <tfoot>
       <tr class="app-table-total opacity-0 animate-fadeSlideDown"
         style="animation-delay:0.2s">
+        <td></td>
         <td class="py-3 px-3 sm:px-4 text-left">Totales Generales</td>
         <td></td>
         <td class="py-3 px-3 sm:px-4 text-right">Gastado: ${{ formatCurrency(getTotalExpenses()) }}</td>
@@ -254,6 +265,12 @@
       </button>
     </div>
 </app-modal-shell>
+
+<!-- Modal de eliminación masiva -->
+<app-confirm-modal *ngIf="showBulkDeleteConfirm" title="¿Eliminar seleccionados?"
+  [message]="'¿Eliminar ' + selectionCount + ' gasto(s)? Esta acción no se puede deshacer.'"
+  confirmText="Eliminar" tone="danger" icon="report_problem"
+  (cancel)="showBulkDeleteConfirm = false" (confirm)="confirmBulkDelete()" />
 
 <!-- Modal para eliminar gasto -->
 <app-confirm-modal *ngIf="isDeleteModalOpen" title="¿Eliminar Gasto?"

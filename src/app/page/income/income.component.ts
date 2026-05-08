@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { IncomeService } from '../../services/income.service';
 import { CategoriaIngreso, Income } from '../../models/income.model';
 import { DateService } from '../../services/date.service'; // ✅ Nuevo
-import { Subscription } from 'rxjs'; // ✅ Nuevo
+import { Subscription, forkJoin } from 'rxjs'; // ✅ Nuevo
 import { AuthService } from '../../services/auth.service'; // ✅ Nuevo
 import { FinanzasService } from '../../services/finanzas.service';
 import { DebtService } from '../../services/debts.service';
@@ -16,6 +16,7 @@ import { LoanService } from '../../services/loans.service';
 import { ExpenseService } from '../../services/expense.service';
 import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 import { PlannerService } from '../../services/planner.service';
 import { RecurrentItem } from '../../models/planner.model';
 import { AttachmentsService } from '../../services/attachments.service';
@@ -33,7 +34,7 @@ export interface IncomeWithId extends Income {
 @Component({
   selector: 'app-income',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
   templateUrl: './income.component.html',
   styleUrls: ['./income.component.css'],
   providers: [DecimalPipe],
@@ -62,6 +63,8 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   // Variables para modales de agregar valor y eliminar
   isAddValueModalOpen: boolean = false;
   isDeleteModalOpen: boolean = false;
+  selectedIds = new Set<string>();
+  showBulkDeleteConfirm = false;
   selectedIncomeId: string | null = null;
   incomeToDeleteId: string | null = null;
   newValue: number = 0;
@@ -837,6 +840,30 @@ export default class IncomeComponent implements OnInit, OnDestroy {
 
   getRowAnimationDelay(income: IncomeWithId) {
     const index = this.incomes.indexOf(income);
-    return `${0.2 + index * 0.1}s`; // empieza 0.2s, aumenta 0.1s por fila
+    return `${0.2 + index * 0.1}s`;
+  }
+
+  get hasSelection(): boolean { return this.selectedIds.size > 0; }
+  get selectionCount(): number { return this.selectedIds.size; }
+  get allSelected(): boolean { return this.incomes.length > 0 && this.incomes.every(i => this.selectedIds.has(i.id)); }
+
+  toggleSelect(id: string): void {
+    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
+    else this.selectedIds.add(id);
+  }
+
+  toggleSelectAll(): void {
+    if (this.allSelected) this.selectedIds.clear();
+    else this.incomes.forEach(i => this.selectedIds.add(i.id));
+  }
+
+  confirmBulkDelete(): void {
+    const ids = Array.from(this.selectedIds);
+    const ops = ids.map(id => this.incomeService.deleteIncome(this.userId, this.currentYear, this.currentMonth, id));
+    forkJoin(ops).subscribe(() => {
+      this.selectedIds.clear();
+      this.showBulkDeleteConfirm = false;
+      this.loadIncomes();
+    });
   }
 }

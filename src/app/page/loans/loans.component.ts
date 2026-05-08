@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { LoanService } from '../../services/loans.service';
 import { Loan } from '../../models/loans.model';
 import { DateService } from '../../services/date.service';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { WalletService } from '../../services/wallet.service';
@@ -37,6 +37,8 @@ export default class LoansComponent implements OnInit, OnDestroy {
   // Variables para modales de agregar valor y eliminar
   isAddValueModalOpen: boolean = false;
   isDeleteModalOpen: boolean = false;
+  selectedIds = new Set<string>();
+  showBulkDeleteConfirm = false;
   selectedLoanId: string | null = null;
   loanToDeleteId: string | null = null;
   newValue: number = 0;
@@ -648,6 +650,30 @@ export default class LoansComponent implements OnInit, OnDestroy {
     const value = Number(raw) || 0;
     this.editedLoan.valor = value;
     input.value = this.formatCurrency(value);
+  }
+
+  get hasSelection(): boolean { return this.selectedIds.size > 0; }
+  get selectionCount(): number { return this.selectedIds.size; }
+  get allSelected(): boolean { return this.loans.length > 0 && this.loans.every(l => this.selectedIds.has(l.id)); }
+
+  toggleSelect(id: string): void {
+    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
+    else this.selectedIds.add(id);
+  }
+
+  toggleSelectAll(): void {
+    if (this.allSelected) this.selectedIds.clear();
+    else this.loans.forEach(l => this.selectedIds.add(l.id));
+  }
+
+  confirmBulkDelete(): void {
+    const ids = Array.from(this.selectedIds);
+    const ops = ids.map(id => this.loanService.deleteLoan(this.userId, this.currentYear, this.currentMonth, id));
+    forkJoin(ops).subscribe(() => {
+      this.selectedIds.clear();
+      this.showBulkDeleteConfirm = false;
+      this.loadLoans();
+    });
   }
 
   // loans.component.ts (o el componente donde tienes la tabla)

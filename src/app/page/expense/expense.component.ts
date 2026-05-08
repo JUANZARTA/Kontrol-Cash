@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ExpenseService } from '../../services/expense.service';
 import { CategoriaGasto, Expense } from '../../models/expense.model';
 import { DateService } from '../../services/date.service';
-import { Subscription, of } from 'rxjs';
+import { Subscription, of, forkJoin } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -89,6 +89,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   // Variables para modales nuevos
   isAddValueModalOpen: boolean = false;
   isDeleteModalOpen: boolean = false;
+  selectedIds = new Set<string>();
+  showBulkDeleteConfirm = false;
   selectedExpenseId: string | null = null;
   expenseToDeleteId: string | null = null;
   newValue: number = 0;
@@ -823,5 +825,29 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     else this.newExpense.estimacion = numericValue;
 
     input.value = this.formatCurrency(numericValue);
+  }
+
+  get hasSelection(): boolean { return this.selectedIds.size > 0; }
+  get selectionCount(): number { return this.selectedIds.size; }
+  get allSelected(): boolean { return this.expenses.length > 0 && this.expenses.every(e => this.selectedIds.has(e.id)); }
+
+  toggleSelect(id: string): void {
+    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
+    else this.selectedIds.add(id);
+  }
+
+  toggleSelectAll(): void {
+    if (this.allSelected) this.selectedIds.clear();
+    else this.expenses.forEach(e => this.selectedIds.add(e.id));
+  }
+
+  confirmBulkDelete(): void {
+    const ids = Array.from(this.selectedIds);
+    const ops = ids.map(id => this.expenseService.deleteExpense(this.userId, this.currentYear, this.currentMonth, id));
+    forkJoin(ops).subscribe(() => {
+      this.selectedIds.clear();
+      this.showBulkDeleteConfirm = false;
+      this.loadExpenses();
+    });
   }
 }

@@ -32,28 +32,39 @@
     <h6 class="text-lg font-semibold text-white">Mi Vehículo</h6>
     <p class="text-sm opacity-90"><strong>Control de tanqueos y consumo</strong></p>
   </div>
-  <button (click)="openAddModal()" class="app-primary-button shadow-md">Agregar tanqueo +</button>
+  <div class="flex items-center gap-2">
+    <button *ngIf="hasSelection" (click)="showBulkDeleteConfirm = true" class="app-warning-button">
+      Eliminar ({{ selectionCount }})
+    </button>
+    <button (click)="openAddModal()" class="app-primary-button shadow-md">Agregar tanqueo +</button>
+  </div>
 </div>
 
 <div class="overflow-x-auto">
   <table class="app-table">
     <thead class="app-table-head">
       <tr>
+        <th class="w-10 py-2 px-2 text-center">
+          <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll()" class="cursor-pointer" />
+        </th>
         <th class="text-left py-2 px-3 sm:px-4">Bomba</th>
         <th class="text-right py-2 px-3 sm:px-4">Cantidad $</th>
         <th class="text-right py-2 px-3 sm:px-4">Gasolina (gal)</th>
         <th class="text-right py-2 px-3 sm:px-4">Kilometraje</th>
-        <th class="text-right py-2 px-3 sm:px-4">KM/Galón</th>
+        <th class="text-right py-2 px-3 sm:px-4">Rendimiento KM</th>
         <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
       </tr>
     </thead>
     <tbody>
       <tr *ngFor="let item of entries; let i = index" class="app-table-row">
+        <td class="py-2 px-2 text-center">
+          <input type="checkbox" [checked]="selectedIds.has(item.id)" (change)="toggleSelect(item.id)" class="cursor-pointer" />
+        </td>
         <td class="py-2 px-3 sm:px-4 font-semibold">{{ item.nombreBomba }}</td>
         <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(item.monto) }}</td>
         <td class="py-2 px-3 sm:px-4 text-right">{{ formatNumber(item.galones) }}</td>
         <td class="py-2 px-3 sm:px-4 text-right">{{ formatCurrency(item.kilometraje) }}</td>
-        <td class="py-2 px-3 sm:px-4 text-right">{{ formatNumber(getKmPerGallon(i)) }}</td>
+        <td class="py-2 px-3 sm:px-4 text-right">{{ i === 0 ? '—' : formatCurrency(getDistanceFromPrevious(i)) + ' km' }}</td>
         <td class="py-2 px-3 sm:px-4 text-center">
           <button (click)="openEditModal(item.id)" class="text-sky-700 mr-2"><span class="material-icons">edit</span></button>
           <button (click)="openDeleteModal(item.id)" class="text-orange-600"><span class="material-icons">delete</span></button>
@@ -113,6 +124,11 @@
     <button (click)="saveEditedEntry()" class="app-primary-button">Guardar</button>
   </div>
 </app-modal-shell>
+
+<app-confirm-modal *ngIf="showBulkDeleteConfirm" title="¿Eliminar seleccionados?"
+  [message]="'¿Eliminar ' + selectionCount + ' tanqueo(s)? Esta acción no se puede deshacer.'"
+  confirmText="Eliminar" tone="danger" icon="report_problem"
+  (cancel)="showBulkDeleteConfirm = false" (confirm)="confirmBulkDelete()" />
 
 <app-confirm-modal *ngIf="isDeleteModalOpen" title="¿Eliminar tanqueo?" message="Esta acción no se puede deshacer." confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteModal()" (confirm)="confirmDelete()" />
 

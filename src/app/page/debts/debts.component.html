@@ -8,9 +8,14 @@
       <strong>Estado de Deudas</strong>
     </p>
   </div>
-  <button (click)="openModal()" class="app-primary-button shadow-md">
-    Agregar Deuda +
-  </button>
+  <div class="flex items-center gap-2">
+    <button *ngIf="hasSelection" (click)="showBulkDeleteConfirm = true" class="app-warning-button">
+      Eliminar ({{ selectionCount }})
+    </button>
+    <button (click)="openModal()" class="app-primary-button shadow-md">
+      Agregar Deuda +
+    </button>
+  </div>
 </div>
 
 <div class="app-section-card mb-4" *ngIf="rankedDebts.length">
@@ -29,6 +34,9 @@
   <table class="app-table">
     <thead class="app-table-head">
       <tr>
+        <th class="w-10 py-2 px-2 text-center">
+          <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll()" class="cursor-pointer" />
+        </th>
         <th class="text-left py-2 px-3 sm:px-4">Nombre Deuda</th>
         <th class="text-center py-2 px-3 sm:px-4">Fecha de Deuda</th>
         <th class="text-center py-2 px-3 sm:px-4">Fecha de Pago</th>
@@ -42,6 +50,9 @@
     <tbody>
       <tr *ngFor="let debt of debts; let i = index" class="app-table-row opacity-0 animate-fadeSlideDown"
         [style.animationDelay]="getRowAnimationDelay(debt, i)">
+        <td class="py-2 px-2 text-center">
+          <input type="checkbox" [checked]="selectedIds.has(debt.id)" (change)="toggleSelect(debt.id)" class="cursor-pointer" />
+        </td>
         <td class="py-2 px-3 sm:px-4 font-semibold">{{ debt.acreedor }}</td>
         <td class="py-2 px-3 sm:px-4 text-center">{{ debt.fecha_deuda }}</td>
         <td class="py-2 px-3 sm:px-4 text-center">{{ debt.fecha_pago }}</td>
@@ -81,6 +92,7 @@
       <!-- Total Deudas Pendientes -->
       <tr class="app-table-total-positive opacity-0 animate-fadeSlideDown"
         [style.animationDelay]="getRowAnimationDelay('total', debts.length)">
+        <td></td>
         <td class="py-3 px-3 sm:px-4 text-left" colspan="5">Total Deudas Pendientes</td>
         <td class="py-3 px-3 sm:px-4 text-right">
           ${{ formatCurrency(getTotalPendingDebts()) }}
@@ -174,6 +186,12 @@
       </button>
     </div>
 </app-modal-shell>
+
+<!-- Modal de eliminación masiva -->
+<app-confirm-modal *ngIf="showBulkDeleteConfirm" title="¿Eliminar seleccionadas?"
+  [message]="'¿Eliminar ' + selectionCount + ' deuda(s)? Esta acción no se puede deshacer.'"
+  confirmText="Eliminar" tone="danger" icon="report_problem"
+  (cancel)="showBulkDeleteConfirm = false" (confirm)="confirmBulkDelete()" />
 
 <!-- Modal para eliminar deuda -->
 <app-confirm-modal *ngIf="isDeleteModalOpen" title="¿Eliminar Deuda?"

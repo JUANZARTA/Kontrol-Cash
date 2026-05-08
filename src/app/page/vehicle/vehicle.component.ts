@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 import { DateService } from '../../services/date.service';
 import { VehicleService } from '../../services/vehicle.service';
@@ -49,6 +49,8 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   editedEntry: FuelEntry = { nombreBomba: '', monto: 0, galones: 0, kilometraje: 0, fecha: '' };
   editedId: string | null = null;
   entryToDeleteId: string | null = null;
+  selectedIds = new Set<string>();
+  showBulkDeleteConfirm = false;
 
   isAddModalOpen = false;
   isEditModalOpen = false;
@@ -265,6 +267,30 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     });
   }
 
+  get hasSelection(): boolean { return this.selectedIds.size > 0; }
+  get selectionCount(): number { return this.selectedIds.size; }
+  get allSelected(): boolean { return this.entries.length > 0 && this.entries.every(e => this.selectedIds.has(e.id)); }
+
+  toggleSelect(id: string): void {
+    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
+    else this.selectedIds.add(id);
+  }
+
+  toggleSelectAll(): void {
+    if (this.allSelected) this.selectedIds.clear();
+    else this.entries.forEach(e => this.selectedIds.add(e.id));
+  }
+
+  confirmBulkDelete(): void {
+    const ids = Array.from(this.selectedIds);
+    const ops = ids.map(id => this.vehicleService.deleteFuelEntry(this.userId, this.currentYear, this.currentMonth, id));
+    forkJoin(ops).subscribe(() => {
+      this.selectedIds.clear();
+      this.showBulkDeleteConfirm = false;
+      this.reloadAndSync();
+    });
+  }
+
   getPricePerGallon(entry: FuelEntryWithId): number {
     if (entry.precioGalon && entry.precioGalon > 0) return entry.precioGalon;
     return entry.galones > 0 ? entry.monto / entry.galones : 0;
@@ -360,8 +386,8 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   private refreshChart(): void {
     if (!this.vehicleChartRef?.nativeElement) return;
-    const labels = this.entries.map((e, i) => `${i + 1}`);
-    const kmPerGallonSeries = this.entries.map((_, i) => this.getKmPerGallon(i));
+    const labels = this.entries.map((_, i) => `Tanqueo ${i + 1}`);
+    const rendimientoSeries = this.entries.map((_, i) => this.getDistanceFromPrevious(i));
 
     const isDark = this.themeService.isDarkMode();
     const textColor = isDark ? '#cbd5e1' : '#334155';
@@ -373,7 +399,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       data: {
         labels,
         datasets: [
-          { label: 'Kilometraje x galón', data: kmPerGallonSeries, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.2)', tension: 0.3 },
+          { label: 'Rendimiento (km recorridos)', data: rendimientoSeries, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.2)', tension: 0.3 },
         ],
       },
       options: {
