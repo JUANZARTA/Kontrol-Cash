@@ -16,6 +16,7 @@ import { PlannerService } from '../../services/planner.service';
 import { RecurrentItem } from '../../models/planner.model';
 import { AttachmentsService } from '../../services/attachments.service';
 import { MovementAttachment } from '../../models/attachment.model';
+import { ScanReceiptService, ScannedItem } from '../../services/scan-receipt.service';
 
 import {
   trigger,
@@ -53,6 +54,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   private walletService = inject(WalletService);
   private plannerService = inject(PlannerService);
   private attachmentsService = inject(AttachmentsService);
+  private scanReceiptService = inject(ScanReceiptService);
 
   // Propiedades
   incomes: any[] = [];
@@ -825,6 +827,74 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     else this.newExpense.estimacion = numericValue;
 
     input.value = this.formatCurrency(numericValue);
+  }
+
+  // Scan receipt
+  showScanModal = false;
+  scanLoading = false;
+  scanError = '';
+  scannedItems: ScannedItem[] = [];
+  selectedScanItems = new Set<number>();
+
+  openScanModal(): void {
+    this.showScanModal = true;
+    this.scanLoading = false;
+    this.scanError = '';
+    this.scannedItems = [];
+    this.selectedScanItems.clear();
+  }
+
+  closeScanModal(): void {
+    this.showScanModal = false;
+  }
+
+  onScanFile(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    this.scanLoading = true;
+    this.scanError = '';
+    this.scannedItems = [];
+    this.selectedScanItems.clear();
+
+    this.scanReceiptService.scan(file).subscribe({
+      next: (items) => {
+        this.scannedItems = items;
+        items.forEach((_, i) => this.selectedScanItems.add(i));
+        this.scanLoading = false;
+      },
+      error: (err) => {
+        console.error('[Scan] error:', err);
+        this.scanError = 'No se pudo leer la imagen. Intentá con una foto más clara y bien iluminada.';
+        this.scanLoading = false;
+      }
+    });
+  }
+
+  toggleScanItem(index: number): void {
+    if (this.selectedScanItems.has(index)) this.selectedScanItems.delete(index);
+    else this.selectedScanItems.add(index);
+  }
+
+  importScannedItems(): void {
+    const ops = Array.from(this.selectedScanItems).map((i) => {
+      const item = this.scannedItems[i];
+      const expense = new Expense(
+        item.nombre,
+        CategoriaGasto.Variable,
+        0,
+        item.precio * item.cantidad
+      );
+      return this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense);
+    });
+
+    if (ops.length === 0) return;
+
+    forkJoin(ops).subscribe(() => {
+      this.closeScanModal();
+      this.loadExpenses();
+      this.showToast(`${ops.length} gasto(s) importados como estimación.`);
+    });
   }
 
   get hasSelection(): boolean { return this.selectedIds.size > 0; }

@@ -7,6 +7,10 @@
     <button *ngIf="hasSelection" (click)="showBulkDeleteConfirm = true" class="app-warning-button">
       Eliminar ({{ selectionCount }})
     </button>
+    <button disabled class="app-secondary-button opacity-40 cursor-not-allowed">
+      <span class="material-icons text-sm">document_scanner</span>
+      <span class="hidden sm:inline">Escanear factura</span>
+    </button>
     <button (click)="openModal()" class="app-link-button app-link-button-primary">
       Agregar +
     </button>
@@ -277,6 +281,82 @@
   message="¿Estás seguro de que deseas eliminar este gasto? Esta acción no se puede deshacer."
   confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteModal()"
   (confirm)="confirmDeleteExpense()" />
+
+<!-- Modal: Escanear factura -->
+<app-modal-shell *ngIf="showScanModal" title="Escanear Factura"
+  description="Subí una foto de tu factura y Gemini AI detectará los ítems automáticamente."
+  panelClass="animate-pop-in">
+
+  <!-- Estado inicial: selector de archivo -->
+  <div *ngIf="!scanLoading && scannedItems.length === 0 && !scanError" class="text-center py-4">
+    <span class="material-icons text-5xl text-slate-300 mb-3 block">document_scanner</span>
+    <p class="text-sm text-slate-500 mb-4">Seleccioná una imagen de la factura (JPG, PNG, WebP)</p>
+    <label class="app-primary-button cursor-pointer inline-flex items-center gap-2">
+      <span class="material-icons text-sm">upload</span>
+      Subir imagen
+      <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="onScanFile($event)" />
+    </label>
+  </div>
+
+  <!-- Estado: cargando -->
+  <div *ngIf="scanLoading" class="flex flex-col items-center py-8 gap-3">
+    <svg class="animate-spin h-10 w-10 text-sky-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+    </svg>
+    <p class="text-sm text-slate-500">Leyendo texto de la factura...</p>
+    <p class="text-xs text-slate-400">Puede tardar 10-20 segundos</p>
+  </div>
+
+  <!-- Estado: error -->
+  <div *ngIf="scanError" class="text-center py-4">
+    <span class="material-icons text-4xl text-red-400 mb-2 block">error_outline</span>
+    <p class="text-sm text-red-600 mb-4">{{ scanError }}</p>
+    <label class="app-secondary-button cursor-pointer inline-flex items-center gap-2">
+      <span class="material-icons text-sm">refresh</span>
+      Intentar de nuevo
+      <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="onScanFile($event)" />
+    </label>
+  </div>
+
+  <!-- Estado: resultados -->
+  <div *ngIf="!scanLoading && scannedItems.length > 0">
+    <p class="text-xs text-slate-500 mb-3">Seleccioná los ítems que querés importar como gastos (estimación):</p>
+    <div class="max-h-64 overflow-y-auto space-y-2 mb-4 pr-1">
+      <label *ngFor="let item of scannedItems; let i = index"
+        class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3 cursor-pointer hover:bg-slate-50 transition">
+        <input type="checkbox" [checked]="selectedScanItems.has(i)" (change)="toggleScanItem(i)" class="cursor-pointer" />
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-slate-800 truncate">{{ item.nombre }}</p>
+          <p class="text-xs text-slate-500">x{{ item.cantidad }} · ${{ formatCurrency(item.precio) }} c/u</p>
+        </div>
+        <span class="text-sm font-semibold text-sky-700 whitespace-nowrap">
+          ${{ formatCurrency(item.precio * item.cantidad) }}
+        </span>
+      </label>
+    </div>
+
+    <div class="flex justify-between items-center gap-2 pt-2 border-t border-gray-100">
+      <label class="app-secondary-button cursor-pointer inline-flex items-center gap-2 text-xs">
+        <span class="material-icons text-sm">refresh</span>
+        Nueva foto
+        <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="onScanFile($event)" />
+      </label>
+      <div class="flex gap-2">
+        <button (click)="closeScanModal()" class="app-secondary-button">Cancelar</button>
+        <button (click)="importScannedItems()" [disabled]="selectedScanItems.size === 0" class="app-primary-button disabled:opacity-50">
+          Importar ({{ selectedScanItems.size }})
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botón cancelar cuando no hay resultados aún -->
+  <div *ngIf="!scanLoading && scannedItems.length === 0" class="flex justify-end mt-4">
+    <button (click)="closeScanModal()" class="app-secondary-button">Cancelar</button>
+  </div>
+
+</app-modal-shell>
 
 <!-- Toast  -->
 <div *ngIf="showingToast"
