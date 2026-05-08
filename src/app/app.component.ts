@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { ThemeService } from './services/theme.service';
+import { UserSettingsService } from './services/user-settings.service';
 
 @Component({
   selector: 'app-root',
@@ -12,10 +13,17 @@ import { ThemeService } from './services/theme.service';
 export class AppComponent implements OnInit {
   title = 'Mi Cartera';
 
-  constructor(private router: Router, private themeService: ThemeService) {}
+  constructor(
+    private router: Router,
+    private themeService: ThemeService,
+    private userSettingsService: UserSettingsService
+  ) {}
 
   ngOnInit(): void {
     this.themeService.initTheme();
+
+    const savedAccent = window.localStorage.getItem('mi-cartera-accent');
+    this.userSettingsService.applyAccentTheme(savedAccent || '#0ea5e9');
 
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');

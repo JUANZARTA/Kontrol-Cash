@@ -34,9 +34,25 @@ export default class SettingsComponent implements OnInit {
         nombre: settings.nombre || this.user?.name || '',
         correo: settings.correo || this.user?.email || '',
       };
+      // Respetar el tema ACTIVO actual (navbar) al entrar a configuración
+      this.settings.darkMode = this.themeService.isDarkMode();
+      this.accentColor = this.settings.accentColor || '#0ea5e9';
+      this.applyAccentPreview(this.accentColor);
       this.profilePhotoPreview = this.settings.profilePhotoUrl || this.user?.profilePhotoUrl || 'assets/img/logoIcono.png';
-      this.themeService.setTheme(this.settings.darkMode ? 'dark' : 'light');
     });
+  }
+
+  onAccentColorChange(): void {
+    this.applyAccentPreview(this.accentColor);
+  }
+
+  useDefaultAccentColor(): void {
+    this.accentColor = '#0ea5e9';
+    this.applyAccentPreview(this.accentColor);
+  }
+
+  private applyAccentPreview(color: string): void {
+    this.settingsService.applyAccentTheme(color || '#0ea5e9');
   }
 
   onPhotoSelected(event: Event): void {
@@ -91,6 +107,7 @@ export default class SettingsComponent implements OnInit {
       nombre: (this.settings.nombre || '').trim(),
       correo: this.user?.email || this.settings.correo,
       profilePhotoUrl,
+      accentColor: this.accentColor,
     };
 
     this.settingsService.saveSettings(this.userId, payload).subscribe({

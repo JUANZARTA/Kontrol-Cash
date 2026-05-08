@@ -31,7 +31,10 @@
   <div class="mt-6 space-y-4">
     <label class="settings-toggle-row">
       <span>Color del sistema (recordatorio)</span>
-      <input type="color" [(ngModel)]="accentColor" title="No funcional por ahora" />
+      <div class="flex items-center gap-2">
+        <input type="color" [(ngModel)]="accentColor" (change)="onAccentColorChange()" title="Color acento del sistema" />
+        <button type="button" class="app-secondary-button !px-3 !py-1.5" (click)="useDefaultAccentColor()">Predeterminado</button>
+      </div>
     </label>
 
     <label class="settings-toggle-row">
