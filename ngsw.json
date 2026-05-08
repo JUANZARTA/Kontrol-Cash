@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1778253430320,
+  "timestamp": 1778256959996,
   "index": "/miCartera/index.html",
   "assetGroups": [
     {
@@ -11,18 +11,18 @@
         "ignoreVary": true
       },
       "urls": [
-        "/miCartera/145.1655c0cf6671a31f.js",
-        "/miCartera/151.7a3abeb8aaad4ffc.js",
+        "/miCartera/145.58daa40347e7bf03.js",
+        "/miCartera/151.9f13b7e2ac292548.js",
         "/miCartera/239.979bca74972d822a.js",
-        "/miCartera/273.36461c3a8eb30f45.js",
-        "/miCartera/30.6577e78ce404e889.js",
-        "/miCartera/326.852a67540ab3af76.js",
-        "/miCartera/338.6672dd3163fb127b.js",
+        "/miCartera/30.3fc36e17d7111d6a.js",
+        "/miCartera/326.b7046ea601176854.js",
+        "/miCartera/338.0a883aeb205c3de7.js",
         "/miCartera/38.98dbea2654f21be4.js",
         "/miCartera/417.cc1561380ce1b7bd.js",
-        "/miCartera/455.20edac6ee300f746.js",
+        "/miCartera/455.fc612c7cb008443e.js",
+        "/miCartera/485.bda5218e9643e84a.js",
         "/miCartera/526.a57bbd30e56e4c2a.js",
-        "/miCartera/539.5f7cd16cbb7acf97.js",
+        "/miCartera/539.8807181684617543.js",
         "/miCartera/558.d3eb7246607f4f66.js",
         "/miCartera/619.7449caebe8ec8df0.js",
         "/miCartera/734.4825822b895d6a84.js",
@@ -31,11 +31,11 @@
         "/miCartera/common.5723afd5c4d3470b.js",
         "/miCartera/favicon.ico",
         "/miCartera/index.html",
-        "/miCartera/main.66eac4bb61797166.js",
+        "/miCartera/main.9ae0b17bdd549b5f.js",
         "/miCartera/manifest.webmanifest",
         "/miCartera/polyfills.b27c06a689c54c5c.js",
-        "/miCartera/runtime.920b0a0f42a4771f.js",
-        "/miCartera/styles.e714e06206d1f67b.css"
+        "/miCartera/runtime.eb194ae895cd283a.js",
+        "/miCartera/styles.aa26e4a617e43e30.css"
       ],
       "patterns": []
     },
@@ -81,18 +81,18 @@
     }
   ],
   "hashTable": {
-    "/miCartera/145.1655c0cf6671a31f.js": "6753ca9cbb1bd01a6f2aa833d02f5cac2629bfc2",
-    "/miCartera/151.7a3abeb8aaad4ffc.js": "e273b06e3019c9ab1a85b6d90c6b481e561ec7ed",
+    "/miCartera/145.58daa40347e7bf03.js": "65875869b8d70fc39c88ed4d62c53642ad4b2a30",
+    "/miCartera/151.9f13b7e2ac292548.js": "e6291a20ef669d4dfeea4d32bbf2f22129a88e69",
     "/miCartera/239.979bca74972d822a.js": "5fe3aacc1f1838c51077e6f333e64ecd217fad2a",
-    "/miCartera/273.36461c3a8eb30f45.js": "bf1309e9949ada17bd1bbc8d8424b93c1ce2458b",
-    "/miCartera/30.6577e78ce404e889.js": "05ccbc1cdba70706391baf31ab5dd2e114bfb5a0",
-    "/miCartera/326.852a67540ab3af76.js": "e2010bdd53bbfb4666a963ca839d49ce12d55222",
-    "/miCartera/338.6672dd3163fb127b.js": "4748559b7b4cfe9c2b77911cd6e7ce825047cceb",
+    "/miCartera/30.3fc36e17d7111d6a.js": "be911b5322cc503224e7552dfe18e6991f9bd4ee",
+    "/miCartera/326.b7046ea601176854.js": "55559b96734413f106623974c0dec64e3a8e81ad",
+    "/miCartera/338.0a883aeb205c3de7.js": "3252373a0a5eac3bef011991944d255f2c765344",
     "/miCartera/38.98dbea2654f21be4.js": "ebdd959a5ed3f254604a2e70b84da6bec9e304b2",
     "/miCartera/417.cc1561380ce1b7bd.js": "74544be88145e3214e03f5bdd44cf8698f9ed1f6",
-    "/miCartera/455.20edac6ee300f746.js": "d441010db1aafd4355887114c1fd3572348afb90",
+    "/miCartera/455.fc612c7cb008443e.js": "8e0209ba40fe0e9c0ac310e243fbc7a2ce4f970a",
+    "/miCartera/485.bda5218e9643e84a.js": "d7644a03ed3d820536dc4aea60797f3a90d1b1af",
     "/miCartera/526.a57bbd30e56e4c2a.js": "71b630ffc7bc46ddd9f46084b00c7af8146f5ff8",
-    "/miCartera/539.5f7cd16cbb7acf97.js": "407f47937efe54f38a8e57d0b871d95e143b0876",
+    "/miCartera/539.8807181684617543.js": "ec5235f610e2f5db6b0154b8694ddf2426e6d4c3",
     "/miCartera/558.d3eb7246607f4f66.js": "e27d75e4229f96365ff3dc763744d435e886a619",
     "/miCartera/619.7449caebe8ec8df0.js": "e68e2eea9e64e4a36e8ac2aefb03746f379448e7",
     "/miCartera/734.4825822b895d6a84.js": "af3c45e40f1e4079d6106052edd841bdb10c1450",
@@ -113,12 +113,12 @@
     "/miCartera/icons/icon-512x512.png": "27334e273a2de15b87ddd111c0cabf6867a58fa1",
     "/miCartera/icons/icon-72x72.png": "a14610f37b42c9eda630db6e1d3e8fcfb70367b9",
     "/miCartera/icons/icon-96x96.png": "8e3536c1da2837ca02cf2eda0c2975ff1e1d513d",
-    "/miCartera/index.html": "42014d735dff0cd3796cb66737c6f2dd38ab78ec",
-    "/miCartera/main.66eac4bb61797166.js": "d094e28b55fdfcaa16fe33bb6cae9ac859f236ca",
+    "/miCartera/index.html": "2324ce06ca572f6e863c46ece1425ce752fc635f",
+    "/miCartera/main.9ae0b17bdd549b5f.js": "5349eb9e393c3a1932025e3724034af9719d7648",
     "/miCartera/manifest.webmanifest": "5a87820f7e86d0c0b529be444ce80f13ea26c7e1",
     "/miCartera/polyfills.b27c06a689c54c5c.js": "e13c8729e25ee26064745fb90f35f516f44fa85c",
-    "/miCartera/runtime.920b0a0f42a4771f.js": "6c8ccb1b7507aae0c3378e3727b1bbc154ac96a9",
-    "/miCartera/styles.e714e06206d1f67b.css": "a5956ea33fc704c6373f8e250ed1e9bb98ff43f9"
+    "/miCartera/runtime.eb194ae895cd283a.js": "8b77c4f4596d5b17393c51a2df19110a7495fdf2",
+    "/miCartera/styles.aa26e4a617e43e30.css": "0e710294515369aab9fdf7428512dbe32a15a3b4"
   },
   "navigationUrls": [
     {
