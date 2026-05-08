@@ -77,6 +77,22 @@
         <span>Iniciar sesión con Google</span>
       </button>
 
+      <!-- Modo prueba -->
+      <div class="relative flex items-center gap-3 my-1">
+        <div class="flex-1 h-px bg-slate-200"></div>
+        <span class="text-xs text-slate-400">o</span>
+        <div class="flex-1 h-px bg-slate-200"></div>
+      </div>
+
+      <button type="button" (click)="loginDemo()"
+        class="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed py-3 text-sm font-medium transition"
+        [ngClass]="isDarkMode
+          ? 'border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700'
+          : 'border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100'">
+        <span class="material-icons text-base" [class.text-slate-400]="!isDarkMode" [class.text-slate-500]="isDarkMode">science</span>
+        Ingresá sin registrarte como invitado
+      </button>
+
       <!-- Enlace a registro -->
       <p class="text-center text-sm text-gray-500 mt-4">
         ¿No tienes cuenta?

@@ -9,6 +9,7 @@ import {
 } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { DateService } from '../../services/date.service';
+import { ThemeService } from '../../services/theme.service';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
@@ -25,6 +26,9 @@ export default class LoginComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
   private dateService = inject(DateService);
+  private themeService = inject(ThemeService);
+
+  get isDarkMode(): boolean { return this.themeService.isDarkMode(); }
   showPassword: boolean = false;
 
   loginForm: FormGroup;
@@ -198,6 +202,26 @@ export default class LoginComponent implements OnInit {
       default:
         return 'Ha ocurrido un error inesperado.';
     }
+  }
+
+  loginDemo(): void {
+    this.showLoginOverlay = true;
+    this.loginSuccess = false;
+    this.loginError = false;
+
+    this.authService.login('Prueba@gmail.com', '000000').subscribe({
+      next: (res) => {
+        this.loginSuccess = true;
+        this.authService.getUserData(res.localId).subscribe((userData) => {
+          this.showWelcomeModal(userData?.nombre || 'Modo Prueba');
+          setTimeout(() => { this.showLoginOverlay = false; }, 1500);
+        });
+      },
+      error: () => {
+        this.loginError = true;
+        setTimeout(() => { this.showLoginOverlay = false; }, 2000);
+      },
+    });
   }
 
   togglePasswordVisibility(): void {
