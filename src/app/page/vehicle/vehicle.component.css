@@ -1,0 +1,7 @@
+.vehicle-chart-wrap {
+  height: 320px;
+}
+
+:host-context(.dark-theme) .vehicle-chart-wrap {
+  background: transparent;
+}

@@ -1,0 +1,141 @@
+<div class="app-section-card mb-4">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-lg font-semibold text-slate-900">Precio por galón por bomba</h3>
+    <button (click)="openPumpModal()" class="app-primary-button">Agregar bomba +</button>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="app-table">
+      <thead class="app-table-head">
+        <tr>
+          <th class="text-left py-2 px-3 sm:px-4">Bomba</th>
+          <th class="text-right py-2 px-3 sm:px-4">Precio por galón</th>
+          <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let pump of pumps" class="app-table-row">
+          <td class="py-2 px-3 sm:px-4 font-semibold">{{ pump.nombre }}</td>
+          <td class="py-2 px-3 sm:px-4 text-right">${{ formatNumber(pump.precioGalon) }}</td>
+          <td class="py-2 px-3 sm:px-4 text-center">
+            <button (click)="openPumpEditModal(pump.id)" class="text-sky-700 mr-2"><span class="material-icons">edit</span></button>
+            <button (click)="openPumpDeleteModal(pump.id)" class="text-orange-600"><span class="material-icons">delete</span></button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="app-page-toolbar opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
+  <div>
+    <h6 class="text-lg font-semibold text-white">Mi Vehículo</h6>
+    <p class="text-sm opacity-90"><strong>Control de tanqueos y consumo</strong></p>
+  </div>
+  <button (click)="openAddModal()" class="app-primary-button shadow-md">Agregar tanqueo +</button>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="app-table">
+    <thead class="app-table-head">
+      <tr>
+        <th class="text-left py-2 px-3 sm:px-4">Bomba</th>
+        <th class="text-right py-2 px-3 sm:px-4">Cantidad $</th>
+        <th class="text-right py-2 px-3 sm:px-4">Gasolina (gal)</th>
+        <th class="text-right py-2 px-3 sm:px-4">Kilometraje</th>
+        <th class="text-right py-2 px-3 sm:px-4">KM/Galón</th>
+        <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of entries; let i = index" class="app-table-row">
+        <td class="py-2 px-3 sm:px-4 font-semibold">{{ item.nombreBomba }}</td>
+        <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(item.monto) }}</td>
+        <td class="py-2 px-3 sm:px-4 text-right">{{ formatNumber(item.galones) }}</td>
+        <td class="py-2 px-3 sm:px-4 text-right">{{ formatCurrency(item.kilometraje) }}</td>
+        <td class="py-2 px-3 sm:px-4 text-right">{{ formatNumber(getKmPerGallon(i)) }}</td>
+        <td class="py-2 px-3 sm:px-4 text-center">
+          <button (click)="openEditModal(item.id)" class="text-sky-700 mr-2"><span class="material-icons">edit</span></button>
+          <button (click)="openDeleteModal(item.id)" class="text-orange-600"><span class="material-icons">delete</span></button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="app-section-card mt-6">
+  <h3 class="text-lg font-semibold text-slate-900 mb-3">Tendencia de tanqueadas</h3>
+  <div class="vehicle-chart-wrap">
+    <canvas #vehicleChart></canvas>
+  </div>
+</div>
+
+<app-modal-shell *ngIf="isAddModalOpen" title="Agregar tanqueo" panelClass="animate-pop-in">
+  <label class="app-field-label">Bomba</label>
+  <select [(ngModel)]="selectedPumpId" class="app-input mb-1">
+    <option value="" disabled selected>Seleccioná la bomba</option>
+    <option *ngFor="let pump of pumps" [value]="pump.id">{{ pump.nombre }}</option>
+  </select>
+  <p *ngIf="selectedPumpId" class="text-xs text-slate-500 mb-3">Precio por galón: ${{ formatNumber(selectedPumpPrice) }}</p>
+
+  <label class="app-field-label">Billetera de pago</label>
+  <select [(ngModel)]="selectedWalletId" class="app-input mb-1">
+    <option value="" disabled selected>Seleccioná la billetera</option>
+    <option *ngFor="let wallet of wallets" [value]="wallet.id">{{ wallet.tipo }}</option>
+  </select>
+  <p *ngIf="selectedWalletId" class="text-xs text-slate-500 mb-3">Saldo disponible: ${{ formatCurrency(selectedWalletBalance) }}</p>
+
+  <label class="app-field-label">Fecha</label>
+  <input type="date" [(ngModel)]="newEntry.fecha" class="app-input mb-3" />
+  <label class="app-field-label">Cantidad $</label>
+  <input type="number" [(ngModel)]="newEntry.monto" class="app-input mb-3" />
+  <label class="app-field-label">Kilometraje</label>
+  <input type="number" [(ngModel)]="newEntry.kilometraje" class="app-input mb-3" />
+  <div class="flex justify-end gap-2">
+    <button (click)="closeAddModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="addEntry()" class="app-primary-button">Guardar</button>
+  </div>
+</app-modal-shell>
+
+<app-modal-shell *ngIf="isEditModalOpen" title="Editar tanqueo" panelClass="animate-pop-in">
+  <label class="app-field-label">Nombre de bomba</label>
+  <input [(ngModel)]="editedEntry.nombreBomba" class="app-input mb-3" />
+  <label class="app-field-label">Fecha</label>
+  <input type="date" [(ngModel)]="editedEntry.fecha" class="app-input mb-3" />
+  <label class="app-field-label">Cantidad $</label>
+  <input type="number" [(ngModel)]="editedEntry.monto" class="app-input mb-3" />
+  <label class="app-field-label">Cantidad gasolina (galones)</label>
+  <input type="number" [(ngModel)]="editedEntry.galones" class="app-input mb-3" />
+  <label class="app-field-label">Kilometraje</label>
+  <input type="number" [(ngModel)]="editedEntry.kilometraje" class="app-input mb-3" />
+  <div class="flex justify-end gap-2">
+    <button (click)="closeEditModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="saveEditedEntry()" class="app-primary-button">Guardar</button>
+  </div>
+</app-modal-shell>
+
+<app-confirm-modal *ngIf="isDeleteModalOpen" title="¿Eliminar tanqueo?" message="Esta acción no se puede deshacer." confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteModal()" (confirm)="confirmDelete()" />
+
+<app-modal-shell *ngIf="isPumpModalOpen" title="Agregar bomba" panelClass="animate-pop-in" size="sm">
+  <label class="app-field-label">Nombre de bomba</label>
+  <input [(ngModel)]="newPump.nombre" class="app-input mb-3" />
+  <label class="app-field-label">Precio por galón</label>
+  <input type="number" [(ngModel)]="newPump.precioGalon" class="app-input mb-3" />
+  <div class="flex justify-end gap-2">
+    <button (click)="closePumpModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="addPump()" class="app-primary-button">Guardar</button>
+  </div>
+</app-modal-shell>
+
+<app-modal-shell *ngIf="isPumpEditModalOpen" title="Editar bomba" panelClass="animate-pop-in" size="sm">
+  <label class="app-field-label">Nombre de bomba</label>
+  <input [(ngModel)]="editedPump.nombre" class="app-input mb-3" />
+  <label class="app-field-label">Precio por galón</label>
+  <input type="number" [(ngModel)]="editedPump.precioGalon" class="app-input mb-3" />
+  <div class="flex justify-end gap-2">
+    <button (click)="closePumpEditModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="saveEditedPump()" class="app-primary-button">Guardar</button>
+  </div>
+</app-modal-shell>
+
+<app-confirm-modal *ngIf="isPumpDeleteModalOpen" title="¿Eliminar bomba?" message="Si hay tanqueos que la usan, solo se perderá la referencia de configuración futura." confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closePumpDeleteModal()" (confirm)="confirmDeletePump()" />

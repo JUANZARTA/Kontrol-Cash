@@ -27,6 +27,7 @@ export const routes: Routes = [
       { path: 'loan', loadComponent: () => import('./page/loans/loans.component') },
       { path: 'debt', loadComponent: () => import('./page/debts/debts.component') },
       { path: 'invoice', loadComponent: () => import('./page/invoice/invoice.component') },
+      { path: 'vehicle', loadComponent: () => import('./page/vehicle/vehicle.component') },
       { path: 'month-close', loadComponent: () => import('./page/month-close/month-close.component') },
       { path: '', redirectTo: 'home', pathMatch: 'full' }
     ]
