@@ -7,6 +7,12 @@
   </svg>
 </button>
 
+<!-- BACKDROP (mobile): cerrar al tocar fuera del sidebar -->
+<div *ngIf="isSidebarOpen && isMobile()"
+  (click)="closeSidebar()"
+  class="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden">
+</div>
+
 <!-- SIDEBAR -->
 <aside [class.translate-x-[-100%]]="!isSidebarOpen && isMobile()"
   class="fixed left-0 top-0 z-50 h-full w-72 overflow-hidden rounded-r-[2rem] border-r border-white/10 bg-gradient-to-b from-slate-950 via-slate-900 to-sky-950 shadow-2xl transform transition-transform duration-300 ease-in-out">

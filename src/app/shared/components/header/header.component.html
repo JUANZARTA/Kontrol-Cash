@@ -23,33 +23,28 @@
   </div>
 
   <!-- 🎛 Columna derecha: acciones -->
-  <div class="flex flex-wrap items-center justify-end gap-3 animate-fadeIn">
+  <div class="flex items-center justify-end gap-2 animate-fadeIn">
 
-    <button (click)="toggleTheme()"
-      class="app-secondary-button bg-white/75">
+    <button (click)="toggleTheme()" class="app-secondary-button bg-white/75" title="Cambiar tema">
       <span class="material-icons text-sm">{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</span>
-      <span>{{ isDarkMode ? 'Modo claro' : 'Modo oscuro' }}</span>
+      <span class="hidden lg:inline">{{ isDarkMode ? 'Modo claro' : 'Modo oscuro' }}</span>
     </button>
 
-    <button (click)="openMonthModal()"
-      class="app-primary-button shadow-md">
+    <button (click)="openMonthModal()" class="app-primary-button shadow-md" title="Cambiar mes">
       <span class="material-icons text-sm">calendar_month</span>
-      <span>Cambiar Mes</span>
+      <span class="hidden lg:inline">Cambiar Mes</span>
     </button>
 
-    <button routerLink="/app/settings"
-      class="app-secondary-button bg-white/75 px-3"
-      title="Configuración">
+    <button routerLink="/app/settings" class="app-secondary-button bg-white/75 px-3" title="Configuración">
       <span class="material-icons text-sm">settings</span>
     </button>
 
     <img [src]="profilePhotoUrl" alt="Perfil"
-      class="h-9 w-9 rounded-full border-2 border-white/70 object-cover shadow-sm" />
+      class="h-9 w-9 rounded-full border-2 border-white/70 object-cover shadow-sm flex-shrink-0" />
 
-    <button (click)="logout()"
-      class="app-secondary-button bg-slate-100/90 text-slate-700 border-slate-200">
+    <button (click)="logout()" class="app-secondary-button bg-slate-100/90 text-slate-700 border-slate-200 px-3" title="Salir">
       <span class="material-icons text-sm">logout</span>
-      <span>Salir</span>
+      <span class="hidden lg:inline">Salir</span>
     </button>
 
   </div>
