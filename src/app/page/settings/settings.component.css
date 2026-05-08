@@ -1,0 +1,52 @@
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+}
+
+.switch-pill {
+  position: relative;
+  width: 74px;
+  height: 34px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  border: 2px solid #d1d5db;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  justify-content: flex-end;
+  color: #9ca3af;
+  font-weight: 800;
+  font-size: 0.9rem;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.switch-pill.on {
+  background: #22c55e;
+  border-color: #16a34a;
+  color: #0f5132;
+  justify-content: flex-start;
+}
+
+.switch-knob {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #fff;
+  left: 3px;
+  top: 3px;
+  transition: all 0.25s ease;
+}
+
+.switch-pill.on .switch-knob {
+  left: 45px;
+}
+
+.switch-text {
+  z-index: 1;
+}

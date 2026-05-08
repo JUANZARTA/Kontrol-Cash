@@ -10,11 +10,12 @@ import { Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { ThemeService } from '../../../services/theme.service';
 import { ModalShellComponent } from '../modal-shell/modal-shell.component';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, ModalShellComponent],
+  imports: [CommonModule, ModalShellComponent, RouterLink],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css',
 })

@@ -4,6 +4,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
 import { Router } from '@angular/router';
+import { UserSettingsService } from '../../../services/user-settings.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-sidebar',
@@ -18,15 +20,35 @@ export class SidebarComponent {
 
   // Detecta si es pantalla móvil (<1024px)
   isMobileScreen = false;
+  private settingsSub?: Subscription;
+
+  showVehicle = true;
+  showLoans = true;
+  showDebts = true;
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private userSettingsService: UserSettingsService
   ) {
     // Solo ejecutar en navegador
     if (isPlatformBrowser(this.platformId)) {
       this.checkScreenSize();
+    }
+
+    const userId = JSON.parse(localStorage.getItem('user') || '{}')?.localId;
+    if (userId) {
+      this.userSettingsService.getSettings(userId).subscribe((settings) => {
+        this.showVehicle = settings.showVehicle;
+        this.showLoans = settings.showLoans;
+        this.showDebts = settings.showDebts;
+      });
+      this.settingsSub = this.userSettingsService.settings$.subscribe((settings) => {
+        this.showVehicle = settings.showVehicle;
+        this.showLoans = settings.showLoans;
+        this.showDebts = settings.showDebts;
+      });
     }
   }
 
@@ -86,5 +108,9 @@ export class SidebarComponent {
   logout() {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  ngOnDestroy() {
+    this.settingsSub?.unsubscribe();
   }
 }

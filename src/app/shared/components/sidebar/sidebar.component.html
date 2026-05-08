@@ -114,7 +114,7 @@
       <a routerLink="/app/loan" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
-        style="animation-delay:0.4s">
+        style="animation-delay:0.4s" *ngIf="showLoans">
         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
           <path
             d="M3 5h18a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2zm0 2v2h18V7H3zm0 4v6h18v-6H3zm2 2h2v2H5v-2z" />
@@ -126,7 +126,7 @@
       <a routerLink="/app/debt" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
-        style="animation-delay:0.45s">
+        style="animation-delay:0.45s" *ngIf="showDebts">
         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
           <path
             d="M2.25 12a9.75 9.75 0 1019.5 0 9.75 9.75 0 00-19.5 0zM13.5 9.75a.75.75 0 00-1.5 0V12H9.75a.75.75 0 000 1.5H12v2.25a.75.75 0 001.5 0V13.5h2.25a.75.75 0 000-1.5H13.5V9.75z" />
@@ -138,9 +138,17 @@
       <a routerLink="/app/vehicle" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
-        style="animation-delay:0.48s">
+        style="animation-delay:0.48s" *ngIf="showVehicle">
         <span class="material-icons text-[20px]">directions_car</span>
         Mi Vehículo
+      </a>
+
+      <a routerLink="/app/settings" (click)="closeSidebar()"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
+        style="animation-delay:0.5s">
+        <span class="material-icons text-[20px]">settings</span>
+        Configuración
       </a>
 
     </nav>
