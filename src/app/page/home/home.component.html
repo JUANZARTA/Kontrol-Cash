@@ -121,51 +121,33 @@
   <div class="app-section-card">
     <div class="flex items-center justify-between gap-4 mb-4">
       <div>
-        <h3 class="text-lg font-semibold text-slate-900">Meta de ahorro</h3>
-        <p class="text-sm text-slate-500">Mirá cuánto falta para alcanzar tu objetivo.</p>
+        <h3 class="text-lg font-semibold text-slate-900">Alcancías</h3>
+        <p class="text-sm text-slate-500">Acceso rápido para ver progreso y entrar.</p>
       </div>
       <div class="text-right">
-        <p class="app-kpi-label">Progreso</p>
-        <p class="text-2xl font-semibold text-teal-700">{{ savingGoalProgress }}%</p>
+        <p class="app-kpi-label">Promedio</p>
+        <p class="text-2xl font-semibold text-teal-700">{{ getAveragePiggybankProgress() }}%</p>
       </div>
     </div>
 
-    <div *ngIf="savingGoal || isEditingSavingGoal; else noGoal" class="grid items-center gap-6 md:grid-cols-[1fr_160px]">
-      <div>
-        <div *ngIf="!isEditingSavingGoal; else editGoalBlock">
-          <div class="flex items-center justify-between gap-3">
-            <p class="text-xl font-semibold text-slate-900">{{ savingGoal?.titulo }}</p>
-            <button (click)="startSavingGoalEdit()" class="app-secondary-button">Editar</button>
+    <div *ngIf="savings && savings.length > 0; else noGoal" class="space-y-3">
+      <div *ngFor="let piggy of savings" class="rounded-2xl border border-gray-200 px-4 py-3">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="font-semibold text-slate-800">{{ getPiggybankName(piggy) }}</p>
+            <p class="text-xs text-slate-500">{{ getPiggybankProgress(piggy) }}% completado</p>
           </div>
-          <p class="mt-2 text-sm text-slate-500">{{ totalAhorro | currency }} de {{ savingGoal?.montoObjetivo | currency }}</p>
+          <button (click)="enterPiggybankFromHome(piggy.id)" class="app-primary-button">Entrar</button>
         </div>
 
-        <ng-template #editGoalBlock>
-          <div class="space-y-3">
-            <input [(ngModel)]="draftSavingGoal.titulo" class="app-input" placeholder="Nombre de la meta" />
-            <input type="text" [value]="draftSavingGoal.montoObjetivo ? draftSavingGoal.montoObjetivo.toLocaleString('es-CO') : ''" (input)="onDraftSavingGoalAmountInput($event)" class="app-input" placeholder="Monto objetivo" />
-            <div class="flex gap-2">
-              <button (click)="saveSavingGoal()" class="app-primary-button">Guardar</button>
-              <button (click)="cancelSavingGoalEdit()" class="app-secondary-button">Cancelar</button>
-            </div>
-          </div>
-        </ng-template>
-
-        <div class="mt-4 h-3 rounded-full bg-slate-100 overflow-hidden">
-          <div class="h-full rounded-full bg-gradient-to-r from-teal-500 to-sky-500 transition-all duration-500"
-            [style.width.%]="savingGoalProgress"></div>
+        <div class="mt-3 h-2 rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-full rounded-full bg-teal-500" [style.width.%]="getPiggybankProgress(piggy)"></div>
         </div>
-      </div>
-
-      <div class="relative mx-auto flex h-44 w-32 items-end justify-center rounded-[3rem] border-4 border-slate-200 bg-slate-100 overflow-hidden">
-        <div class="absolute inset-x-3 bottom-3 rounded-[2rem] bg-gradient-to-t from-teal-600 to-sky-400 transition-all duration-500"
-          [style.height.%]="savingGoalProgress"></div>
-        <div class="absolute inset-0 flex items-center justify-center text-5xl">🐷</div>
       </div>
     </div>
 
     <ng-template #noGoal>
-      <p class="text-sm text-slate-500">Definí tu meta desde la sección de ahorros para verla acá.</p>
+      <p class="text-sm text-slate-500">Creá alcancías desde su sección para verlas acá.</p>
     </ng-template>
   </div>
 

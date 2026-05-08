@@ -1,0 +1,65 @@
+.piggy-card {
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: transparent;
+  box-shadow: 0 8px 20px -16px rgba(15, 23, 42, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.piggy-card__name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #334155;
+}
+
+.piggy-card__emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.piggy-card__amount {
+  margin: 2px 0 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.piggy-card__goal {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+:host-context(.dark-theme) .piggy-card__name,
+:host-context(.dark-theme) .piggy-card__amount,
+:host-context(.dark-theme) .piggy-card__goal {
+  color: #ffffff;
+}
+
+.piggy-progress-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+  overflow: hidden;
+}
+
+.piggy-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #0ea5e9;
+  transition: width 0.3s ease;
+}
+
+.piggy-card__actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

@@ -42,6 +42,10 @@ interface DebtWithId extends Debt {
   id: string;
 }
 
+interface SavingWithId extends Saving {
+  id: string;
+}
+
 export interface WalletAccountWithId extends WalletAccount {
   id: string;
   showMenu?: boolean;
@@ -103,7 +107,7 @@ export default class HomeComponent implements OnInit, OnDestroy {
   gastos: Expense[] = [];
   ingresos: Income[] = [];
   invoices: InvoiceWithId[] = [];
-  savings: Saving[] = [];
+  savings: SavingWithId[] = [];
 
   // Fecha
   currentYear: string = new Date().getFullYear().toString();
@@ -431,6 +435,28 @@ export default class HomeComponent implements OnInit, OnDestroy {
   get savingGoalProgress(): number {
     if (!this.savingGoal?.montoObjetivo) return 0;
     return Math.min(100, Math.round((this.totalAhorro / this.savingGoal.montoObjetivo) * 100));
+  }
+
+  getPiggybankName(item: any): string {
+    return (item?.nombre || item?.tipo || 'Alcancía').trim();
+  }
+
+  getPiggybankProgress(item: any): number {
+    const meta = Number(item?.metaAhorro || 0);
+    const valor = Number(item?.valor || 0);
+    if (!meta) return 0;
+    return Math.min(100, Math.round((valor / meta) * 100));
+  }
+
+  getAveragePiggybankProgress(): number {
+    if (!this.savings?.length) return 0;
+    const progresses = this.savings.map((item) => this.getPiggybankProgress(item));
+    const total = progresses.reduce((sum, p) => sum + p, 0);
+    return Math.round(total / progresses.length);
+  }
+
+  enterPiggybankFromHome(piggybankId: string): void {
+    this.router.navigate(['/app/saving'], { queryParams: { piggybank: piggybankId } });
   }
 
   loadMonthlyHistory() {

@@ -1,162 +1,181 @@
 <app-financial-status-badge [label]="estadoFinanciero" [color]="estadoFinancieroColor" />
 
-<!-- Encabezado con botón -->
 <div class="app-page-toolbar opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
   <div>
-    <h6 class="text-lg font-semibold text-white">Mis Ahorros</h6>
-    <p class="text-sm flex items-center gap-2 opacity-90">
-      <strong>Estado Actual</strong>
-    </p>
+    <h6 class="text-lg font-semibold text-white">Alcancías</h6>
+    <p class="text-sm flex items-center gap-2 opacity-90"><strong>Gestión de alcancías</strong></p>
   </div>
-  <button (click)="openModal()" class="app-primary-button shadow-md hover:bg-teal-500">
-    Agregar Ahorro +
+
+  <button *ngIf="viewMode === 'list'" (click)="openPiggybankModal()" class="app-primary-button shadow-md hover:bg-teal-500">
+    Crear alcancía +
+  </button>
+
+  <button *ngIf="viewMode === 'detail'" (click)="backToPiggybanks()" class="app-secondary-button">
+    Volver
   </button>
 </div>
 
-<div class="mb-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+<ng-container *ngIf="viewMode === 'list'; else piggybankDetail">
+  <div class="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <article *ngFor="let piggy of piggybanks; let i = index" class="piggy-card opacity-0 animate-fadeSlideDown" [style.animationDelay]="getRowAnimationDelay(piggy, i)">
+      <p class="piggy-card__name">{{ getPiggybankName(piggy) }}</p>
+      <span class="piggy-card__emoji">🐷</span>
+      <p class="piggy-card__amount">${{ formatCurrency(piggy.valor || 0) }}</p>
+      <p class="piggy-card__goal">Meta: ${{ formatCurrency(piggy.metaAhorro || 0) }}</p>
+
+      <div class="piggy-progress-track">
+        <div class="piggy-progress-fill" [style.width.%]="getPiggybankProgress(piggy)"></div>
+      </div>
+
+      <div class="piggy-card__actions">
+        <button (click)="enterPiggybank(piggy.id)" class="app-primary-button text-xs" title="Entrar">Entrar</button>
+        <button (click)="openEditPiggybankModal(piggy.id)" class="text-sky-700" title="Editar">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button (click)="openDeletePiggybankModal(piggy.id)" class="text-orange-600" title="Eliminar">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </article>
+  </div>
+
   <div class="app-section-card">
-    <div class="flex items-center justify-between gap-4 mb-4">
+    <div class="flex items-center justify-between">
+      <p class="text-sm font-semibold text-slate-600 uppercase tracking-[0.14em]">Total Ahorrado</p>
+      <p class="text-2xl font-bold text-teal-700">${{ formatCurrency(getTotalSavings()) }}</p>
+    </div>
+  </div>
+</ng-container>
+
+<ng-template #piggybankDetail>
+  <div *ngIf="selectedPiggybank" class="space-y-4">
+    <div class="app-section-card">
+      <div class="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">{{ getPiggybankName(selectedPiggybank) }}</h3>
+          <p class="text-sm text-slate-500">Meta individual de esta alcancía.</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Avance</p>
+          <p class="text-2xl font-semibold text-teal-700">{{ getPiggybankProgress(selectedPiggybank) }}%</p>
+        </div>
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-[0.8fr_auto]">
+        <input type="text" [value]="formatCurrency(selectedPiggybank.metaAhorro || 0)" (input)="onValueInput($event, 'goal')" class="app-input" placeholder="Meta de ahorro" />
+        <button (click)="savePiggybankGoal()" class="app-primary-button">Guardar meta</button>
+      </div>
+
+      <div class="mt-4 piggy-progress-track">
+        <div class="piggy-progress-fill" [style.width.%]="getPiggybankProgress(selectedPiggybank)"></div>
+      </div>
+      <p class="mt-2 text-sm text-slate-600">Actual: ${{ formatCurrency(selectedPiggybank.valor || 0) }} / Meta: ${{ formatCurrency(selectedPiggybank.metaAhorro || 0) }}</p>
+    </div>
+
+    <div class="app-page-toolbar !rounded-2xl">
       <div>
-        <h3 class="text-lg font-semibold text-slate-900">Meta de ahorro</h3>
-        <p class="text-sm text-slate-500">Definí una meta y seguí tu avance visualmente.</p>
+        <h6 class="text-base font-semibold text-white">Movimientos de ahorro</h6>
       </div>
-      <div class="text-right">
-        <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Avance</p>
-        <p class="text-2xl font-semibold text-teal-700">{{ savingProgress }}%</p>
-      </div>
+      <button (click)="openMovementModal()" class="app-primary-button">Agregar movimiento +</button>
     </div>
 
-    <div class="grid gap-3 md:grid-cols-[1fr_0.8fr_auto]">
-      <input [(ngModel)]="savingGoal.titulo" class="app-input" placeholder="Ej: Fondo de emergencia" />
-      <input type="text" [value]="formatCurrency(savingGoal.montoObjetivo)" (input)="onSavingGoalAmountInput($event)" class="app-input" placeholder="Monto objetivo" />
-      <button (click)="saveSavingGoal()" class="app-primary-button">Guardar</button>
+    <div class="overflow-x-auto">
+      <table class="app-table">
+        <thead class="app-table-head">
+          <tr>
+            <th class="text-left py-2 px-3 sm:px-4">Ahorro en</th>
+            <th class="text-right py-2 px-3 sm:px-4">Valor</th>
+            <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let movement of movements; let i = index" class="app-table-row opacity-0 animate-fadeSlideDown" [style.animationDelay]="getRowAnimationDelay(movement, i)">
+            <td class="py-2 px-3 sm:px-4 font-semibold">{{ movement.nombre }}</td>
+            <td class="py-2 px-3 sm:px-4 text-right font-semibold" [ngClass]="movement.valor >= 0 ? 'text-teal-700' : 'text-orange-600'">
+              {{ movement.valor >= 0 ? '+' : '-' }}${{ formatCurrency(abs(movement.valor)) }}
+            </td>
+            <td class="py-2 px-3 sm:px-4 text-center">
+              <button (click)="openAdjustMovementModal(movement.id)" class="text-lime-600 mr-2" title="Sumar o restar valor">
+                <span class="material-icons">add</span>
+              </button>
+              <button (click)="openEditMovementModal(movement.id)" class="text-sky-700 mr-2"><mat-icon>edit</mat-icon></button>
+              <button (click)="openDeleteMovementModal(movement.id)" class="text-orange-600"><mat-icon>delete</mat-icon></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
+</ng-template>
 
-  <div class="app-section-card overflow-hidden">
-    <div class="relative mx-auto flex h-48 w-36 items-end justify-center rounded-[3rem] border-4 border-slate-200 bg-slate-100">
-      <div class="absolute inset-x-3 bottom-3 rounded-[2rem] bg-gradient-to-t from-teal-600 to-sky-400 transition-all duration-500"
-        [style.height.%]="savingProgress"></div>
-      <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span class="text-5xl">🐷</span>
-        <span class="mt-2 text-sm font-semibold text-slate-800">{{ getTotalSavings() | currency }}</span>
-        <span class="text-xs text-slate-500">de {{ savingGoal.montoObjetivo | currency }}</span>
-      </div>
-    </div>
+<app-modal-shell *ngIf="isPiggybankModalOpen" title="Crear Alcancía" description="Nombre, meta y valor inicial." panelClass="animate-pop-in">
+  <label class="app-field-label">Nombre de la alcancía:</label>
+  <input type="text" [(ngModel)]="newPiggybank.nombre" class="app-input mb-3" placeholder="Ej: Viaje 2027" />
+
+  <label class="app-field-label">Meta de ahorro:</label>
+  <input type="text" [value]="formatCurrency(newPiggybank.metaAhorro || 0)" (input)="onNewPiggybankGoalInput($event)" class="app-input mb-3" />
+
+  <label class="app-field-label">Valor inicial:</label>
+  <input type="text" [value]="formatCurrency(newPiggybank.valor || 0)" (input)="onValueInput($event, 'piggy')" class="app-input mb-3" />
+
+  <div class="flex justify-end gap-2">
+    <button (click)="closePiggybankModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="addPiggybank()" class="app-primary-button">Crear</button>
   </div>
-</div>
-
-<!-- Tabla de Ahorros -->
-<div class="overflow-x-auto">
-  <table class="app-table">
-    <thead class="app-table-head">
-      <tr>
-        <th class="text-left py-2 px-3 sm:px-4">Ahorro en</th>
-        <th class="text-right py-2 px-3 sm:px-4">Valor</th>
-        <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let account of savings; let i = index"
-        class="app-table-row opacity-0 animate-fadeSlideDown"
-        [style.animationDelay]="getRowAnimationDelay(account, i)">
-        <td class="py-2 px-3 sm:px-4 font-semibold">{{ account.tipo }}</td>
-        <td class="py-2 px-3 sm:px-4 text-right font-semibold text-teal-700">
-          ${{ formatCurrency(account.valor) }}
-        </td>
-        <td class="py-2 px-3 sm:px-4 text-center">
-          <button (click)="openAddModal(account.id)" class="text-lime-600 mr-2">
-            <span class="material-icons">add</span>
-          </button>
-          <button (click)="openEditModal(account.id)" class="text-sky-700 mr-2">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button (click)="openDeleteModal(account.id)" class="text-orange-600">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </tr>
-
-      <!-- Total Final -->
-      <tr class="app-table-total-positive opacity-0 animate-fadeSlideDown"
-        [style.animationDelay]="getRowAnimationDelay('total', savings.length)">
-        <td class="py-3 px-3 sm:px-4 text-left">Total</td>
-        <td class="py-3 px-3 sm:px-4 text-right">
-          ${{ formatCurrency(getTotalSavings()) }}
-        </td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- Modal para agregar ahorro -->
-<app-modal-shell *ngIf="isModalOpen" title="Agregar Nuevo Ahorro"
-  description="Introduce los detalles del nuevo ahorro." panelClass="animate-pop-in">
-
-    <label class="app-field-label animate-fadeIn">Ahorro en:</label>
-    <input type="text" [(ngModel)]="newSaving.tipo" placeholder="Ej: Cuenta bancaria"
-      class="app-input mb-3 animate-fadeIn">
-
-    <label class="app-field-label animate-fadeIn">Valor:</label>
-    <input type="text" [value]="formatCurrency(newSaving.valor)" (input)="onValueInput($event, 'new')"
-      placeholder="Ej: 500.000" class="app-input mb-3 animate-fadeIn">
-
-    <div class="flex justify-end gap-2">
-      <button (click)="closeModal()" class="app-secondary-button animate-fadeIn">
-        Cancelar
-      </button>
-      <button (click)="addSaving()" class="app-primary-button animate-fadeIn">
-        Agregar
-      </button>
-    </div>
 </app-modal-shell>
 
-<!-- Modal para agregar valor al ahorro -->
-<app-modal-shell *ngIf="isAddValueModalOpen" title="Agregar o Restar Valor"
-  description="Introduce un valor para adicionar o restar a este ahorro." size="sm" panelClass="animate-pop-in">
+<app-modal-shell *ngIf="isEditPiggybankModalOpen" title="Editar Alcancía" description="Actualizá nombre, meta o valor." panelClass="animate-pop-in">
+  <label class="app-field-label">Nombre de la alcancía:</label>
+  <input type="text" [(ngModel)]="editedPiggybank.nombre" class="app-input mb-3" />
 
-    <label class="app-field-label-strong animate-fadeIn">Valor:</label>
-    <input type="text" [value]="formatCurrency(newValue)" (input)="onValueInput($event, 'add')" placeholder="Ej: 3000"
-      class="app-input mb-4 animate-fadeIn">
+  <label class="app-field-label">Meta de ahorro:</label>
+  <input type="text" [value]="formatCurrency(editedPiggybank.metaAhorro || 0)" (input)="onEditPiggybankGoalInput($event)" class="app-input mb-3" />
 
-    <div class="flex justify-end gap-2">
-      <button (click)="closeAddValueModal()" class="app-secondary-button animate-fadeIn">
-        Cancelar
-      </button>
-      <button (click)="applyValue('subtract')" class="app-primary-button animate-fadeIn">
-        Restar
-      </button>
-      <button (click)="applyValue('add')" class="app-success-button animate-fadeIn">
-        Sumar
-      </button>
-    </div>
+  <label class="app-field-label">Valor actual:</label>
+  <input type="text" [value]="formatCurrency(editedPiggybank.valor || 0)" (input)="onValueInput($event, 'piggyEdit')" class="app-input mb-3" />
+
+  <div class="flex justify-end gap-2">
+    <button (click)="closeEditPiggybankModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="saveEditedPiggybank()" class="app-primary-button">Guardar</button>
+  </div>
 </app-modal-shell>
 
-<!-- Modal para editar ahorro -->
-<app-modal-shell *ngIf="isEditModalOpen" title="Editar Ahorro"
-  description="Edita los detalles del ahorro." panelClass="animate-pop-in">
+<app-modal-shell *ngIf="isMovementModalOpen" title="Agregar Movimiento" description="Registrá un ingreso o retiro de esta alcancía." size="sm" panelClass="animate-pop-in">
+  <label class="app-field-label">Nombre:</label>
+  <input type="text" [(ngModel)]="newMovement.nombre" class="app-input mb-3" placeholder="Ej: Aporte semanal" />
 
-    <label class="app-field-label animate-fadeIn">Ahorro en:</label>
-    <input type="text" [(ngModel)]="editedSaving.tipo" placeholder="Ej: Inversión CDT"
-      class="app-input mb-3 animate-fadeIn">
+  <label class="app-field-label">Valor:</label>
+  <input type="text" [value]="formatCurrency(newMovement.valor || 0)" (input)="onValueInput($event, 'movement')" class="app-input mb-4" />
 
-    <label class="app-field-label animate-fadeIn">Valor:</label>
-    <input type="text" [value]="formatCurrency(editedSaving.valor)" (input)="onEditValueInput($event)"
-      placeholder="Ej: 1.000.000" class="app-input mb-3 animate-fadeIn">
-
-    <div class="flex justify-end gap-2">
-      <button (click)="closeEditModal()" class="app-secondary-button animate-fadeIn">
-        Cancelar
-      </button>
-      <button (click)="saveEditedSaving()" class="app-primary-button animate-fadeIn">
-        Guardar
-      </button>
-    </div>
+  <div class="flex justify-end gap-2">
+    <button (click)="closeMovementModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="addMovement('subtract')" class="app-primary-button">Restar</button>
+    <button (click)="addMovement('add')" class="app-success-button">Sumar</button>
+  </div>
 </app-modal-shell>
 
-<!-- Modal para eliminar ahorro -->
-<app-confirm-modal *ngIf="isDeleteModalOpen" title="¿Eliminar Ahorro?"
-  message="¿Estás seguro de que deseas eliminar este ahorro? Esta acción no se puede deshacer."
-  confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteModal()"
-  (confirm)="confirmDeleteSaving()" />
+<app-modal-shell *ngIf="isEditMovementModalOpen" title="Editar Movimiento" panelClass="animate-pop-in" size="sm">
+  <label class="app-field-label">Nombre:</label>
+  <input type="text" [(ngModel)]="editedMovement.nombre" class="app-input mb-3" />
+  <label class="app-field-label">Valor:</label>
+  <input type="text" [value]="formatCurrency(editedMovement.valor || 0)" (input)="onValueInput($event, 'movementEdit')" class="app-input mb-4" />
+  <div class="flex justify-end gap-2">
+    <button (click)="closeEditMovementModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="saveEditedMovement()" class="app-primary-button">Guardar</button>
+  </div>
+</app-modal-shell>
+
+<app-modal-shell *ngIf="isAdjustMovementModalOpen" title="Sumar o Restar Movimiento" panelClass="animate-pop-in" size="sm">
+  <label class="app-field-label">Valor:</label>
+  <input type="text" [value]="formatCurrency(adjustMovementValue || 0)" (input)="onValueInput($event, 'movementAdjust')" class="app-input mb-4" />
+
+  <div class="flex justify-end gap-2">
+    <button (click)="closeAdjustMovementModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="applyAdjustMovement('subtract')" class="app-primary-button">Restar</button>
+    <button (click)="applyAdjustMovement('add')" class="app-success-button">Sumar</button>
+  </div>
+</app-modal-shell>
+
+<app-confirm-modal *ngIf="isDeletePiggybankModalOpen" title="¿Eliminar Alcancía?" message="Se eliminará la alcancía completa con sus movimientos." confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeletePiggybankModal()" (confirm)="confirmDeletePiggybank()" />
+
+<app-confirm-modal *ngIf="isDeleteMovementModalOpen" title="¿Eliminar Movimiento?" message="¿Seguro que deseas eliminar este movimiento de ahorro?" confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteMovementModal()" (confirm)="confirmDeleteMovement()" />

@@ -1,22 +1,16 @@
-import { Component, OnInit, inject, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SavingsService } from '../../services/savings.service';
-import { Saving } from '../../models/savings.model';
-import { DateService } from '../../services/date.service'; // ✅ Nuevo
-import { Subscription } from 'rxjs'; // ✅ Nuevo
-import { AuthService } from '../../services/auth.service'; // ✅ nuevo
-import { FinanzasService } from '../../services/finanzas.service';
+import { Subscription } from 'rxjs';
 import { MatIconModule } from '@angular/material/icon';
+import { ActivatedRoute } from '@angular/router';
+import { SavingsService } from '../../services/savings.service';
+import { Saving, SavingMovement, SavingMovementWithId, SavingWithId } from '../../models/savings.model';
+import { DateService } from '../../services/date.service';
+import { FinanzasService } from '../../services/finanzas.service';
 import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
-import { PlannerService } from '../../services/planner.service';
-import { SavingGoal } from '../../models/planner.model';
-
-export interface SavingWithId extends Saving {
-  id: string;
-}
 
 @Component({
   selector: 'app-savings',
@@ -27,318 +21,460 @@ export interface SavingWithId extends Saving {
   providers: [DecimalPipe],
 })
 export default class SavingsComponent implements OnInit, OnDestroy {
-  // Servicios
   private savingsService = inject(SavingsService);
   private decimalPipe = inject(DecimalPipe);
   private dateService = inject(DateService);
-  private authService = inject(AuthService);
   private finanzasService = inject(FinanzasService);
-  private plannerService = inject(PlannerService);
-  // Variables para modales de agregar valor y eliminar
-  isAddValueModalOpen: boolean = false;
-  isDeleteModalOpen: boolean = false;
-  selectedSavingId: string | null = null;
-  savingToDeleteId: string | null = null;
-  newValue: number = 0;
+  private route = inject(ActivatedRoute);
 
-  // Datos
-  savings: SavingWithId[] = [];
+  readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
+  currentYear = '';
+  currentMonth = '';
+  private dateSubscription: Subscription | undefined;
+
+  estadoFinanciero = 'Cargando...';
+  estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
+  cuadreDescuadre = 0;
   incomes: any[] = [];
   expenses: any[] = [];
   wallet: any[] = [];
   loans: any[] = [];
 
-  estadoFinanciero: string = 'Cargando...';
-  estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
-  cuadreDescuadre = 0;
+  piggybanks: SavingWithId[] = [];
+  selectedPiggybank: SavingWithId | null = null;
+  movements: SavingMovementWithId[] = [];
+  requestedPiggybankId: string | null = null;
 
-  // Modales
-  isModalOpen = false;
-  isEditModalOpen = false;
+  viewMode: 'list' | 'detail' = 'list';
 
-  // Ahorro nuevo
-  newSaving: Saving = new Saving('', 0);
+  isPiggybankModalOpen = false;
+  isEditPiggybankModalOpen = false;
+  isDeletePiggybankModalOpen = false;
 
-  // Ahorro en edición
-  editedSaving: Saving = new Saving('', 0);
-  editedId: string | null = null;
-  savingGoal: SavingGoal = { titulo: 'Mi meta principal', montoObjetivo: 0 };
+  isMovementModalOpen = false;
+  isEditMovementModalOpen = false;
+  isDeleteMovementModalOpen = false;
+  isAdjustMovementModalOpen = false;
 
-  readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
+  newPiggybank: Saving = new Saving('', 0, '', 0);
+  editedPiggybank: Saving = new Saving('', 0, '', 0);
+  piggybankToDeleteId: string | null = null;
+  editedPiggybankId: string | null = null;
 
-  currentYear: string = '';
-  currentMonth: string = '';
-  private dateSubscription: Subscription | undefined; // ✅ Nuevo
+  newMovement: SavingMovement = { nombre: '', valor: 0 };
+  editedMovement: SavingMovement = { nombre: '', valor: 0 };
+  movementToDeleteId: string | null = null;
+  editedMovementId: string | null = null;
+  selectedMovementId: string | null = null;
+  adjustMovementValue = 0;
 
   ngOnInit() {
+    this.route.queryParamMap.subscribe((params) => {
+      this.requestedPiggybankId = params.get('piggybank');
+    });
+
     this.dateSubscription = this.dateService.selectedDate$.subscribe((date) => {
       if (date.year && date.month) {
         this.currentYear = date.year;
         this.currentMonth = date.month;
-        this.loadSavings();
-        this.loadSavingGoal();
+        this.loadPiggybanks();
       }
     });
-    this.finanzasService.mostrarEstadoFinanciero(
-      this,
-      this.userId,
-      this.currentYear,
-      this.currentMonth
-    );
   }
 
   ngOnDestroy(): void {
     this.dateSubscription?.unsubscribe();
   }
 
-  loadSavings() {
-    this.savingsService
-      .getSavings(this.userId, this.currentYear, this.currentMonth)
-      .subscribe({
-        next: (data) => {
-          this.savings = Object.entries(data).map(([id, s]) => ({ id, ...s }));
-        },
+  loadPiggybanks() {
+    this.savingsService.getSavings(this.userId, this.currentYear, this.currentMonth).subscribe({
+      next: (data) => {
+        this.piggybanks = Object.entries(data).map(([id, p]: [string, any]) => ({
+          id,
+          tipo: (p?.tipo || p?.nombre || '').trim(),
+          nombre: (p?.nombre || p?.tipo || '').trim(),
+          valor: Number(p?.valor || 0),
+          metaAhorro: Number(p?.metaAhorro || 0),
+        }));
 
-        error: (err) => {
-          console.error('Error al cargar ahorros:', err);
-        },
-      });
-    this.finanzasService.mostrarEstadoFinanciero(
-      this,
-      this.userId,
-      this.currentYear,
-      this.currentMonth
-      );
+        if (this.viewMode === 'detail' && this.selectedPiggybank) {
+          const refreshed = this.piggybanks.find((p) => p.id === this.selectedPiggybank!.id) || null;
+          this.selectedPiggybank = refreshed;
+          if (refreshed) this.loadMovements(refreshed.id);
+        }
+
+        if (this.requestedPiggybankId) {
+          const requested = this.piggybanks.find((p) => p.id === this.requestedPiggybankId);
+          if (requested) {
+            this.enterPiggybank(requested.id);
+            this.requestedPiggybankId = null;
+          }
+        }
+      },
+      error: (err) => console.error('Error al cargar alcancías:', err),
+    });
+
+    this.finanzasService.mostrarEstadoFinanciero(this, this.userId, this.currentYear, this.currentMonth);
   }
 
-  loadSavingGoal() {
-    this.plannerService.getSavingGoal(this.userId).subscribe((goal) => {
-      if (goal) {
-        this.savingGoal = goal;
-      }
+  loadMovements(piggybankId: string) {
+    this.savingsService
+      .getSavingMovements(this.userId, this.currentYear, this.currentMonth, piggybankId)
+      .subscribe((data) => {
+        this.movements = Object.entries(data || {}).map(([id, m]: [string, any]) => ({
+          id,
+          nombre: (m?.nombre || '').trim(),
+          valor: Number(m?.valor || 0),
+        }));
+      });
+  }
+
+  openPiggybankModal() {
+    this.newPiggybank = new Saving('', 0, '', 0);
+    this.isPiggybankModalOpen = true;
+  }
+
+  closePiggybankModal() {
+    this.isPiggybankModalOpen = false;
+  }
+
+  addPiggybank() {
+    const nombre = (this.newPiggybank.nombre || this.newPiggybank.tipo || '').trim();
+    if (!nombre) {
+      alert('El nombre de la alcancía es obligatorio.');
+      return;
+    }
+
+    const payload: Saving = {
+      tipo: nombre,
+      nombre,
+      metaAhorro: Math.max(0, Number(this.newPiggybank.metaAhorro || 0)),
+      valor: Math.max(0, Number(this.newPiggybank.valor || 0)),
+    };
+
+    this.savingsService.addSaving(this.userId, this.currentYear, this.currentMonth, payload).subscribe({
+      next: () => {
+        this.closePiggybankModal();
+        this.loadPiggybanks();
+      },
+      error: (err) => console.error('Error al crear alcancía:', err),
     });
   }
 
-  saveSavingGoal() {
-    if (this.savingGoal.montoObjetivo <= 0 || !this.savingGoal.titulo.trim()) {
+  openEditPiggybankModal(id: string) {
+    const p = this.piggybanks.find((x) => x.id === id);
+    if (!p) return;
+    this.editedPiggybankId = id;
+    this.editedPiggybank = new Saving(p.tipo, p.valor, p.nombre, p.metaAhorro || 0);
+    this.isEditPiggybankModalOpen = true;
+  }
+
+  closeEditPiggybankModal() {
+    this.isEditPiggybankModalOpen = false;
+    this.editedPiggybankId = null;
+  }
+
+  saveEditedPiggybank() {
+    if (!this.editedPiggybankId) return;
+    const nombre = (this.editedPiggybank.nombre || this.editedPiggybank.tipo || '').trim();
+    if (!nombre) {
+      alert('El nombre de la alcancía es obligatorio.');
       return;
     }
 
-    this.plannerService.saveSavingGoal(this.userId, {
-      titulo: this.savingGoal.titulo.trim(),
-      montoObjetivo: this.savingGoal.montoObjetivo,
-    }).subscribe();
-  }
-
-  onSavingGoalAmountInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const raw = input.value.replace(/\D/g, '');
-    const value = Number(raw) || 0;
-    this.savingGoal.montoObjetivo = value;
-    input.value = this.formatCurrency(value);
-  }
-
-  get savingProgress(): number {
-    if (!this.savingGoal.montoObjetivo) return 0;
-    return Math.min(100, Math.round((this.getTotalSavings() / this.savingGoal.montoObjetivo) * 100));
-  }
-
-  // ======================
-  // Modal: Agregar Ahorro
-  // ======================
-  openModal() {
-    this.isModalOpen = true;
-  }
-
-  closeModal() {
-    this.isModalOpen = false;
-    this.newSaving = new Saving('', 0);
-  }
-
-  addSaving() {
-    if (!this.newSaving.tipo) {
-      alert('Por favor completa todos los campos.');
-      return;
-    }
-
-    this.savingsService
-      .addSaving(
-        this.userId,
-        this.currentYear,
-        this.currentMonth,
-        this.newSaving
-      )
-      .subscribe({
-        next: () => {
-          this.loadSavings();
-          this.closeModal();
-        },
-        error: (err) => {
-          console.error('Error al agregar ahorro:', err);
-        },
-      });
-  }
-
-  // ======================
-  // Modal: Agregar Valor en Ahorro
-  // ======================
-  openAddModal(id: string) {
-    this.selectedSavingId = id;
-    this.isAddValueModalOpen = true;
-  }
-
-  closeAddValueModal() {
-    this.isAddValueModalOpen = false;
-    this.newValue = 0;
-  }
-
-  applyValue(action: 'add' | 'subtract') {
-    if (!this.selectedSavingId) return;
-
-    const saving = this.savings.find((s) => s.id === this.selectedSavingId);
-    if (!saving) return;
-
-    let finalValue = this.newValue;
-
-    if (action === 'subtract') {
-      finalValue = -Math.abs(this.newValue);
-    } else {
-      finalValue = Math.abs(this.newValue);
-    }
-
-    const updatedValue = saving.valor + finalValue;
-
-    const updatedSaving: Saving = {
-      tipo: saving.tipo,
-      valor: updatedValue,
+    const payload: Saving = {
+      tipo: nombre,
+      nombre,
+      metaAhorro: Math.max(0, Number(this.editedPiggybank.metaAhorro || 0)),
+      valor: Math.max(0, Number(this.editedPiggybank.valor || 0)),
     };
 
     this.savingsService
-      .updateSaving(
-        this.userId,
-        this.currentYear,
-        this.currentMonth,
-        saving.id,
-        updatedSaving
-      )
+      .updateSaving(this.userId, this.currentYear, this.currentMonth, this.editedPiggybankId, payload)
+      .subscribe({ next: () => { this.closeEditPiggybankModal(); this.loadPiggybanks(); } });
+  }
+
+  openDeletePiggybankModal(id: string) {
+    this.piggybankToDeleteId = id;
+    this.isDeletePiggybankModalOpen = true;
+  }
+
+  closeDeletePiggybankModal() {
+    this.isDeletePiggybankModalOpen = false;
+    this.piggybankToDeleteId = null;
+  }
+
+  confirmDeletePiggybank() {
+    if (!this.piggybankToDeleteId) return;
+    this.savingsService
+      .deleteSaving(this.userId, this.currentYear, this.currentMonth, this.piggybankToDeleteId)
       .subscribe({
         next: () => {
-          this.loadSavings();
-          this.closeAddValueModal();
-        },
-        error: (err) => {
-          console.error('Error al actualizar ahorro:', err);
+          if (this.selectedPiggybank?.id === this.piggybankToDeleteId) {
+            this.backToPiggybanks();
+          }
+          this.closeDeletePiggybankModal();
+          this.loadPiggybanks();
         },
       });
   }
 
-  // ======================
-  // Modal: Editar Ahorro
-  // ======================
-  openEditModal(id: string) {
-    const original = this.savings.find((s) => s.id === id);
+  enterPiggybank(id: string) {
+    const selected = this.piggybanks.find((x) => x.id === id);
+    if (!selected) return;
+    this.selectedPiggybank = selected;
+    this.viewMode = 'detail';
+    this.loadMovements(id);
+  }
+
+  backToPiggybanks() {
+    this.viewMode = 'list';
+    this.selectedPiggybank = null;
+    this.movements = [];
+  }
+
+  openMovementModal() {
+    this.newMovement = { nombre: '', valor: 0 };
+    this.isMovementModalOpen = true;
+  }
+
+  closeMovementModal() {
+    this.isMovementModalOpen = false;
+  }
+
+  addMovement(action: 'add' | 'subtract') {
+    if (!this.selectedPiggybank) return;
+    const nombre = (this.newMovement.nombre || '').trim();
+    if (!nombre || this.newMovement.valor <= 0) {
+      alert('Completá nombre y valor del movimiento.');
+      return;
+    }
+
+    const signedValue = action === 'subtract' ? -Math.abs(this.newMovement.valor) : Math.abs(this.newMovement.valor);
+    const movementPayload: SavingMovement = { nombre, valor: signedValue };
+    const piggy = this.selectedPiggybank;
+    const updatedPiggy: Saving = {
+      tipo: this.getPiggybankName(piggy),
+      nombre: this.getPiggybankName(piggy),
+      metaAhorro: piggy.metaAhorro || 0,
+      valor: Math.max(0, Number(piggy.valor || 0) + signedValue),
+    };
+
+    this.savingsService
+      .addSavingMovement(this.userId, this.currentYear, this.currentMonth, piggy.id, movementPayload)
+      .subscribe({
+        next: () => {
+          this.savingsService
+            .updateSaving(this.userId, this.currentYear, this.currentMonth, piggy.id, updatedPiggy)
+            .subscribe({
+              next: () => {
+                this.closeMovementModal();
+                this.loadPiggybanks();
+              },
+            });
+        },
+      });
+  }
+
+  openEditMovementModal(id: string) {
+    const movement = this.movements.find((m) => m.id === id);
+    if (!movement) return;
+    this.editedMovementId = id;
+    this.editedMovement = { ...movement };
+    this.isEditMovementModalOpen = true;
+  }
+
+  closeEditMovementModal() {
+    this.isEditMovementModalOpen = false;
+    this.editedMovementId = null;
+  }
+
+  saveEditedMovement() {
+    if (!this.selectedPiggybank || !this.editedMovementId) return;
+    const original = this.movements.find((m) => m.id === this.editedMovementId);
     if (!original) return;
+    const piggy = this.selectedPiggybank;
 
-    this.editedSaving = new Saving(original.tipo, original.valor);
-    this.editedId = id;
-    this.isEditModalOpen = true;
-  }
+    const newNombre = (this.editedMovement.nombre || '').trim();
+    if (!newNombre) return;
 
-  closeEditModal() {
-    this.isEditModalOpen = false;
-    this.editedSaving = new Saving('', 0);
-    this.editedId = null;
-  }
-
-  saveEditedSaving() {
-    if (!this.editedId) return;
+    const diff = Number(this.editedMovement.valor || 0) - Number(original.valor || 0);
+    const updatedPiggy: Saving = {
+      tipo: this.getPiggybankName(piggy),
+      nombre: this.getPiggybankName(piggy),
+      metaAhorro: piggy.metaAhorro || 0,
+      valor: Math.max(0, Number(piggy.valor || 0) + diff),
+    };
 
     this.savingsService
-      .updateSaving(
-        this.userId,
-        this.currentYear,
-        this.currentMonth,
-        this.editedId,
-        this.editedSaving
-      )
+      .updateSavingMovement(this.userId, this.currentYear, this.currentMonth, piggy.id, this.editedMovementId, {
+        nombre: newNombre,
+        valor: Number(this.editedMovement.valor || 0),
+      })
       .subscribe({
         next: () => {
-          this.loadSavings();
-          this.closeEditModal();
-        },
-        error: (err) => {
-          console.error('Error al actualizar ahorro:', err);
+          this.savingsService.updateSaving(this.userId, this.currentYear, this.currentMonth, piggy.id, updatedPiggy).subscribe({
+            next: () => {
+              this.closeEditMovementModal();
+              this.loadPiggybanks();
+            },
+          });
         },
       });
   }
 
-  // ======================
-  // Modal: Eliminar Ahorro
-  // ======================
-  openDeleteModal(id: string) {
-    this.isDeleteModalOpen = true;
-    this.savingToDeleteId = id;
+  openDeleteMovementModal(id: string) {
+    this.movementToDeleteId = id;
+    this.isDeleteMovementModalOpen = true;
   }
 
-  closeDeleteModal() {
-    this.isDeleteModalOpen = false;
-    this.savingToDeleteId = null;
+  closeDeleteMovementModal() {
+    this.isDeleteMovementModalOpen = false;
+    this.movementToDeleteId = null;
   }
 
-  confirmDeleteSaving() {
-    if (!this.savingToDeleteId) return;
+  confirmDeleteMovement() {
+    if (!this.selectedPiggybank || !this.movementToDeleteId) return;
+    const movement = this.movements.find((m) => m.id === this.movementToDeleteId);
+    if (!movement) return;
+    const piggy = this.selectedPiggybank;
+    const updatedPiggy: Saving = {
+      tipo: this.getPiggybankName(piggy),
+      nombre: this.getPiggybankName(piggy),
+      metaAhorro: piggy.metaAhorro || 0,
+      valor: Math.max(0, Number(piggy.valor || 0) - Number(movement.valor || 0)),
+    };
 
     this.savingsService
-      .deleteSaving(
-        this.userId,
-        this.currentYear,
-        this.currentMonth,
-        this.savingToDeleteId
-      )
+      .deleteSavingMovement(this.userId, this.currentYear, this.currentMonth, piggy.id, this.movementToDeleteId)
       .subscribe({
         next: () => {
-          this.loadSavings();
-          this.closeDeleteModal();
-        },
-        error: (err) => {
-          console.error('Error al eliminar ahorro:', err);
+          this.savingsService.updateSaving(this.userId, this.currentYear, this.currentMonth, piggy.id, updatedPiggy).subscribe({
+            next: () => {
+              this.closeDeleteMovementModal();
+              this.loadPiggybanks();
+            },
+          });
         },
       });
+  }
+
+  openAdjustMovementModal(id: string) {
+    this.selectedMovementId = id;
+    this.adjustMovementValue = 0;
+    this.isAdjustMovementModalOpen = true;
+  }
+
+  closeAdjustMovementModal() {
+    this.isAdjustMovementModalOpen = false;
+    this.selectedMovementId = null;
+    this.adjustMovementValue = 0;
+  }
+
+  applyAdjustMovement(action: 'add' | 'subtract') {
+    if (!this.selectedPiggybank || !this.selectedMovementId) return;
+    const movement = this.movements.find((m) => m.id === this.selectedMovementId);
+    if (!movement) return;
+
+    const delta = action === 'subtract' ? -Math.abs(this.adjustMovementValue) : Math.abs(this.adjustMovementValue);
+    const updatedMovement: SavingMovement = {
+      nombre: movement.nombre,
+      valor: Number(movement.valor || 0) + delta,
+    };
+
+    const piggy = this.selectedPiggybank;
+    const updatedPiggy: Saving = {
+      tipo: this.getPiggybankName(piggy),
+      nombre: this.getPiggybankName(piggy),
+      metaAhorro: piggy.metaAhorro || 0,
+      valor: Math.max(0, Number(piggy.valor || 0) + delta),
+    };
+
+    this.savingsService
+      .updateSavingMovement(this.userId, this.currentYear, this.currentMonth, piggy.id, movement.id, updatedMovement)
+      .subscribe({
+        next: () => {
+          this.savingsService.updateSaving(this.userId, this.currentYear, this.currentMonth, piggy.id, updatedPiggy).subscribe({
+            next: () => {
+              this.closeAdjustMovementModal();
+              this.loadPiggybanks();
+            },
+          });
+        },
+      });
+  }
+
+  savePiggybankGoal() {
+    if (!this.selectedPiggybank) return;
+    const piggy = this.selectedPiggybank;
+    const payload: Saving = {
+      tipo: this.getPiggybankName(piggy),
+      nombre: this.getPiggybankName(piggy),
+      valor: Number(piggy.valor || 0),
+      metaAhorro: Math.max(0, Number(piggy.metaAhorro || 0)),
+    };
+    this.savingsService.updateSaving(this.userId, this.currentYear, this.currentMonth, piggy.id, payload).subscribe({
+      next: () => this.loadPiggybanks(),
+    });
+  }
+
+  getPiggybankName(p: SavingWithId): string {
+    return (p.nombre || p.tipo || 'Alcancía').trim();
+  }
+
+  getPiggybankProgress(p: SavingWithId): number {
+    if (!p.metaAhorro) return 0;
+    return Math.min(100, Math.round((Number(p.valor || 0) / Number(p.metaAhorro || 0)) * 100));
   }
 
   getTotalSavings(): number {
-    return this.savings.reduce((sum, e) => sum + Number(e.valor), 0);
+    return this.piggybanks.reduce((sum, p) => sum + Number(p.valor || 0), 0);
   }
 
   formatCurrency(value: number): string {
     return this.decimalPipe.transform(value, '1.0-0') || '';
   }
-  onValueInput(event: Event, type: 'new' | 'edit' | 'add') {
+
+  abs(value: number): number {
+    return Math.abs(value || 0);
+  }
+
+  onValueInput(event: Event, type: 'piggy' | 'piggyEdit' | 'movement' | 'movementEdit' | 'goal' | 'movementAdjust') {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/[^\d-]/g, '');
     const value = Number(raw) || 0;
-
-    if (type === 'new') {
-      this.newSaving.valor = value;
-    } else if (type === 'edit') {
-      this.editedSaving.valor = value;
-    } else if (type === 'add') {
-      this.newValue = value;
-    }
-
+    if (type === 'piggy') this.newPiggybank.valor = value;
+    if (type === 'piggyEdit') this.editedPiggybank.valor = value;
+    if (type === 'movement') this.newMovement.valor = value;
+    if (type === 'movementEdit') this.editedMovement.valor = value;
+    if (type === 'movementAdjust') this.adjustMovementValue = value;
+    if (type === 'goal' && this.selectedPiggybank) this.selectedPiggybank.metaAhorro = value;
     input.value = this.formatCurrency(value);
   }
-  onEditValueInput(event: Event) {
+
+  onNewPiggybankGoalInput(event: Event) {
     const input = event.target as HTMLInputElement;
-    const raw = input.value.replace(/[^\d-]/g, '');
+    const raw = input.value.replace(/[^\d]/g, '');
     const value = Number(raw) || 0;
-    this.editedSaving.valor = value;
+    this.newPiggybank.metaAhorro = value;
     input.value = this.formatCurrency(value);
   }
-  getRowAnimationDelay(saving: any, index?: number): string {
-    // Si pasas el index desde *ngFor, úsalo directamente
-    const i = index ?? this.savings.indexOf(saving);
-    // Retorna un delay incremental: 0.1s, 0.15s, 0.2s, ...
+
+  onEditPiggybankGoalInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/[^\d]/g, '');
+    const value = Number(raw) || 0;
+    this.editedPiggybank.metaAhorro = value;
+    input.value = this.formatCurrency(value);
+  }
+
+  getSavingCardClass(index: number): string {
+    const classes = ['piggy-card--sky', 'piggy-card--mint', 'piggy-card--violet', 'piggy-card--amber'];
+    return classes[index % classes.length];
+  }
+
+  getRowAnimationDelay(_: any, index?: number): string {
+    const i = index ?? 0;
     return `${0.1 + i * 0.05}s`;
   }
 }
