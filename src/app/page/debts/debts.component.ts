@@ -66,10 +66,12 @@ export default class DebtsComponent implements OnInit, OnDestroy {
 
   // Edición
   editedDebt: Debt = new Debt('', '', '', 0, 'Pendiente');
+  editedDebtTotalCuotas: number = 1;
   editedId: string | null = null;
 
   // Deuda nueva
   newDebt: Debt = new Debt('', '', '', 0, 'Pendiente');
+  newDebtTotalCuotas: number = 1;
 
   readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
 
@@ -126,6 +128,7 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   closeModal() {
     this.isModalOpen = false;
     this.newDebt = new Debt('', '', '', 0, 'Pendiente');
+    this.newDebtTotalCuotas = 1;
   }
 
   addDebt() {
@@ -142,6 +145,8 @@ export default class DebtsComponent implements OnInit, OnDestroy {
     this.debtService
       .addDebt(this.userId, this.currentYear, this.currentMonth, {
         ...this.newDebt,
+        totalCuotas: Math.max(1, Math.floor(this.newDebtTotalCuotas || 1)),
+        cuotasPagadas: 0,
       })
       .subscribe({
         next: () => {
@@ -178,6 +183,12 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       fecha_pago: debt.fecha_pago,
       valor: updatedValue,
       estado: debt.estado,
+      totalCuotas: this.getTotalCuotas(debt),
+      cuotasPagadas: this.getCuotasPagadas(debt),
+      interestRate: debt.interestRate,
+      penaltyFee: debt.penaltyFee,
+      minPayment: debt.minPayment,
+      daysPastDue: debt.daysPastDue,
     };
 
     this.debtService
@@ -213,6 +224,7 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       original.valor,
       original.estado
     );
+    this.editedDebtTotalCuotas = this.getTotalCuotas(original);
     this.editedId = id;
     this.isEditModalOpen = true;
   }
@@ -220,11 +232,30 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   closeEditModal() {
     this.isEditModalOpen = false;
     this.editedDebt = new Debt('', '', '', 0, 'Pendiente');
+    this.editedDebtTotalCuotas = 1;
     this.editedId = null;
   }
 
   saveEditedDebt() {
     if (!this.editedId) return;
+
+    const original = this.debts.find((d) => d.id === this.editedId);
+    if (!original) return;
+
+    const totalCuotas = Math.max(1, Math.floor(this.editedDebtTotalCuotas || 1));
+    const cuotasPagadas = Math.max(0, Math.min(this.getCuotasPagadas(original), totalCuotas));
+    const remaining = totalCuotas - cuotasPagadas;
+
+    const updatedDebt: Debt = {
+      ...this.editedDebt,
+      totalCuotas,
+      cuotasPagadas,
+      estado: remaining === 0 ? 'Pagado' : 'Pendiente',
+      interestRate: original.interestRate,
+      penaltyFee: original.penaltyFee,
+      minPayment: original.minPayment,
+      daysPastDue: original.daysPastDue,
+    };
 
     this.debtService
       .updateDebt(
@@ -232,7 +263,7 @@ export default class DebtsComponent implements OnInit, OnDestroy {
         this.currentYear,
         this.currentMonth,
         this.editedId,
-        this.editedDebt
+        updatedDebt
       )
       .subscribe({
         next: () => {
@@ -299,9 +330,14 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   // Estado
   // ======================
   togglePaymentStatus(debt: DebtWithId) {
-    const updatedStatus = (
-      debt.estado === 'Pendiente' ? 'Pagado' : 'Pendiente'
-    ) as 'Pendiente' | 'Pagado';
+    const totalCuotas = this.getTotalCuotas(debt);
+    const cuotasPagadas = this.getCuotasPagadas(debt);
+    const updatedStatus = (debt.estado === 'Pendiente' ? 'Pagado' : 'Pendiente') as 'Pendiente' | 'Pagado';
+
+    const updatedCuotasPagadas =
+      updatedStatus === 'Pagado'
+        ? totalCuotas
+        : (totalCuotas > 1 ? Math.max(0, Math.min(cuotasPagadas, totalCuotas - 1)) : 0);
 
     const updatedDebt: Debt = {
       acreedor: debt.acreedor,
@@ -309,6 +345,12 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       fecha_pago: debt.fecha_pago,
       valor: debt.valor,
       estado: updatedStatus,
+      totalCuotas,
+      cuotasPagadas: updatedCuotasPagadas,
+      interestRate: debt.interestRate,
+      penaltyFee: debt.penaltyFee,
+      minPayment: debt.minPayment,
+      daysPastDue: debt.daysPastDue,
     };
 
     this.debtService
@@ -336,7 +378,136 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   getTotalPendingDebts(): number {
     return this.debts
       .filter((debt) => debt.estado === 'Pendiente')
-      .reduce((sum, debt) => sum + Number(debt.valor), 0);
+      .reduce((sum, debt) => sum + this.getRemainingAmount(debt), 0);
+  }
+
+  getTotalCuotas(debt: DebtWithId): number {
+    return Math.max(1, Math.floor(debt.totalCuotas ?? 1));
+  }
+
+  getCuotasPagadas(debt: DebtWithId): number {
+    return Math.max(0, Math.min(Math.floor(debt.cuotasPagadas ?? 0), this.getTotalCuotas(debt)));
+  }
+
+  getValorCuota(debt: DebtWithId): number {
+    return debt.valor / this.getTotalCuotas(debt);
+  }
+
+  getRemainingAmount(debt: DebtWithId): number {
+    if (debt.estado === 'Pagado') return 0;
+    const restantes = this.getTotalCuotas(debt) - this.getCuotasPagadas(debt);
+    return Math.max(0, restantes * this.getValorCuota(debt));
+  }
+
+  getCuotasLabel(debt: DebtWithId): string {
+    const total = this.getTotalCuotas(debt);
+    const pagadas = this.getCuotasPagadas(debt);
+    return `${pagadas}/${total}`;
+  }
+
+  payOneInstallment(debt: DebtWithId): void {
+    const totalCuotas = this.getTotalCuotas(debt);
+    const cuotasPagadas = this.getCuotasPagadas(debt);
+
+    if (cuotasPagadas >= totalCuotas) return;
+
+    const nextCuotasPagadas = cuotasPagadas + 1;
+    const updatedDebt: Debt = {
+      acreedor: debt.acreedor,
+      fecha_deuda: debt.fecha_deuda,
+      fecha_pago: debt.fecha_pago,
+      valor: debt.valor,
+      estado: nextCuotasPagadas >= totalCuotas ? 'Pagado' : 'Pendiente',
+      totalCuotas,
+      cuotasPagadas: nextCuotasPagadas,
+      interestRate: debt.interestRate,
+      penaltyFee: debt.penaltyFee,
+      minPayment: debt.minPayment,
+      daysPastDue: debt.daysPastDue,
+    };
+
+    this.debtService
+      .updateDebt(this.userId, this.currentYear, this.currentMonth, debt.id, updatedDebt)
+      .subscribe({
+        next: () => this.loadDebts(),
+        error: (err) => console.error('Error al pagar cuota de deuda:', err),
+      });
+  }
+
+  onDebtStatusActionChange(debt: DebtWithId, action: string): void {
+    if (action === 'PagarCuota') {
+      this.payOneInstallment(debt);
+      return;
+    }
+
+    if (action === 'DeshacerCuota') {
+      this.undoOneInstallment(debt);
+      return;
+    }
+
+    if (action === 'Pendiente' || action === 'Pagado') {
+      this.setDebtStatus(debt, action as 'Pendiente' | 'Pagado');
+    }
+  }
+
+  private setDebtStatus(debt: DebtWithId, targetStatus: 'Pendiente' | 'Pagado'): void {
+    const totalCuotas = this.getTotalCuotas(debt);
+    const cuotasPagadas = this.getCuotasPagadas(debt);
+
+    const updatedCuotasPagadas =
+      targetStatus === 'Pagado'
+        ? totalCuotas
+        : (totalCuotas > 1 ? Math.max(0, Math.min(cuotasPagadas, totalCuotas - 1)) : 0);
+
+    const updatedDebt: Debt = {
+      acreedor: debt.acreedor,
+      fecha_deuda: debt.fecha_deuda,
+      fecha_pago: debt.fecha_pago,
+      valor: debt.valor,
+      estado: targetStatus,
+      totalCuotas,
+      cuotasPagadas: updatedCuotasPagadas,
+      interestRate: debt.interestRate,
+      penaltyFee: debt.penaltyFee,
+      minPayment: debt.minPayment,
+      daysPastDue: debt.daysPastDue,
+    };
+
+    this.debtService
+      .updateDebt(this.userId, this.currentYear, this.currentMonth, debt.id, updatedDebt)
+      .subscribe({
+        next: () => this.loadDebts(),
+        error: (err) => console.error('Error al cambiar estado de la deuda:', err),
+      });
+  }
+
+  undoOneInstallment(debt: DebtWithId): void {
+    const totalCuotas = this.getTotalCuotas(debt);
+    const cuotasPagadas = this.getCuotasPagadas(debt);
+
+    if (cuotasPagadas <= 0) return;
+
+    const nextCuotasPagadas = cuotasPagadas - 1;
+    const updatedDebt: Debt = {
+      acreedor: debt.acreedor,
+      fecha_deuda: debt.fecha_deuda,
+      fecha_pago: debt.fecha_pago,
+      valor: debt.valor,
+      estado: nextCuotasPagadas >= totalCuotas ? 'Pagado' : 'Pendiente',
+      totalCuotas,
+      cuotasPagadas: nextCuotasPagadas,
+      interestRate: debt.interestRate,
+      penaltyFee: debt.penaltyFee,
+      minPayment: debt.minPayment,
+      daysPastDue: debt.daysPastDue,
+    };
+
+    this.debtService
+      .updateDebt(this.userId, this.currentYear, this.currentMonth, debt.id, updatedDebt)
+      .subscribe({
+        next: () => this.loadDebts(),
+        error: (err) => console.error('Error al deshacer cuota de deuda:', err),
+      });
   }
 
   formatCurrency(value: number): string {
@@ -381,6 +552,12 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       fecha_pago: debt.fecha_pago,
       valor: updatedValue,
       estado: debt.estado,
+      totalCuotas: this.getTotalCuotas(debt),
+      cuotasPagadas: this.getCuotasPagadas(debt),
+      interestRate: debt.interestRate,
+      penaltyFee: debt.penaltyFee,
+      minPayment: debt.minPayment,
+      daysPastDue: debt.daysPastDue,
     };
 
     this.debtService

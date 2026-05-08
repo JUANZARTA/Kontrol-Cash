@@ -5,6 +5,8 @@ export class Debt {
     public fecha_pago: string,
     public valor: number,
     public estado: 'Pendiente' | 'Pagado',
+    public totalCuotas?: number,
+    public cuotasPagadas?: number,
     public interestRate?: number,
     public penaltyFee?: number,
     public minPayment?: number,

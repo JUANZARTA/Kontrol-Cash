@@ -63,10 +63,12 @@ export default class LoansComponent implements OnInit, OnDestroy {
 
   // Edición
   editedLoan: Loan = new Loan('', '', '', 0, 'Pendiente');
+  editedLoanTotalCuotas: number = 1;
   editedId: string | null = null;
 
   // Préstamo nuevo (modal)
   newLoan: Loan = new Loan('', '', '', 0, 'Pendiente');
+  newLoanTotalCuotas: number = 1;
 
   readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
 
@@ -139,6 +141,7 @@ export default class LoansComponent implements OnInit, OnDestroy {
   closeModal() {
     this.isModalOpen = false;
     this.newLoan = new Loan('', '', '', 0, 'Pendiente');
+    this.newLoanTotalCuotas = 1;
     this.selectedWallet = '';
   }
 
@@ -174,8 +177,14 @@ export default class LoansComponent implements OnInit, OnDestroy {
     }
 
     // 1️⃣ Crear el préstamo en backend
+    const loanToSave: Loan = {
+      ...this.newLoan,
+      totalCuotas: Math.max(1, Math.floor(this.newLoanTotalCuotas || 1)),
+      cuotasPagadas: 0,
+    };
+
     this.loanService
-      .addLoan(this.userId, this.currentYear, this.currentMonth, this.newLoan)
+      .addLoan(this.userId, this.currentYear, this.currentMonth, loanToSave)
       .subscribe({
         next: () => {
           // 2️⃣ Actualizar billetera de origen descontando valor
@@ -259,6 +268,8 @@ export default class LoansComponent implements OnInit, OnDestroy {
       fecha_pago: loan.fecha_pago,
       valor: updatedValue,
       estado: loan.estado,
+      totalCuotas: this.getTotalCuotas(loan),
+      cuotasPagadas: this.getCuotasPagadas(loan),
     };
 
     this.loanService
@@ -373,6 +384,7 @@ export default class LoansComponent implements OnInit, OnDestroy {
       original.valor,
       original.estado
     );
+    this.editedLoanTotalCuotas = this.getTotalCuotas(original);
     this.editedId = id;
     this.isEditModalOpen = true;
   }
@@ -380,11 +392,26 @@ export default class LoansComponent implements OnInit, OnDestroy {
   closeEditModal() {
     this.isEditModalOpen = false;
     this.editedLoan = new Loan('', '', '', 0, 'Pendiente');
+    this.editedLoanTotalCuotas = 1;
     this.editedId = null;
   }
 
   saveEditedLoan() {
     if (!this.editedId) return;
+
+    const original = this.loans.find((l) => l.id === this.editedId);
+    if (!original) return;
+
+    const totalCuotas = Math.max(1, Math.floor(this.editedLoanTotalCuotas || 1));
+    const cuotasPagadas = Math.max(0, Math.min(this.getCuotasPagadas(original), totalCuotas));
+    const remaining = totalCuotas - cuotasPagadas;
+
+    const updatedLoan: Loan = {
+      ...this.editedLoan,
+      totalCuotas,
+      cuotasPagadas,
+      estado: remaining === 0 ? 'Pagado' : 'Pendiente',
+    };
 
     this.loanService
       .updateLoan(
@@ -392,7 +419,7 @@ export default class LoansComponent implements OnInit, OnDestroy {
         this.currentYear,
         this.currentMonth,
         this.editedId,
-        this.editedLoan
+        updatedLoan
       )
       .subscribe({
         next: () => {
@@ -471,11 +498,128 @@ export default class LoansComponent implements OnInit, OnDestroy {
       });
   }
 
+  onLoanStatusActionChange(loan: LoanWithId, action: string): void {
+    if (action === 'PagarCuota') {
+      this.payOneInstallment(loan);
+      return;
+    }
+
+    if (action === 'DeshacerCuota') {
+      this.undoOneInstallment(loan);
+      return;
+    }
+
+    if (action === 'Pendiente' || action === 'Pagado') {
+      this.setLoanStatus(loan, action as 'Pendiente' | 'Pagado');
+    }
+  }
+
+  private setLoanStatus(loan: LoanWithId, targetStatus: 'Pendiente' | 'Pagado'): void {
+    const totalCuotas = this.getTotalCuotas(loan);
+    const cuotasPagadas = this.getCuotasPagadas(loan);
+
+    const updatedCuotasPagadas =
+      targetStatus === 'Pagado'
+        ? totalCuotas
+        : (totalCuotas > 1 ? Math.max(0, Math.min(cuotasPagadas, totalCuotas - 1)) : 0);
+
+    const updatedLoan: Loan = {
+      deudor: loan.deudor,
+      fecha_prestamo: loan.fecha_prestamo,
+      fecha_pago: loan.fecha_pago,
+      valor: loan.valor,
+      estado: targetStatus,
+      totalCuotas,
+      cuotasPagadas: updatedCuotasPagadas,
+    };
+
+    this.loanService
+      .updateLoan(this.userId, this.currentYear, this.currentMonth, loan.id, updatedLoan)
+      .subscribe({
+        next: () => this.loadLoans(),
+        error: (err) => console.error('Error al actualizar estado del préstamo:', err),
+      });
+  }
+
   // Método para calcular el total de préstamos pendientes
   getTotalPendingLoans(): number {
     return this.loans
       .filter((loan) => loan.estado === 'Pendiente')
-      .reduce((sum, loan) => sum + Number(loan.valor), 0);
+      .reduce((sum, loan) => sum + this.getRemainingAmount(loan), 0);
+  }
+
+  getTotalCuotas(loan: LoanWithId): number {
+    return Math.max(1, Math.floor(loan.totalCuotas ?? 1));
+  }
+
+  getCuotasPagadas(loan: LoanWithId): number {
+    return Math.max(0, Math.min(Math.floor(loan.cuotasPagadas ?? 0), this.getTotalCuotas(loan)));
+  }
+
+  getValorCuota(loan: LoanWithId): number {
+    return loan.valor / this.getTotalCuotas(loan);
+  }
+
+  getRemainingAmount(loan: LoanWithId): number {
+    if (loan.estado === 'Pagado') return 0;
+    const restantes = this.getTotalCuotas(loan) - this.getCuotasPagadas(loan);
+    return Math.max(0, restantes * this.getValorCuota(loan));
+  }
+
+  getCuotasLabel(loan: LoanWithId): string {
+    const total = this.getTotalCuotas(loan);
+    const pagadas = this.getCuotasPagadas(loan);
+    return `${pagadas}/${total}`;
+  }
+
+  payOneInstallment(loan: LoanWithId): void {
+    const totalCuotas = this.getTotalCuotas(loan);
+    const cuotasPagadas = this.getCuotasPagadas(loan);
+
+    if (cuotasPagadas >= totalCuotas) return;
+
+    const nextCuotasPagadas = cuotasPagadas + 1;
+    const updatedLoan: Loan = {
+      deudor: loan.deudor,
+      fecha_prestamo: loan.fecha_prestamo,
+      fecha_pago: loan.fecha_pago,
+      valor: loan.valor,
+      estado: nextCuotasPagadas >= totalCuotas ? 'Pagado' : 'Pendiente',
+      totalCuotas,
+      cuotasPagadas: nextCuotasPagadas,
+    };
+
+    this.loanService
+      .updateLoan(this.userId, this.currentYear, this.currentMonth, loan.id, updatedLoan)
+      .subscribe({
+        next: () => this.loadLoans(),
+        error: (err) => console.error('Error al pagar cuota del deudor:', err),
+      });
+  }
+
+  undoOneInstallment(loan: LoanWithId): void {
+    const totalCuotas = this.getTotalCuotas(loan);
+    const cuotasPagadas = this.getCuotasPagadas(loan);
+
+    if (cuotasPagadas <= 0) return;
+
+    const nextCuotasPagadas = cuotasPagadas - 1;
+    const updatedLoan: Loan = {
+      deudor: loan.deudor,
+      fecha_prestamo: loan.fecha_prestamo,
+      fecha_pago: loan.fecha_pago,
+      valor: loan.valor,
+      estado: nextCuotasPagadas >= totalCuotas ? 'Pagado' : 'Pendiente',
+      totalCuotas,
+      cuotasPagadas: nextCuotasPagadas,
+    };
+
+    this.loanService
+      .updateLoan(this.userId, this.currentYear, this.currentMonth, loan.id, updatedLoan)
+      .subscribe({
+        next: () => this.loadLoans(),
+        error: (err) => console.error('Error al deshacer cuota del deudor:', err),
+      });
   }
 
   // Método para calcular el total de préstamos pagados
