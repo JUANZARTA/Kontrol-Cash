@@ -3,6 +3,7 @@ export interface UserSystemSettings {
   correo: string;
   profilePhotoUrl?: string;
   accentColor?: string;
+  allowCustomPalette?: boolean;
   darkMode: boolean;
   showVehicle: boolean;
   showLoans: boolean;
@@ -14,6 +15,7 @@ export const defaultUserSystemSettings: UserSystemSettings = {
   correo: '',
   profilePhotoUrl: '',
   accentColor: '#0ea5e9',
+  allowCustomPalette: true,
   darkMode: false,
   showVehicle: true,
   showLoans: true,

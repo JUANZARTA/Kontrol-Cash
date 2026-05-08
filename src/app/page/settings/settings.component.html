@@ -30,10 +30,18 @@
 
   <div class="mt-6 space-y-4">
     <label class="settings-toggle-row">
-      <span>Color del sistema (recordatorio)</span>
+      <span>Permitir personalizar colores</span>
+      <button type="button" class="switch-pill" [class.on]="settings.allowCustomPalette !== false" (click)="toggleSetting('allowCustomPalette')">
+        <span class="switch-knob"></span>
+        <span class="switch-text">{{ settings.allowCustomPalette !== false ? 'ON' : 'OFF' }}</span>
+      </button>
+    </label>
+
+    <label class="settings-toggle-row">
+      <span>Color del sistema</span>
       <div class="flex items-center gap-2">
-        <input type="color" [(ngModel)]="accentColor" (change)="onAccentColorChange()" title="Color acento del sistema" />
-        <button type="button" class="app-secondary-button !px-3 !py-1.5" (click)="useDefaultAccentColor()">Predeterminado</button>
+        <input type="color" [(ngModel)]="accentColor" (change)="onAccentColorChange()" title="Color acento del sistema" [disabled]="settings.allowCustomPalette === false" />
+        <button type="button" class="app-secondary-button !px-3 !py-1.5" (click)="useDefaultAccentColor()" [disabled]="settings.allowCustomPalette === false">Predeterminado</button>
       </div>
     </label>
 

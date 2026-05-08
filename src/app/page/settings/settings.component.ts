@@ -52,7 +52,7 @@ export default class SettingsComponent implements OnInit {
   }
 
   private applyAccentPreview(color: string): void {
-    this.settingsService.applyAccentTheme(color || '#0ea5e9');
+    this.settingsService.applyAccentTheme(color || '#0ea5e9', this.settings.allowCustomPalette !== false);
   }
 
   onPhotoSelected(event: Event): void {
@@ -108,6 +108,7 @@ export default class SettingsComponent implements OnInit {
       correo: this.user?.email || this.settings.correo,
       profilePhotoUrl,
       accentColor: this.accentColor,
+      allowCustomPalette: this.settings.allowCustomPalette !== false,
     };
 
     this.settingsService.saveSettings(this.userId, payload).subscribe({
@@ -128,10 +129,13 @@ export default class SettingsComponent implements OnInit {
     });
   }
 
-  toggleSetting(key: 'darkMode' | 'showVehicle' | 'showLoans' | 'showDebts'): void {
+  toggleSetting(key: 'darkMode' | 'showVehicle' | 'showLoans' | 'showDebts' | 'allowCustomPalette'): void {
     this.settings[key] = !this.settings[key];
     if (key === 'darkMode') {
       this.onDarkModeToggle();
+    }
+    if (key === 'allowCustomPalette') {
+      this.applyAccentPreview(this.accentColor);
     }
   }
 }

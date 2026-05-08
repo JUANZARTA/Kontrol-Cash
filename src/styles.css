@@ -639,6 +639,98 @@ textarea {
   color: #f8fafc !important;
 }
 
+/* ===== MODO PALETA FIJA (valores originales) ===== */
+.palette-fixed body {
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.10), transparent 26%),
+    radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(248, 250, 252, 0.92)),
+    var(--app-bg);
+}
+
+.palette-fixed.dark-theme body {
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.10), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(37, 99, 235, 0.12), transparent 22%),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.96), rgba(15, 23, 42, 0.98)),
+    var(--app-bg);
+}
+
+.palette-fixed .app-sidebar-surface {
+  background: linear-gradient(to bottom, #0f2f57, #1d4f91);
+}
+
+.palette-fixed.dark-theme .app-sidebar-surface {
+  background: linear-gradient(to bottom, #0b2342, #143b6b);
+}
+
+.palette-fixed.dark-theme .app-card,
+.palette-fixed.dark-theme .app-kpi-card,
+.palette-fixed.dark-theme .app-section-card,
+.palette-fixed.dark-theme .app-page-toolbar,
+.palette-fixed.dark-theme .app-modal-panel,
+.palette-fixed.dark-theme .app-menu-panel,
+.palette-fixed.dark-theme .app-table-row,
+.palette-fixed.dark-theme .app-table-head,
+.palette-fixed.dark-theme .app-table-bordered,
+.palette-fixed.dark-theme .home-install-card,
+.palette-fixed.dark-theme .install-hint-card {
+  background-color: rgba(15, 23, 42, 0.88) !important;
+}
+
+.palette-fixed.dark-theme .text-blue-500 {
+  color: #7dd3fc !important;
+}
+
+.palette-fixed.dark-theme .text-cyan-600,
+.palette-fixed.dark-theme .text-lime-600,
+.palette-fixed.dark-theme .text-teal-600,
+.palette-fixed.dark-theme .text-teal-700 {
+  color: #5eead4 !important;
+}
+
+.palette-fixed.dark-theme .text-blue-900,
+.palette-fixed.dark-theme .text-sky-900,
+.palette-fixed.dark-theme .text-teal-900 {
+  color: #bfdbfe !important;
+}
+
+.palette-fixed.dark-theme .bg-sky-200,
+.palette-fixed.dark-theme .bg-sky-300,
+.palette-fixed.dark-theme .bg-blue-300 {
+  background-color: rgba(30, 64, 175, 0.28) !important;
+  color: #bfdbfe !important;
+}
+
+.palette-fixed.dark-theme .hover\:bg-sky-800:hover,
+.palette-fixed.dark-theme .hover\:bg-slate-700:hover,
+.palette-fixed.dark-theme .hover\:bg-blue-700:hover {
+  background-color: #143b6b !important;
+}
+
+.palette-fixed.dark-theme .app-sidebar-link-active {
+  background-color: rgba(224, 242, 254, 0.96) !important;
+  color: #0f172a !important;
+}
+
+.palette-fixed.dark-theme .from-sky-500,
+.palette-fixed.dark-theme .from-sky-600,
+.palette-fixed.dark-theme .from-sky-700 {
+  --tw-gradient-from: #1d4f91 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(29, 79, 145, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.palette-fixed.dark-theme .to-sky-500,
+.palette-fixed.dark-theme .to-sky-600,
+.palette-fixed.dark-theme .to-sky-700 {
+  --tw-gradient-to: #143b6b var(--tw-gradient-to-position) !important;
+}
+
+.palette-fixed.dark-theme .bg-gradient-to-b.from-sky-700.to-sky-500 {
+  background-image: linear-gradient(to bottom, #0f2f57, #1d4f91) !important;
+}
+
 .dark-theme .hover\:bg-sky-50:hover,
 .dark-theme .hover\:bg-sky-100:hover,
 .dark-theme .hover\:bg-sky-300:hover,
