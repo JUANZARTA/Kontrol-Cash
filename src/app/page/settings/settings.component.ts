@@ -19,7 +19,6 @@ export default class SettingsComponent implements OnInit {
   readonly user = JSON.parse(localStorage.getItem('user') || '{}');
   readonly userId = this.user?.localId || '';
   settings: UserSystemSettings = { ...defaultUserSystemSettings };
-  accentColor = '#0ea5e9';
   selectedPhotoFile: File | null = null;
   profilePhotoPreview = 'assets/img/logoIcono.png';
   selectedPhotoName = '';
@@ -30,12 +29,16 @@ export default class SettingsComponent implements OnInit {
     if (!this.userId) return;
     this.settingsService.getSettings(this.userId).subscribe((settings) => {
       this.settings = {
+        ...defaultUserSystemSettings,
         ...settings,
         nombre: settings.nombre || this.user?.name || '',
         correo: settings.correo || this.user?.email || '',
       };
       this.profilePhotoPreview = this.settings.profilePhotoUrl || this.user?.profilePhotoUrl || 'assets/img/logoIcono.png';
-      this.themeService.setTheme(this.settings.darkMode ? 'dark' : 'light');
+      // Sincronizamos settings.darkMode al estado real del ThemeService (que refleja localStorage).
+      // No llamamos setTheme() aquí para no revertir cambios hechos desde el navbar.
+      this.settings.darkMode = this.themeService.isDarkMode();
+      this.themeService.setCustomColorMode(this.settings.useCustomColor, this.settings.accentColor);
     });
   }
 
@@ -68,6 +71,16 @@ export default class SettingsComponent implements OnInit {
 
   onDarkModeToggle(): void {
     this.themeService.setTheme(this.settings.darkMode ? 'dark' : 'light');
+  }
+
+  onCustomColorToggle(): void {
+    this.themeService.setCustomColorMode(this.settings.useCustomColor, this.settings.accentColor);
+  }
+
+  onAccentColorChange(): void {
+    if (this.settings.useCustomColor) {
+      this.themeService.previewAccentColor(this.settings.accentColor);
+    }
   }
 
   async save(): Promise<void> {
@@ -111,10 +124,9 @@ export default class SettingsComponent implements OnInit {
     });
   }
 
-  toggleSetting(key: 'darkMode' | 'showVehicle' | 'showLoans' | 'showDebts'): void {
+  toggleSetting(key: 'darkMode' | 'showVehicle' | 'showLoans' | 'showDebts' | 'useCustomColor'): void {
     this.settings[key] = !this.settings[key];
-    if (key === 'darkMode') {
-      this.onDarkModeToggle();
-    }
+    if (key === 'darkMode') this.onDarkModeToggle();
+    if (key === 'useCustomColor') this.onCustomColorToggle();
   }
 }

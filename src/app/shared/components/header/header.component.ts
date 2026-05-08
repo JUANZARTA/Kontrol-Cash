@@ -9,6 +9,7 @@ import { Subscription } from 'rxjs';
 import { Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { ThemeService } from '../../../services/theme.service';
+import { UserSettingsService } from '../../../services/user-settings.service';
 import { ModalShellComponent } from '../modal-shell/modal-shell.component';
 import { RouterLink } from '@angular/router';
 
@@ -43,23 +44,36 @@ export class HeaderComponent implements OnInit, OnDestroy {
   currentMonth: string = '';
   currentRoute: string = '';
 
-  userName: string = ''; // Para mostrar nombre si luego se quiere
-
+  profilePhotoUrl: string = 'assets/img/logoIcono.png';
   isDarkMode = false;
 
   private dateSubscription?: Subscription;
   private routeSubscription?: Subscription;
   private themeSubscription?: Subscription;
+  private settingsSubscription?: Subscription;
 
   constructor(
     private dateService: DateService,
     private router: Router,
     private authService: AuthService,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    private userSettingsService: UserSettingsService
   ) {}
 
   ngOnInit(): void {
     this.isDarkMode = this.themeService.isDarkMode();
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    this.profilePhotoUrl = storedUser?.profilePhotoUrl || 'assets/img/logoIcono.png';
+
+    const userId = storedUser?.localId || '';
+    if (userId) {
+      this.settingsSubscription = this.userSettingsService.settings$.subscribe((settings) => {
+        if (settings.profilePhotoUrl) {
+          this.profilePhotoUrl = settings.profilePhotoUrl;
+        }
+      });
+      this.userSettingsService.getSettings(userId).subscribe();
+    }
     this.themeSubscription = this.themeService.theme$.subscribe((theme) => {
       this.isDarkMode = theme === 'dark';
     });
@@ -102,6 +116,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.dateSubscription?.unsubscribe();
     this.routeSubscription?.unsubscribe();
     this.themeSubscription?.unsubscribe();
+    this.settingsSubscription?.unsubscribe();
   }
 
   toggleTheme(): void {
@@ -157,6 +172,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
         return 'Deudas';
       case 'home':
         return 'Inicio';
+      case 'invoice':
+        return 'Facturas';
+      case 'vehicle':
+        return 'Mi Vehículo';
+      case 'settings':
+        return 'Configuración';
+      case 'month-close':
+        return 'Cierre Mensual';
       default:
         return this.capitalize(route);
     }

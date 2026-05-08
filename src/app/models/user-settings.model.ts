@@ -6,6 +6,8 @@ export interface UserSystemSettings {
   showVehicle: boolean;
   showLoans: boolean;
   showDebts: boolean;
+  useCustomColor: boolean;
+  accentColor: string;
 }
 
 export const defaultUserSystemSettings: UserSystemSettings = {
@@ -16,4 +18,6 @@ export const defaultUserSystemSettings: UserSystemSettings = {
   showVehicle: true,
   showLoans: true,
   showDebts: true,
+  useCustomColor: false,
+  accentColor: '#0ea5e9',
 };

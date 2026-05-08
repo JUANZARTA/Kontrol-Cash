@@ -16,6 +16,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.themeService.initTheme();
+    this.themeService.initAccent();
 
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');

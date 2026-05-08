@@ -665,6 +665,94 @@ textarea {
   color: inherit;
 }
 
+/* ═══════════════════════════════════════════════════
+   CUSTOM COLOR MODE  (.custom-color en <html>)
+   ═══════════════════════════════════════════════════ */
+
+/* ── LIGHT MODE ── */
+.custom-color .app-primary-button {
+  background-color: var(--app-accent) !important;
+}
+.custom-color .app-primary-button:hover {
+  background-color: var(--app-accent-hover) !important;
+}
+.custom-color .app-accent-button {
+  background-color: var(--app-accent-muted) !important;
+  color: var(--app-accent-link) !important;
+}
+.custom-color .app-link-button-primary {
+  color: var(--app-accent-link) !important;
+}
+.custom-color .app-link-button-primary:hover {
+  background-color: var(--app-accent-muted) !important;
+}
+.custom-color .app-input:focus {
+  border-color: var(--app-accent) !important;
+  box-shadow: 0 0 0 4px var(--app-accent-muted) !important;
+}
+.custom-color .app-table-row:hover {
+  background-color: var(--app-accent-muted) !important;
+}
+.custom-color .app-sidebar-link-active {
+  color: var(--app-accent-link) !important;
+}
+.custom-color aside {
+  background-image: linear-gradient(
+    to bottom,
+    var(--app-sidebar-from),
+    var(--app-sidebar-via),
+    var(--app-sidebar-to)
+  ) !important;
+}
+
+/* ── DARK MODE ── */
+.dark-theme.custom-color body {
+  background:
+    radial-gradient(circle at top right, var(--app-accent-dark-glow-1), transparent 26%),
+    radial-gradient(circle at bottom left, var(--app-accent-dark-glow-2), transparent 24%),
+    var(--app-accent-dark-bg) !important;
+}
+.dark-theme.custom-color .app-card,
+.dark-theme.custom-color .app-kpi-card,
+.dark-theme.custom-color .app-section-card,
+.dark-theme.custom-color .app-page-toolbar,
+.dark-theme.custom-color .app-modal-panel,
+.dark-theme.custom-color .app-menu-panel {
+  background-color: var(--app-accent-dark-surface) !important;
+}
+.dark-theme.custom-color .bg-white,
+.dark-theme.custom-color .bg-white\/90,
+.dark-theme.custom-color .bg-white\/80,
+.dark-theme.custom-color .bg-white\/75,
+.dark-theme.custom-color .bg-white\/70,
+.dark-theme.custom-color .bg-white\/78,
+.dark-theme.custom-color .bg-gray-50\/50 {
+  background-color: var(--app-accent-dark-surface) !important;
+}
+.dark-theme.custom-color .app-table-bordered {
+  background-color: var(--app-accent-dark-surface) !important;
+}
+.dark-theme.custom-color .app-table-head,
+.dark-theme.custom-color .bg-slate-100,
+.dark-theme.custom-color .bg-slate-100\/90,
+.dark-theme.custom-color .bg-gray-100,
+.dark-theme.custom-color .bg-gray-50 {
+  background-color: var(--app-accent-dark-bg-soft) !important;
+}
+.dark-theme.custom-color .app-table-row {
+  background-color: var(--app-accent-dark-row) !important;
+}
+.dark-theme.custom-color .app-primary-button {
+  background-color: var(--app-accent-dark-btn) !important;
+}
+.dark-theme.custom-color .app-primary-button:hover {
+  background-color: var(--app-accent-dark-btn-hover) !important;
+}
+.dark-theme.custom-color .app-sidebar-link-active {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  color: var(--app-accent-link) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -38,10 +38,13 @@
     </button>
 
     <button routerLink="/app/settings"
-      class="app-secondary-button bg-white/75">
+      class="app-secondary-button bg-white/75 px-3"
+      title="Configuración">
       <span class="material-icons text-sm">settings</span>
-      <span>Configuración</span>
     </button>
+
+    <img [src]="profilePhotoUrl" alt="Perfil"
+      class="h-9 w-9 rounded-full border-2 border-white/70 object-cover shadow-sm" />
 
     <button (click)="logout()"
       class="app-secondary-button bg-slate-100/90 text-slate-700 border-slate-200">

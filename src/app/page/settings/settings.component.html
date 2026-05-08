@@ -29,10 +29,25 @@
   </div>
 
   <div class="mt-6 space-y-4">
-    <label class="settings-toggle-row">
-      <span>Color del sistema (recordatorio)</span>
-      <input type="color" [(ngModel)]="accentColor" title="No funcional por ahora" />
-    </label>
+    <div class="settings-toggle-row flex-col items-start gap-3">
+      <div class="flex w-full items-center justify-between">
+        <span>Color personalizado</span>
+        <button type="button" class="switch-pill" [class.on]="settings.useCustomColor" (click)="toggleSetting('useCustomColor')">
+          <span class="switch-knob"></span>
+          <span class="switch-text">{{ settings.useCustomColor ? 'ON' : 'OFF' }}</span>
+        </button>
+      </div>
+      <div *ngIf="settings.useCustomColor" class="flex w-full items-center gap-3 pt-1">
+        <label class="text-sm text-slate-500">Color de acento</label>
+        <input
+          type="color"
+          [(ngModel)]="settings.accentColor"
+          (input)="onAccentColorChange()"
+          class="h-10 w-14 cursor-pointer rounded-xl border border-slate-300 bg-white p-1"
+          title="Seleccioná el color de acento" />
+        <span class="text-xs font-mono text-slate-400">{{ settings.accentColor }}</span>
+      </div>
+    </div>
 
     <label class="settings-toggle-row">
       <span>Modo oscuro</span>
