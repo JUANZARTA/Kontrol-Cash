@@ -62,7 +62,7 @@
       </div>
 
       <div class="grid gap-3 md:grid-cols-[0.8fr_auto]">
-        <input type="text" [value]="formatCurrency(selectedPiggybank.metaAhorro || 0)" (input)="onValueInput($event, 'goal')" class="app-input" placeholder="Meta de ahorro" />
+        <input type="text" [value]="formatCurrencyInput(selectedPiggybank.metaAhorro || 0)" (input)="onValueInput($event, 'goal')" class="app-input" placeholder="Meta de ahorro" />
         <button (click)="savePiggybankGoal()" class="app-primary-button">Guardar meta</button>
       </div>
 
@@ -113,10 +113,10 @@
   <input type="text" [(ngModel)]="newPiggybank.nombre" class="app-input mb-3" placeholder="Ej: Viaje 2027" />
 
   <label class="app-field-label">Meta de ahorro:</label>
-  <input type="text" [value]="formatCurrency(newPiggybank.metaAhorro || 0)" (input)="onNewPiggybankGoalInput($event)" class="app-input mb-3" />
+  <input type="text" [value]="formatCurrencyInput(newPiggybank.metaAhorro || 0)" (input)="onNewPiggybankGoalInput($event)" class="app-input mb-3" />
 
   <label class="app-field-label">Valor inicial:</label>
-  <input type="text" [value]="formatCurrency(newPiggybank.valor || 0)" (input)="onValueInput($event, 'piggy')" class="app-input mb-3" />
+  <input type="text" [value]="formatCurrencyInput(newPiggybank.valor || 0)" (input)="onValueInput($event, 'piggy')" class="app-input mb-3" />
 
   <div class="flex justify-end gap-2">
     <button (click)="closePiggybankModal()" class="app-secondary-button">Cancelar</button>
@@ -129,10 +129,10 @@
   <input type="text" [(ngModel)]="editedPiggybank.nombre" class="app-input mb-3" />
 
   <label class="app-field-label">Meta de ahorro:</label>
-  <input type="text" [value]="formatCurrency(editedPiggybank.metaAhorro || 0)" (input)="onEditPiggybankGoalInput($event)" class="app-input mb-3" />
+  <input type="text" [value]="formatCurrencyInput(editedPiggybank.metaAhorro || 0)" (input)="onEditPiggybankGoalInput($event)" class="app-input mb-3" />
 
   <label class="app-field-label">Valor actual:</label>
-  <input type="text" [value]="formatCurrency(editedPiggybank.valor || 0)" (input)="onValueInput($event, 'piggyEdit')" class="app-input mb-3" />
+  <input type="text" [value]="formatCurrencyInput(editedPiggybank.valor || 0)" (input)="onValueInput($event, 'piggyEdit')" class="app-input mb-3" />
 
   <div class="flex justify-end gap-2">
     <button (click)="closeEditPiggybankModal()" class="app-secondary-button">Cancelar</button>
@@ -145,7 +145,7 @@
   <input type="text" [(ngModel)]="newMovement.nombre" class="app-input mb-3" placeholder="Ej: Aporte semanal" />
 
   <label class="app-field-label">Valor:</label>
-  <input type="text" [value]="formatCurrency(newMovement.valor || 0)" (input)="onValueInput($event, 'movement')" class="app-input mb-4" />
+  <input type="text" [value]="formatCurrencyInput(newMovement.valor || 0)" (input)="onValueInput($event, 'movement')" class="app-input mb-4" />
 
   <div class="flex justify-end gap-2">
     <button (click)="closeMovementModal()" class="app-secondary-button">Cancelar</button>
@@ -158,7 +158,7 @@
   <label class="app-field-label">Nombre:</label>
   <input type="text" [(ngModel)]="editedMovement.nombre" class="app-input mb-3" />
   <label class="app-field-label">Valor:</label>
-  <input type="text" [value]="formatCurrency(editedMovement.valor || 0)" (input)="onValueInput($event, 'movementEdit')" class="app-input mb-4" />
+  <input type="text" [value]="formatCurrencyInput(editedMovement.valor || 0)" (input)="onValueInput($event, 'movementEdit')" class="app-input mb-4" />
   <div class="flex justify-end gap-2">
     <button (click)="closeEditMovementModal()" class="app-secondary-button">Cancelar</button>
     <button (click)="saveEditedMovement()" class="app-primary-button">Guardar</button>
@@ -167,7 +167,7 @@
 
 <app-modal-shell *ngIf="isAdjustMovementModalOpen" title="Sumar o Restar Movimiento" panelClass="animate-pop-in" size="sm">
   <label class="app-field-label">Valor:</label>
-  <input type="text" [value]="formatCurrency(adjustMovementValue || 0)" (input)="onValueInput($event, 'movementAdjust')" class="app-input mb-4" />
+  <input type="text" [value]="formatCurrencyInput(adjustMovementValue || 0)" (input)="onValueInput($event, 'movementAdjust')" class="app-input mb-4" />
 
   <div class="flex justify-end gap-2">
     <button (click)="closeAdjustMovementModal()" class="app-secondary-button">Cancelar</button>

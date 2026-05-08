@@ -435,6 +435,10 @@ export default class SavingsComponent implements OnInit, OnDestroy {
     return this.decimalPipe.transform(value, '1.0-0') || '';
   }
 
+  formatCurrencyInput(value: number): string {
+    return value ? this.formatCurrency(value) : '';
+  }
+
   abs(value: number): number {
     return Math.abs(value || 0);
   }
@@ -449,7 +453,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
     if (type === 'movementEdit') this.editedMovement.valor = value;
     if (type === 'movementAdjust') this.adjustMovementValue = value;
     if (type === 'goal' && this.selectedPiggybank) this.selectedPiggybank.metaAhorro = value;
-    input.value = this.formatCurrency(value);
+    input.value = value ? this.formatCurrency(value) : '';
   }
 
   onNewPiggybankGoalInput(event: Event) {
@@ -457,7 +461,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
     const raw = input.value.replace(/[^\d]/g, '');
     const value = Number(raw) || 0;
     this.newPiggybank.metaAhorro = value;
-    input.value = this.formatCurrency(value);
+    input.value = value ? this.formatCurrency(value) : '';
   }
 
   onEditPiggybankGoalInput(event: Event) {
@@ -465,7 +469,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
     const raw = input.value.replace(/[^\d]/g, '');
     const value = Number(raw) || 0;
     this.editedPiggybank.metaAhorro = value;
-    input.value = this.formatCurrency(value);
+    input.value = value ? this.formatCurrency(value) : '';
   }
 
   getSavingCardClass(index: number): string {

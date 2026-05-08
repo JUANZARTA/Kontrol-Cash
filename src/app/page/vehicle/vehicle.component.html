@@ -88,9 +88,9 @@
   <label class="app-field-label">Fecha</label>
   <input type="date" [(ngModel)]="newEntry.fecha" class="app-input mb-3" />
   <label class="app-field-label">Cantidad $</label>
-  <input type="number" [(ngModel)]="newEntry.monto" class="app-input mb-3" />
+  <input type="text" [value]="formatCurrencyInput(newEntry.monto)" (input)="onMoneyInput($event, 'newMonto')" class="app-input mb-3" />
   <label class="app-field-label">Kilometraje</label>
-  <input type="number" [(ngModel)]="newEntry.kilometraje" class="app-input mb-3" />
+  <input type="text" [value]="formatCurrencyInput(newEntry.kilometraje)" (input)="onDistanceInput($event, 'newKm')" class="app-input mb-3" />
   <div class="flex justify-end gap-2">
     <button (click)="closeAddModal()" class="app-secondary-button">Cancelar</button>
     <button (click)="addEntry()" class="app-primary-button">Guardar</button>
@@ -103,11 +103,11 @@
   <label class="app-field-label">Fecha</label>
   <input type="date" [(ngModel)]="editedEntry.fecha" class="app-input mb-3" />
   <label class="app-field-label">Cantidad $</label>
-  <input type="number" [(ngModel)]="editedEntry.monto" class="app-input mb-3" />
+  <input type="text" [value]="formatCurrencyInput(editedEntry.monto)" (input)="onMoneyInput($event, 'editMonto')" class="app-input mb-3" />
   <label class="app-field-label">Cantidad gasolina (galones)</label>
-  <input type="number" [(ngModel)]="editedEntry.galones" class="app-input mb-3" />
+  <input type="text" [value]="formatNumberInput(editedEntry.galones)" (input)="onGallonsInput($event)" class="app-input mb-3" />
   <label class="app-field-label">Kilometraje</label>
-  <input type="number" [(ngModel)]="editedEntry.kilometraje" class="app-input mb-3" />
+  <input type="text" [value]="formatCurrencyInput(editedEntry.kilometraje)" (input)="onDistanceInput($event, 'editKm')" class="app-input mb-3" />
   <div class="flex justify-end gap-2">
     <button (click)="closeEditModal()" class="app-secondary-button">Cancelar</button>
     <button (click)="saveEditedEntry()" class="app-primary-button">Guardar</button>
@@ -120,7 +120,7 @@
   <label class="app-field-label">Nombre de bomba</label>
   <input [(ngModel)]="newPump.nombre" class="app-input mb-3" />
   <label class="app-field-label">Precio por galón</label>
-  <input type="number" [(ngModel)]="newPump.precioGalon" class="app-input mb-3" />
+  <input type="text" [value]="formatCurrencyInput(newPump.precioGalon)" (input)="onMoneyInput($event, 'pumpNew')" class="app-input mb-3" />
   <div class="flex justify-end gap-2">
     <button (click)="closePumpModal()" class="app-secondary-button">Cancelar</button>
     <button (click)="addPump()" class="app-primary-button">Guardar</button>
@@ -131,7 +131,7 @@
   <label class="app-field-label">Nombre de bomba</label>
   <input [(ngModel)]="editedPump.nombre" class="app-input mb-3" />
   <label class="app-field-label">Precio por galón</label>
-  <input type="number" [(ngModel)]="editedPump.precioGalon" class="app-input mb-3" />
+  <input type="text" [value]="formatCurrencyInput(editedPump.precioGalon)" (input)="onMoneyInput($event, 'pumpEdit')" class="app-input mb-3" />
   <div class="flex justify-end gap-2">
     <button (click)="closePumpEditModal()" class="app-secondary-button">Cancelar</button>
     <button (click)="saveEditedPump()" class="app-primary-button">Guardar</button>

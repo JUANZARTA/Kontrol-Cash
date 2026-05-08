@@ -307,6 +307,38 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   formatCurrency(v: number): string { return this.decimalPipe.transform(v, '1.0-0') || ''; }
   formatNumber(v: number): string { return this.decimalPipe.transform(v, '1.1-2') || ''; }
+  formatCurrencyInput(v: number): string { return v ? this.formatCurrency(v) : ''; }
+  formatNumberInput(v: number): string { return v ? this.formatNumber(v) : ''; }
+
+  onMoneyInput(event: Event, field: 'newMonto' | 'editMonto' | 'pumpNew' | 'pumpEdit'): void {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/[^\d]/g, '');
+    const value = Number(raw) || 0;
+
+    if (field === 'newMonto') this.newEntry.monto = value;
+    if (field === 'editMonto') this.editedEntry.monto = value;
+    if (field === 'pumpNew') this.newPump.precioGalon = value;
+    if (field === 'pumpEdit') this.editedPump.precioGalon = value;
+
+    input.value = value ? this.formatCurrency(value) : '';
+  }
+
+  onDistanceInput(event: Event, field: 'newKm' | 'editKm'): void {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/[^\d]/g, '');
+    const value = Number(raw) || 0;
+    if (field === 'newKm') this.newEntry.kilometraje = value;
+    if (field === 'editKm') this.editedEntry.kilometraje = value;
+    input.value = value ? this.formatCurrency(value) : '';
+  }
+
+  onGallonsInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/[^\d.,]/g, '').replace(',', '.');
+    const value = Number(raw) || 0;
+    this.editedEntry.galones = value;
+    input.value = value ? this.formatNumber(value) : '';
+  }
 
   private refreshChart(): void {
     if (!this.vehicleChartRef?.nativeElement) return;
