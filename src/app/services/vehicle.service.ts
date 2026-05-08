@@ -132,4 +132,34 @@ export class VehicleService {
       })
     );
   }
+
+  getGasolinaExpenseId(userId: string, year: string, month: string): Observable<string | null> {
+    const base = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/vehiculo/gastoGasolinaId.json`;
+    return from(this.auth.getIdToken()).pipe(
+      switchMap((token) => {
+        const url = token ? `${base}?auth=${token}` : base;
+        return this.http.get<string | null>(url).pipe(catchError(() => of(null)));
+      })
+    );
+  }
+
+  setGasolinaExpenseId(userId: string, year: string, month: string, expenseId: string): Observable<any> {
+    const base = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/vehiculo/gastoGasolinaId.json`;
+    return from(this.auth.getIdToken()).pipe(
+      switchMap((token) => {
+        const url = token ? `${base}?auth=${token}` : base;
+        return this.http.put(url, JSON.stringify(expenseId)).pipe(catchError(() => of(null)));
+      })
+    );
+  }
+
+  clearGasolinaExpenseId(userId: string, year: string, month: string): Observable<any> {
+    const base = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/vehiculo/gastoGasolinaId.json`;
+    return from(this.auth.getIdToken()).pipe(
+      switchMap((token) => {
+        const url = token ? `${base}?auth=${token}` : base;
+        return this.http.delete(url).pipe(catchError(() => of(null)));
+      })
+    );
+  }
 }

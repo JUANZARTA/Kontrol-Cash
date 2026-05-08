@@ -127,43 +127,27 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       return;
     }
 
-    const expense = new Expense(
-      `Tanqueo ${selectedPump.nombre}`,
-      'Vehículo',
-      this.newEntry.monto,
-      0
-    );
+    const galonesCalculados = this.newEntry.monto / selectedPump.precioGalon;
+    const payload: FuelEntry = {
+      ...this.newEntry,
+      bombaId: selectedPump.id,
+      nombreBomba: selectedPump.nombre,
+      precioGalon: selectedPump.precioGalon,
+      galones: galonesCalculados,
+      walletId: this.selectedWalletId,
+    };
 
-    this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe((expenseRes) => {
-      const expenseId = expenseRes?.name || '';
-      const galonesCalculados = this.newEntry.monto / selectedPump.precioGalon;
-      const payload: FuelEntry = {
-        ...this.newEntry,
-        bombaId: selectedPump.id,
-        nombreBomba: selectedPump.nombre,
-        precioGalon: selectedPump.precioGalon,
-        galones: galonesCalculados,
-        walletId: this.selectedWalletId,
-        expenseId,
+    this.vehicleService.addFuelEntry(this.userId, this.currentYear, this.currentMonth, payload).subscribe(() => {
+      const updatedWallet = {
+        tipo: selectedWallet.tipo,
+        valor: selectedWallet.valor - this.newEntry.monto,
       };
-
-      this.vehicleService.addFuelEntry(this.userId, this.currentYear, this.currentMonth, payload).subscribe(() => {
-        const updatedWallet = {
-          tipo: selectedWallet.tipo,
-          valor: selectedWallet.valor - this.newEntry.monto,
-        };
-
-        this.walletService.updateAccount(
-          this.userId,
-          this.currentYear,
-          this.currentMonth,
-          selectedWallet.id,
-          updatedWallet
-        ).subscribe(() => {
-          this.closeAddModal();
-          this.loadEntries();
-          this.loadWallets();
-        });
+      this.walletService.updateAccount(
+        this.userId, this.currentYear, this.currentMonth, selectedWallet.id, updatedWallet
+      ).subscribe(() => {
+        this.closeAddModal();
+        this.reloadAndSync();
+        this.loadWallets();
       });
     });
   }
@@ -266,7 +250,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     if (!this.editedId) return;
     this.vehicleService.updateFuelEntry(this.userId, this.currentYear, this.currentMonth, this.editedId, this.editedEntry).subscribe(() => {
       this.closeEditModal();
-      this.loadEntries();
+      this.reloadAndSync();
     });
   }
 
@@ -277,7 +261,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     if (!this.entryToDeleteId) return;
     this.vehicleService.deleteFuelEntry(this.userId, this.currentYear, this.currentMonth, this.entryToDeleteId).subscribe(() => {
       this.closeDeleteModal();
-      this.loadEntries();
+      this.reloadAndSync();
     });
   }
 
@@ -338,6 +322,40 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     const value = Number(raw) || 0;
     this.editedEntry.galones = value;
     input.value = value ? this.formatNumber(value) : '';
+  }
+
+  private reloadAndSync(): void {
+    this.vehicleService.getFuelEntries(this.userId, this.currentYear, this.currentMonth).subscribe((data) => {
+      this.entries = Object.entries(data || {})
+        .map(([id, item]: [string, any]) => ({ id, ...item }))
+        .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+      this.refreshChart();
+      const total = this.entries.reduce((sum, e) => sum + (e.monto || 0), 0);
+      this.syncGasolinaExpense(total);
+    });
+  }
+
+  private syncGasolinaExpense(total: number): void {
+    this.vehicleService.getGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth).subscribe((existingId) => {
+      if (total <= 0) {
+        if (existingId) {
+          this.expenseService.deleteExpense(this.userId, this.currentYear, this.currentMonth, existingId).subscribe();
+          this.vehicleService.clearGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth).subscribe();
+        }
+        return;
+      }
+      const expense = new Expense('Gasolina', 'Transporte', total, 0);
+      if (existingId) {
+        this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, existingId, expense).subscribe();
+      } else {
+        this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe((res) => {
+          const newId = res?.name;
+          if (newId) {
+            this.vehicleService.setGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth, newId).subscribe();
+          }
+        });
+      }
+    });
   }
 
   private refreshChart(): void {
