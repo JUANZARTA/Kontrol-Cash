@@ -149,6 +149,10 @@ export default class HomeComponent implements OnInit, OnDestroy {
   installHelpVisible = false;
   private deferredInstallPrompt: any = null;
 
+  get isIos(): boolean {
+    return typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
   private getGlobalInstallPrompt(): any {
     return isPlatformBrowser(this.platformId) ? (window as any).__deferredInstallPrompt ?? null : null;
   }

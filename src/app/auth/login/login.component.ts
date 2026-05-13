@@ -45,6 +45,10 @@ export default class LoginComponent implements OnInit {
   installHelpVisible = false;
   private deferredInstallPrompt: any = null;
 
+  get isIos(): boolean {
+    return typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
   private getGlobalInstallPrompt(): any {
     return typeof window !== 'undefined' ? (window as any).__deferredInstallPrompt ?? null : null;
   }
