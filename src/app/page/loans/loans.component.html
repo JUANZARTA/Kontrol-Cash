@@ -59,7 +59,7 @@
             (ngModelChange)="onLoanStatusActionChange(loan, $event)">
             <option value="Pendiente">Pendiente</option>
             <option value="Pagado">Pagado Todo</option>
-            <option value="PagarCuota">Pagar cuota</option>
+            <option value="PagarCuota">Cuota recibida</option>
             <option value="DeshacerCuota">Deshacer cuota</option>
           </select>
 
@@ -207,25 +207,68 @@
   confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteModal()"
   (confirm)="confirmDeleteLoan()" />
 
-<!-- Modal para Pagar Deudor -->
-<app-modal-shell *ngIf="isPaymentModalOpen" title="Selecciona la billetera para el pago"
-  panelClass="animate-pop-in">
+<!-- Modal: devolver dinero al eliminar deudor -->
+<app-modal-shell *ngIf="showReturnWalletModal" title="¿A qué billetera devolver el dinero?"
+  size="sm" panelClass="animate-pop-in">
 
-    <label class="app-field-label">Billetera:</label>
-    <select [(ngModel)]="selectedPaymentWallet" class="app-input mb-3">
-      <option value="" disabled selected>Selecciona la billetera</option>
-      <option *ngFor="let account of wallet" [value]="account.id">
-        {{ account.tipo }}
-      </option>
-    </select>
+  <p class="text-sm text-slate-500 mb-4">
+    El deudor aún tiene saldo pendiente. Seleccioná la billetera donde se devuelve ese dinero antes de eliminarlo.
+  </p>
 
-    <div *ngIf="selectedPaymentWallet" class="text-sm text-gray-500 mb-3">
-      Saldo disponible de esta billetera es: $ {{ formatCurrency(paymentWalletSaldo) }}
-    </div>
+  <label class="app-field-label">Billetera:</label>
+  <select [(ngModel)]="selectedReturnWallet" class="app-input mb-1">
+    <option value="" disabled>Seleccioná billetera</option>
+    <option *ngFor="let w of wallet" [value]="w.id">{{ w.tipo }}</option>
+  </select>
+  <p *ngIf="selectedReturnWallet" class="text-sm text-gray-500 mb-4">
+    ${{ formatCurrency(returnWalletSaldo) }} disponibles
+  </p>
 
-
-    <div class="flex justify-end gap-2">
-      <button (click)="isPaymentModalOpen=false; loanToPay=null; selectedPaymentWallet=''" class="app-secondary-button">Cancelar</button>
-      <button (click)="confirmLoanPayment()" class="app-primary-button">Confirmar</button>
-    </div>
+  <div class="flex justify-end gap-2 mt-4">
+    <button (click)="showReturnWalletModal = false; deleteLoanById(loanToDeleteId!)"
+      class="app-secondary-button text-xs">
+      Eliminar sin devolver
+    </button>
+    <button (click)="confirmReturnAndDelete()" [disabled]="!selectedReturnWallet"
+      class="app-primary-button disabled:opacity-50">
+      Devolver y eliminar
+    </button>
+  </div>
 </app-modal-shell>
+
+<!-- Modal para Pagar Deudor -->
+<app-modal-shell *ngIf="isPaymentModalOpen" title="Registrar pago recibido"
+  size="sm" panelClass="animate-pop-in">
+
+  <p class="text-sm font-semibold text-slate-700 mb-1">{{ loanToPay?.deudor }}</p>
+  <p class="text-xs text-slate-500 mb-4">
+    <ng-container *ngIf="payLoanMode === 'cuota'">
+      Cuota {{ getCuotasPagadas(loanToPay!) + 1 }}/{{ getTotalCuotas(loanToPay!) }} —
+    </ng-container>
+    <ng-container *ngIf="payLoanMode === 'todo'">Pago total — </ng-container>
+    <strong>${{ formatCurrency(getPayModalMonto()) }}</strong>
+  </p>
+
+  <label class="app-field-label">¿A qué billetera ingresa el dinero?</label>
+  <select [(ngModel)]="selectedPaymentWallet" class="app-input mb-1">
+    <option value="" disabled>Seleccioná billetera</option>
+    <option *ngFor="let account of wallet" [value]="account.id">{{ account.tipo }}</option>
+  </select>
+  <p *ngIf="selectedPaymentWallet" class="text-sm text-gray-500 mb-4">
+    ${{ formatCurrency(paymentWalletSaldo) }} disponibles
+  </p>
+
+  <div class="flex justify-end gap-2 mt-4">
+    <button (click)="closePaymentModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="confirmLoanPayment()" [disabled]="!selectedPaymentWallet"
+      class="app-success-button disabled:opacity-50">
+      Confirmar
+    </button>
+  </div>
+</app-modal-shell>
+
+<!-- Toast -->
+<div *ngIf="showingToast"
+  class="fixed bottom-4 right-4 bg-sky-700 text-white px-4 py-2 rounded shadow-md animate-fadeIn">
+  {{ toastMessage }}
+</div>

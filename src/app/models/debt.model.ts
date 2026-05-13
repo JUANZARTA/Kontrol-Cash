@@ -10,7 +10,8 @@ export class Debt {
     public interestRate?: number,
     public penaltyFee?: number,
     public minPayment?: number,
-    public daysPastDue?: number
+    public daysPastDue?: number,
+    public lastPaymentWalletId?: string
   ) {}
 }
 

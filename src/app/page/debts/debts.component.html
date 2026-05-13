@@ -193,8 +193,45 @@
   confirmText="Eliminar" tone="danger" icon="report_problem"
   (cancel)="showBulkDeleteConfirm = false" (confirm)="confirmBulkDelete()" />
 
+<!-- Modal: Pagar deuda -->
+<app-modal-shell *ngIf="showPayDebtModal" title="Pagar deuda"
+  size="sm" panelClass="animate-pop-in">
+
+  <p class="text-sm font-semibold text-slate-700 mb-1">{{ payDebtTarget?.acreedor }}</p>
+  <p class="text-xs text-slate-500 mb-4">
+    <ng-container *ngIf="payDebtMode === 'cuota'">
+      Cuota {{ getCuotasPagadas(payDebtTarget!) + 1 }}/{{ getTotalCuotas(payDebtTarget!) }} —
+    </ng-container>
+    <ng-container *ngIf="payDebtMode === 'todo'">Pago total — </ng-container>
+    <strong>${{ formatCurrency(getPayModalMonto()) }}</strong>
+  </p>
+
+  <label class="app-field-label">Seleccioná una billetera:</label>
+  <select [(ngModel)]="selectedWalletForDebt" class="app-input mb-1">
+    <option value="" disabled>Seleccioná billetera</option>
+    <option *ngFor="let w of wallet" [value]="w.id">{{ w.tipo }}</option>
+  </select>
+  <p *ngIf="selectedWalletForDebt" class="text-sm text-gray-500 mb-4">
+    ${{ getWalletBalance(selectedWalletForDebt) }} disponibles
+  </p>
+
+  <div class="flex justify-end gap-2 mt-4">
+    <button (click)="closePayDebtModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="confirmPayDebt()" [disabled]="!selectedWalletForDebt"
+      class="app-success-button disabled:opacity-50">
+      Confirmar pago
+    </button>
+  </div>
+</app-modal-shell>
+
 <!-- Modal para eliminar deuda -->
 <app-confirm-modal *ngIf="isDeleteModalOpen" title="¿Eliminar Deuda?"
   message="¿Estás seguro de que deseas eliminar esta deuda? Esta acción no se puede deshacer."
   confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteModal()"
   (confirm)="confirmDeleteDebt()" />
+
+<!-- Toast -->
+<div *ngIf="showingToast"
+  class="fixed bottom-4 right-4 bg-sky-700 text-white px-4 py-2 rounded shadow-md animate-fadeIn">
+  {{ toastMessage }}
+</div>

@@ -12,6 +12,9 @@ import { FinancialStatusBadgeComponent } from '../../shared/components/financial
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 import { DebtPriorityService, RankedDebt } from '../../services/debt-priority.service';
+import { WalletService } from '../../services/wallet.service';
+import { ExpenseService } from '../../services/expense.service';
+import { Expense, CategoriaGasto } from '../../models/expense.model';
 
 export interface DebtWithId extends Debt {
   id: string;
@@ -29,19 +32,27 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   // Servicios
   private debtService = inject(DebtService);
   private decimalPipe = inject(DecimalPipe);
-  private dateService = inject(DateService); // ✅ Nuevo
-  private authService = inject(AuthService); // ✅ nuevo
+  private dateService = inject(DateService);
+  private authService = inject(AuthService);
   private finanzasService = inject(FinanzasService);
   private debtPriorityService = inject(DebtPriorityService);
+  private walletService = inject(WalletService);
+  private expenseService = inject(ExpenseService);
 
   // Variables
   selectedDebtId: string | null = null;
 
-  // Datos de la deuda
-  incomes: any[] = [];
-  expenses: any[] = [];
   wallet: any[] = [];
-  loans: any[] = [];
+
+  // Modal pagar deuda
+  showPayDebtModal = false;
+  payDebtTarget: DebtWithId | null = null;
+  selectedWalletForDebt = '';
+  payDebtMode: 'cuota' | 'todo' = 'cuota';
+
+  toastMessage = '';
+  showingToast = false;
+  private toastTimeout: any;
 
   // Estado financiero
   estadoFinanciero: string = 'Cargando...';
@@ -438,17 +449,22 @@ export default class DebtsComponent implements OnInit, OnDestroy {
 
   onDebtStatusActionChange(debt: DebtWithId, action: string): void {
     if (action === 'PagarCuota') {
-      this.payOneInstallment(debt);
+      this.openPayDebtModal(debt.id, 'cuota');
+      return;
+    }
+
+    if (action === 'Pagado') {
+      this.openPayDebtModal(debt.id, 'todo');
       return;
     }
 
     if (action === 'DeshacerCuota') {
-      this.undoOneInstallment(debt);
+      this.undoAndDeleteExpense(debt);
       return;
     }
 
-    if (action === 'Pendiente' || action === 'Pagado') {
-      this.setDebtStatus(debt, action as 'Pendiente' | 'Pagado');
+    if (action === 'Pendiente') {
+      this.setDebtStatus(debt, 'Pendiente');
     }
   }
 
@@ -580,6 +596,171 @@ export default class DebtsComponent implements OnInit, OnDestroy {
         },
       });
   }
+  // ======================
+  // Pagar deuda desde billetera
+  // ======================
+  openPayDebtModal(id: string, mode: 'cuota' | 'todo' = 'cuota'): void {
+    const debt = this.debts.find(d => d.id === id);
+    if (!debt || debt.estado === 'Pagado') return;
+    this.payDebtTarget = debt;
+    this.payDebtMode = mode;
+    this.selectedWalletForDebt = '';
+    this.showPayDebtModal = true;
+    this.loadWallet();
+  }
+
+  closePayDebtModal(): void {
+    this.showPayDebtModal = false;
+    this.payDebtTarget = null;
+    this.selectedWalletForDebt = '';
+  }
+
+  private loadWallet(): void {
+    this.walletService.getWallet(this.userId, this.currentYear, this.currentMonth).subscribe({
+      next: (data) => {
+        this.wallet = Object.entries(data || {}).map(([id, w]: [string, any]) => ({ id, tipo: w.tipo, valor: w.valor }));
+      },
+    });
+  }
+
+  getWalletBalance(walletId: string): string {
+    const w = this.wallet.find(x => x.id === walletId);
+    return w ? this.formatCurrency(w.valor) : '0';
+  }
+
+  getCuotaMonto(debt: DebtWithId): number {
+    return debt.valor / this.getTotalCuotas(debt);
+  }
+
+  getPayModalMonto(): number {
+    if (!this.payDebtTarget) return 0;
+    return this.payDebtMode === 'todo'
+      ? this.getRemainingAmount(this.payDebtTarget)
+      : this.getCuotaMonto(this.payDebtTarget);
+  }
+
+  confirmPayDebt(): void {
+    if (!this.payDebtTarget || !this.selectedWalletForDebt) return;
+
+    const debt = this.payDebtTarget;
+    const account = this.wallet.find(w => w.id === this.selectedWalletForDebt);
+    if (!account) return;
+
+    const totalCuotas = this.getTotalCuotas(debt);
+    const cuotasPagadas = this.getCuotasPagadas(debt);
+    const monto = this.getPayModalMonto();
+
+    if (account.valor < monto) {
+      this.showToast('Saldo insuficiente en la billetera seleccionada.');
+      return;
+    }
+
+    let descripcion: string;
+    let nuevasCuotasPagadas: number;
+
+    if (this.payDebtMode === 'todo') {
+      descripcion = debt.acreedor;
+      nuevasCuotasPagadas = totalCuotas;
+    } else {
+      const nextCuota = cuotasPagadas + 1;
+      descripcion = totalCuotas > 1
+        ? `Cuota ${debt.acreedor} (${nextCuota}/${totalCuotas})`
+        : debt.acreedor;
+      nuevasCuotasPagadas = nextCuota;
+    }
+
+    const nuevoGasto = new Expense(descripcion, CategoriaGasto.Deuda, monto, monto);
+    account.valor -= monto;
+
+    this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, account.id, { tipo: account.tipo, valor: account.valor })
+      .subscribe({
+        next: () => {
+          this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, nuevoGasto)
+            .subscribe({
+              next: () => {
+                const updatedDebt: Debt = {
+                  ...debt,
+                  cuotasPagadas: nuevasCuotasPagadas,
+                  estado: nuevasCuotasPagadas >= totalCuotas ? 'Pagado' : 'Pendiente',
+                  lastPaymentWalletId: account.id,
+                };
+                this.debtService.updateDebt(this.userId, this.currentYear, this.currentMonth, debt.id, updatedDebt)
+                  .subscribe({
+                    next: () => {
+                      this.closePayDebtModal();
+                      this.loadDebts();
+                      this.showToast(`$${this.formatCurrency(monto)} pagados desde ${account.tipo}.`);
+                    },
+                  });
+              },
+            });
+        },
+        error: () => this.showToast('Error al actualizar la billetera.'),
+      });
+  }
+
+  undoAndDeleteExpense(debt: DebtWithId): void {
+    const cuotasPagadas = this.getCuotasPagadas(debt);
+    if (cuotasPagadas <= 0) return;
+
+    const totalCuotas = this.getTotalCuotas(debt);
+    const montoDevolver = this.getCuotaMonto(debt);
+    const descripcionBuscada = totalCuotas > 1
+      ? `Cuota ${debt.acreedor} (${cuotasPagadas}/${totalCuotas})`
+      : debt.acreedor;
+
+    this.expenseService.getExpenses(this.userId, this.currentYear, this.currentMonth).subscribe({
+      next: (data: any) => {
+        const entries = Object.entries(data || {}) as [string, any][];
+        const match = entries.find(([, e]) =>
+          e.categoria === CategoriaGasto.Deuda && e.descripcion === descripcionBuscada
+        );
+
+        const updatedDebt: Debt = {
+          ...debt,
+          cuotasPagadas: cuotasPagadas - 1,
+          estado: 'Pendiente',
+        };
+
+        const ops: any[] = [
+          this.debtService.updateDebt(this.userId, this.currentYear, this.currentMonth, debt.id, updatedDebt),
+        ];
+
+        if (match) {
+          ops.push(this.expenseService.deleteExpense(this.userId, this.currentYear, this.currentMonth, match[0]));
+        }
+
+        // Devolver dinero a la billetera usada si la conocemos
+        const walletId = debt.lastPaymentWalletId;
+        if (walletId) {
+          this.walletService.getWallet(this.userId, this.currentYear, this.currentMonth).subscribe({
+            next: (walletData: any) => {
+              const entries = Object.entries(walletData || {}) as [string, any][];
+              const walletEntry = entries.find(([id]) => id === walletId);
+              if (walletEntry) {
+                const [id, w] = walletEntry;
+                ops.push(this.walletService.updateAccount(
+                  this.userId, this.currentYear, this.currentMonth, id,
+                  { tipo: w.tipo, valor: w.valor + montoDevolver }
+                ));
+              }
+              forkJoin(ops).subscribe({ next: () => { this.loadDebts(); this.showToast(`$${this.formatCurrency(montoDevolver)} devueltos a la billetera.`); } });
+            },
+          });
+        } else {
+          forkJoin(ops).subscribe({ next: () => this.loadDebts() });
+        }
+      },
+    });
+  }
+
+  showToast(message: string): void {
+    this.toastMessage = message;
+    this.showingToast = true;
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => { this.showingToast = false; }, 3000);
+  }
+
   getRowAnimationDelay(item: any, index?: number): string {
     const i = index ?? this.debts.indexOf(item);
     return `${0.1 + i * 0.05}s`;

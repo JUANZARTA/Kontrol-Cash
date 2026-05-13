@@ -44,10 +44,19 @@ export default class LoansComponent implements OnInit, OnDestroy {
   newValue: number = 0;
   selectedWallet: string = '';
 
+  // Modal devolución al eliminar
+  showReturnWalletModal = false;
+  selectedReturnWallet = '';
+
   // Modal de pago
   isPaymentModalOpen = false;
   loanToPay: LoanWithId | null = null;
   selectedPaymentWallet: string = '';
+  payLoanMode: 'cuota' | 'todo' = 'cuota';
+
+  toastMessage = '';
+  showingToast = false;
+  private toastTimeout: any;
 
   // Datos
   incomes: any[] = [];
@@ -296,16 +305,20 @@ export default class LoansComponent implements OnInit, OnDestroy {
   // ======================
   // Modal: Pagado el Préstamo
   // ======================
-  openPaymentModal(loan: LoanWithId) {
-    if (loan.estado === 'Pagado') return; // solo prestamos pendientes
+  openPaymentModal(loan: LoanWithId, mode: 'cuota' | 'todo' = 'cuota') {
+    if (loan.estado === 'Pagado') return;
     this.loanToPay = loan;
+    this.payLoanMode = mode;
     this.selectedPaymentWallet = '';
     this.isPaymentModalOpen = true;
+    if (!this.wallet.length) this.loadWallets();
+  }
 
-    // Cargar billeteras si no están cargadas
-    if (!this.wallet.length) {
-      this.loadWallets();
-    }
+  getPayModalMonto(): number {
+    if (!this.loanToPay) return 0;
+    return this.payLoanMode === 'todo'
+      ? this.getRemainingAmount(this.loanToPay)
+      : this.loanToPay.valor / this.getTotalCuotas(this.loanToPay);
   }
 
   closePaymentModal() {
@@ -315,61 +328,42 @@ export default class LoansComponent implements OnInit, OnDestroy {
   }
 
   confirmLoanPayment() {
-    if (!this.loanToPay) return;
-    if (!this.selectedPaymentWallet) {
-      alert('Selecciona la billetera para registrar el pago.');
-      return;
-    }
+    if (!this.loanToPay || !this.selectedPaymentWallet) return;
 
-    const wallet = this.wallet.find((w) => w.id === this.selectedPaymentWallet);
-    if (!wallet) {
-      alert('Billetera no encontrada.');
-      return;
-    }
+    const loan = this.loanToPay;
+    const account = this.wallet.find(w => w.id === this.selectedPaymentWallet);
+    if (!account) return;
 
-    // 1️⃣ Sumar el valor del préstamo a la billetera
-    const updatedWallet = {
-      tipo: wallet.tipo,
-      valor: wallet.valor + this.loanToPay.valor,
-    };
+    const monto = this.getPayModalMonto();
+    const totalCuotas = this.getTotalCuotas(loan);
+    const cuotasPagadas = this.getCuotasPagadas(loan);
+    const nuevasCuotasPagadas = this.payLoanMode === 'todo' ? totalCuotas : cuotasPagadas + 1;
 
-    this.walletService
-      .updateAccount(
-        this.userId,
-        this.currentYear,
-        this.currentMonth,
-        wallet.id,
-        updatedWallet
-      )
-      .subscribe({
-        next: () => {
-          // 2️⃣ Cambiar estado del préstamo a Pagado
-          const updatedLoan: Loan = {
-            ...this.loanToPay!,
-            estado: 'Pagado',
-          };
-          this.loanService
-            .updateLoan(
-              this.userId,
-              this.currentYear,
-              this.currentMonth,
-              this.loanToPay!.id,
-              updatedLoan
-            )
-            .subscribe({
-              next: () => {
-                this.loadLoans(); // recarga la tabla
-                this.loadWallets(); // actualiza billeteras
-                this.isPaymentModalOpen = false;
-                this.loanToPay = null;
-                this.selectedPaymentWallet = '';
-              },
-              error: (err) =>
-                console.error('Error al actualizar préstamo:', err),
-            });
-        },
-        error: (err) => console.error('Error al actualizar billetera:', err),
-      });
+    this.walletService.updateAccount(
+      this.userId, this.currentYear, this.currentMonth, account.id,
+      { tipo: account.tipo, valor: account.valor + monto }
+    ).subscribe({
+      next: () => {
+        const updatedLoan: Loan = {
+          ...loan,
+          cuotasPagadas: nuevasCuotasPagadas,
+          estado: nuevasCuotasPagadas >= totalCuotas ? 'Pagado' : 'Pendiente',
+          lastPaymentWalletId: account.id,
+        };
+        this.loanService.updateLoan(this.userId, this.currentYear, this.currentMonth, loan.id, updatedLoan)
+          .subscribe({
+            next: () => {
+              this.isPaymentModalOpen = false;
+              this.loanToPay = null;
+              this.selectedPaymentWallet = '';
+              this.loadLoans();
+              this.loadWallets();
+              this.showToast(`$${this.formatCurrency(monto)} recibidos en ${account.tipo}.`);
+            },
+          });
+      },
+      error: () => this.showToast('Error al actualizar la billetera.'),
+    });
   }
 
   // ======================
@@ -449,22 +443,54 @@ export default class LoansComponent implements OnInit, OnDestroy {
 
   confirmDeleteLoan() {
     if (!this.loanToDeleteId) return;
+    const loan = this.loans.find(l => l.id === this.loanToDeleteId);
+    this.isDeleteModalOpen = false;
 
-    this.loanService
-      .deleteLoan(
-        this.userId,
-        this.currentYear,
-        this.currentMonth,
-        this.loanToDeleteId
-      )
+    // Si tiene saldo pendiente, preguntar a qué billetera devolver
+    if (loan && this.getRemainingAmount(loan) > 0) {
+      this.selectedReturnWallet = '';
+      this.showReturnWalletModal = true;
+      if (!this.wallet.length) this.loadWallets();
+    } else {
+      this.deleteLoanById(this.loanToDeleteId);
+    }
+  }
+
+  confirmReturnAndDelete(): void {
+    if (!this.loanToDeleteId) return;
+    const loan = this.loans.find(l => l.id === this.loanToDeleteId);
+    const monto = loan ? this.getRemainingAmount(loan) : 0;
+
+    const finish = () => {
+      this.deleteLoanById(this.loanToDeleteId!);
+      this.showReturnWalletModal = false;
+      this.selectedReturnWallet = '';
+    };
+
+    if (this.selectedReturnWallet && monto > 0) {
+      const account = this.wallet.find(w => w.id === this.selectedReturnWallet);
+      if (account) {
+        this.walletService.updateAccount(
+          this.userId, this.currentYear, this.currentMonth, account.id,
+          { tipo: account.tipo, valor: account.valor + monto }
+        ).subscribe({
+          next: () => {
+            this.loadWallets();
+            this.showToast(`$${this.formatCurrency(monto)} devueltos a ${account.tipo}.`);
+            finish();
+          },
+        });
+        return;
+      }
+    }
+    finish();
+  }
+
+  deleteLoanById(id: string): void {
+    this.loanService.deleteLoan(this.userId, this.currentYear, this.currentMonth, id)
       .subscribe({
-        next: () => {
-          this.loadLoans();
-          this.closeDeleteModal();
-        },
-        error: (err) => {
-          console.error('Error al eliminar préstamo:', err);
-        },
+        next: () => { this.loanToDeleteId = null; this.loadLoans(); },
+        error: err => console.error('Error al eliminar préstamo:', err),
       });
   }
 
@@ -502,17 +528,22 @@ export default class LoansComponent implements OnInit, OnDestroy {
 
   onLoanStatusActionChange(loan: LoanWithId, action: string): void {
     if (action === 'PagarCuota') {
-      this.payOneInstallment(loan);
+      this.openPaymentModal(loan, 'cuota');
+      return;
+    }
+
+    if (action === 'Pagado') {
+      this.openPaymentModal(loan, 'todo');
       return;
     }
 
     if (action === 'DeshacerCuota') {
-      this.undoOneInstallment(loan);
+      this.undoAndReturnToWallet(loan);
       return;
     }
 
-    if (action === 'Pendiente' || action === 'Pagado') {
-      this.setLoanStatus(loan, action as 'Pendiente' | 'Pagado');
+    if (action === 'Pendiente') {
+      this.setLoanStatus(loan, 'Pendiente');
     }
   }
 
@@ -624,7 +655,57 @@ export default class LoansComponent implements OnInit, OnDestroy {
       });
   }
 
-  // Método para calcular el total de préstamos pagados
+  undoAndReturnToWallet(loan: LoanWithId): void {
+    const cuotasPagadas = this.getCuotasPagadas(loan);
+    if (cuotasPagadas <= 0) return;
+
+    const monto = loan.valor / this.getTotalCuotas(loan);
+    const updatedLoan: Loan = {
+      ...loan,
+      cuotasPagadas: cuotasPagadas - 1,
+      estado: 'Pendiente',
+    };
+
+    const update$ = this.loanService.updateLoan(
+      this.userId, this.currentYear, this.currentMonth, loan.id, updatedLoan
+    );
+
+    const walletId = loan.lastPaymentWalletId;
+    if (walletId) {
+      this.walletService.getWallet(this.userId, this.currentYear, this.currentMonth).subscribe({
+        next: (data: any) => {
+          const entries = Object.entries(data || {}) as [string, any][];
+          const entry = entries.find(([id]) => id === walletId);
+          if (entry) {
+            const [id, w] = entry;
+            forkJoin([
+              update$,
+              this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, id,
+                { tipo: w.tipo, valor: w.valor - monto }),
+            ]).subscribe({
+              next: () => {
+                this.loadLoans();
+                this.loadWallets();
+                this.showToast(`$${this.formatCurrency(monto)} descontados de ${w.tipo}.`);
+              },
+            });
+          } else {
+            update$.subscribe({ next: () => this.loadLoans() });
+          }
+        },
+      });
+    } else {
+      update$.subscribe({ next: () => this.loadLoans() });
+    }
+  }
+
+  showToast(message: string): void {
+    this.toastMessage = message;
+    this.showingToast = true;
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => { this.showingToast = false; }, 3000);
+  }
+
   formatCurrency(value: number): string {
     return this.decimalPipe.transform(value, '1.0-0') || '';
   }
@@ -685,10 +766,12 @@ export default class LoansComponent implements OnInit, OnDestroy {
   }
 
   get paymentWalletSaldo(): number {
-    if (!this.selectedPaymentWallet) return 0;
-    const account = this.wallet.find(
-      (w) => w.id === this.selectedPaymentWallet
-    );
+    const account = this.wallet.find(w => w.id === this.selectedPaymentWallet);
+    return account ? account.valor : 0;
+  }
+
+  get returnWalletSaldo(): number {
+    const account = this.wallet.find(w => w.id === this.selectedReturnWallet);
     return account ? account.valor : 0;
   }
 }

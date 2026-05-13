@@ -52,10 +52,15 @@ export class FinanzasService {
               0
             );
 
-            // Solo préstamos pendientes para el cuadre
+            // Solo préstamos pendientes para el cuadre (saldo restante, no valor total)
             const prestamosPendientes = prestamos
               .filter((l: any) => l.estado !== 'Pagado')
-              .reduce((a: number, l: any) => a + (l.valor || 0), 0);
+              .reduce((a: number, l: any) => {
+                const total = Math.max(1, Math.floor(l.totalCuotas ?? 1));
+                const pagadas = Math.max(0, Math.min(Math.floor(l.cuotasPagadas ?? 0), total));
+                const restantes = total - pagadas;
+                return a + (restantes / total) * (l.valor || 0);
+              }, 0);
 
             // Préstamos ya pagados (opcional, para mostrar)
             const prestamosPagados = prestamos

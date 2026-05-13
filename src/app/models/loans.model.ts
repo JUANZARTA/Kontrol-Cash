@@ -6,7 +6,8 @@ export class Loan {
     public valor: number,
     public estado: 'Pendiente' | 'Pagado',
     public totalCuotas?: number,
-    public cuotasPagadas?: number
+    public cuotasPagadas?: number,
+    public lastPaymentWalletId?: string
   ) {}
 }
 
