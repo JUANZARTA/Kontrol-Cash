@@ -1,8 +1,9 @@
-<div class="app-section-card mb-4">
-  <div class="flex items-center justify-between mb-3">
-    <h3 class="text-lg font-semibold text-slate-900">Precio por galón por bomba</h3>
-    <button (click)="openPumpModal()" class="app-primary-button">Agregar bomba +</button>
-  </div>
+<div class="flex flex-wrap gap-4 mb-4">
+  <div class="app-section-card flex-1 min-w-[280px]">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-lg font-semibold text-slate-900">Precio por galón por bomba</h3>
+      <button (click)="openPumpModal()" class="app-primary-button">Agregar bomba +</button>
+    </div>
 
   <div class="overflow-x-auto">
     <table class="app-table">
@@ -27,6 +28,23 @@
   </div>
 </div>
 
+  <!-- Estimación de consumo -->
+  <div class="app-section-card flex-none w-full sm:w-64 flex flex-col justify-between">
+    <div>
+      <h3 class="text-lg font-semibold text-slate-900 mb-1">Estimación de consumo</h3>
+      <p class="text-xs text-slate-500 mb-3">Define el presupuesto mensual de gasolina para habilitar los tanqueos.</p>
+    </div>
+    <div class="flex items-center justify-between gap-3">
+      <p class="text-xl font-bold" [class.text-slate-400]="gasolinaEstimacion === 0" [class.text-teal-600]="gasolinaEstimacion > 0">
+        {{ gasolinaEstimacion > 0 ? '$' + formatCurrency(gasolinaEstimacion) : 'Sin definir' }}
+      </p>
+      <button (click)="openEstimacionModal()" class="app-secondary-button text-sm">
+        {{ gasolinaEstimacion > 0 ? 'Editar' : 'Agregar' }}
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="app-page-toolbar opacity-0 animate-fadeSlideDown" style="animation-delay:0.1s">
   <div>
     <h6 class="text-lg font-semibold text-white">Mi Vehículo</h6>
@@ -36,7 +54,11 @@
     <button *ngIf="hasSelection" (click)="showBulkDeleteConfirm = true" class="app-warning-button">
       Eliminar ({{ selectionCount }})
     </button>
-    <button (click)="openAddModal()" class="app-primary-button shadow-md">Agregar tanqueo +</button>
+    <button (click)="openAddModal()" [disabled]="gasolinaEstimacion === 0"
+      class="app-primary-button shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+      [title]="gasolinaEstimacion === 0 ? 'Definí una estimación de consumo primero' : ''">
+      Agregar tanqueo +
+    </button>
   </div>
 </div>
 
@@ -80,6 +102,17 @@
     <canvas #vehicleChart></canvas>
   </div>
 </div>
+
+<app-modal-shell *ngIf="isEstimacionModalOpen" title="Estimación de consumo" size="sm" panelClass="animate-pop-in">
+  <p class="text-sm text-slate-500 mb-4">Definí el presupuesto mensual esperado para gasolina.</p>
+  <label class="app-field-label">Estimación $</label>
+  <input type="text" [value]="formatCurrencyInput(newEstimacion)" (input)="onMoneyInput($event, 'estimacion')"
+    placeholder="Ej: 200.000" class="app-input mb-4" />
+  <div class="flex justify-end gap-2">
+    <button (click)="closeEstimacionModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="saveEstimacion()" [disabled]="newEstimacion <= 0" class="app-primary-button disabled:opacity-50">Guardar</button>
+  </div>
+</app-modal-shell>
 
 <app-modal-shell *ngIf="isAddModalOpen" title="Agregar tanqueo" panelClass="animate-pop-in">
   <label class="app-field-label">Bomba</label>

@@ -58,6 +58,10 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   isPumpModalOpen = false;
   isPumpEditModalOpen = false;
   isPumpDeleteModalOpen = false;
+  isEstimacionModalOpen = false;
+
+  gasolinaEstimacion = 0;
+  newEstimacion = 0;
   newPump: FuelPump = { nombre: '', precioGalon: 0 };
   editedPump: FuelPump = { nombre: '', precioGalon: 0 };
   editedPumpId: string | null = null;
@@ -94,6 +98,47 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
       this.refreshChart();
     });
+    this.loadGasolinaEstimacion();
+  }
+
+  loadGasolinaEstimacion(): void {
+    this.expenseService.getExpenses(this.userId, this.currentYear, this.currentMonth).subscribe((data: any) => {
+      const expenses = Object.values(data || {}) as any[];
+      const gasolina = expenses.find(e => e.descripcion === 'Gasolina' && e.categoria === 'Transporte');
+      this.gasolinaEstimacion = gasolina?.estimacion || 0;
+    });
+  }
+
+  openEstimacionModal(): void {
+    this.newEstimacion = this.gasolinaEstimacion;
+    this.isEstimacionModalOpen = true;
+  }
+
+  closeEstimacionModal(): void { this.isEstimacionModalOpen = false; }
+
+  saveEstimacion(): void {
+    if (this.newEstimacion <= 0) return;
+    this.gasolinaEstimacion = this.newEstimacion;
+
+    this.vehicleService.getGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth).subscribe(existingId => {
+      if (existingId) {
+        // Actualiza solo la estimación del gasto existente
+        const total = this.entries.reduce((sum, e) => sum + (e.monto || 0), 0);
+        const expense = new Expense('Gasolina', 'Transporte', total, this.gasolinaEstimacion);
+        this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, existingId, expense).subscribe();
+      } else {
+        // Crea el gasto con valor=0 y la estimación definida
+        const expense = new Expense('Gasolina', 'Transporte', 0, this.gasolinaEstimacion);
+        this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe((res: any) => {
+          const newId = res?.name;
+          if (newId) {
+            this.vehicleService.setGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth, newId).subscribe();
+          }
+        });
+      }
+    });
+
+    this.closeEstimacionModal();
   }
 
   addEntry(): void {
@@ -320,7 +365,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   formatCurrencyInput(v: number): string { return v ? this.formatCurrency(v) : ''; }
   formatNumberInput(v: number): string { return v ? this.formatNumber(v) : ''; }
 
-  onMoneyInput(event: Event, field: 'newMonto' | 'editMonto' | 'pumpNew' | 'pumpEdit'): void {
+  onMoneyInput(event: Event, field: 'newMonto' | 'editMonto' | 'pumpNew' | 'pumpEdit' | 'estimacion'): void {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/[^\d]/g, '');
     const value = Number(raw) || 0;
@@ -329,6 +374,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     if (field === 'editMonto') this.editedEntry.monto = value;
     if (field === 'pumpNew') this.newPump.precioGalon = value;
     if (field === 'pumpEdit') this.editedPump.precioGalon = value;
+    if (field === 'estimacion') this.newEstimacion = value;
 
     input.value = value ? this.formatCurrency(value) : '';
   }
@@ -370,7 +416,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         }
         return;
       }
-      const expense = new Expense('Gasolina', 'Transporte', total, 0);
+      const expense = new Expense('Gasolina', 'Transporte', total, this.gasolinaEstimacion);
       if (existingId) {
         this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, existingId, expense).subscribe();
       } else {
