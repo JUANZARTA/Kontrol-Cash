@@ -15,6 +15,8 @@ import { Expense } from '../../models/expense.model';
 
 Chart.register(...registerables);
 
+type ChartType = 'rendimiento' | 'dias' | 'kmGalon' | 'costoKm' | 'acumulado';
+
 @Component({
   selector: 'app-vehicle',
   standalone: true,
@@ -62,6 +64,27 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   gasolinaEstimacion = 0;
   newEstimacion = 0;
+
+  chartType: ChartType = 'rendimiento';
+  showChartMenu = false;
+
+  readonly chartOptions: { key: ChartType; label: string; icon: string }[] = [
+    { key: 'rendimiento', label: 'Rendimiento por tanqueo', icon: 'local_gas_station' },
+    { key: 'dias',        label: 'Rendimiento por día',     icon: 'calendar_today' },
+    { key: 'kmGalon',    label: 'KM por galón',             icon: 'speed' },
+    { key: 'costoKm',    label: 'Costo por KM',             icon: 'payments' },
+    { key: 'acumulado',  label: 'Gasto acumulado',          icon: 'stacked_line_chart' },
+  ];
+
+  selectChartType(type: ChartType): void {
+    this.chartType = type;
+    this.showChartMenu = false;
+    this.refreshChart();
+  }
+
+  get currentChartLabel(): string {
+    return this.chartOptions.find(o => o.key === this.chartType)?.label ?? '';
+  }
   newPump: FuelPump = { nombre: '', precioGalon: 0 };
   editedPump: FuelPump = { nombre: '', precioGalon: 0 };
   editedPumpId: string | null = null;
@@ -432,29 +455,94 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   private refreshChart(): void {
     if (!this.vehicleChartRef?.nativeElement) return;
-    const labels = this.entries.map((_, i) => `Tanqueo ${i + 1}`);
-    const rendimientoSeries = this.entries.map((_, i) => this.getDistanceFromPrevious(i));
 
     const isDark = this.themeService.isDarkMode();
     const textColor = isDark ? '#cbd5e1' : '#334155';
     const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.25)';
 
+    const labels = this.entries.map((_, i) => `Tanqueo ${i + 1}`);
+    let datasets: any[] = [];
+    let yAxisTitle = '';
+
+    switch (this.chartType) {
+      case 'rendimiento': {
+        datasets = [{
+          label: 'KM recorridos',
+          data: this.entries.map((_, i) => this.getDistanceFromPrevious(i)),
+          borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.15)', tension: 0.3, fill: true,
+        }];
+        yAxisTitle = 'Kilómetros';
+        break;
+      }
+      case 'dias': {
+        datasets = [{
+          label: 'KM por día',
+          data: this.entries.map((_, i) => {
+            const km = this.getDistanceFromPrevious(i);
+            const days = this.getDaysFromPrevious(i);
+            return days > 0 ? Math.round((km / days) * 10) / 10 : 0;
+          }),
+          borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)', tension: 0.3, fill: true,
+        }];
+        yAxisTitle = 'KM / día';
+        break;
+      }
+      case 'kmGalon': {
+        datasets = [{
+          label: 'KM por galón',
+          data: this.entries.map((_, i) => Math.round(this.getKmPerGallon(i) * 10) / 10),
+          borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.15)', tension: 0.3, fill: true,
+        }];
+        yAxisTitle = 'KM / galón';
+        break;
+      }
+      case 'costoKm': {
+        datasets = [{
+          label: 'Costo por KM ($)',
+          data: this.entries.map((entry, i) => {
+            const km = this.getDistanceFromPrevious(i);
+            return km > 0 ? Math.round((entry.monto / km) * 10) / 10 : 0;
+          }),
+          borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.15)', tension: 0.3, fill: true,
+        }];
+        yAxisTitle = '$ / KM';
+        break;
+      }
+      case 'acumulado': {
+        let cumulative = 0;
+        datasets = [{
+          label: 'Gasto acumulado ($)',
+          data: this.entries.map(e => { cumulative += e.monto; return cumulative; }),
+          borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.15)', tension: 0.3, fill: true,
+        }];
+        if (this.gasolinaEstimacion > 0) {
+          datasets.push({
+            label: 'Presupuesto mensual',
+            data: this.entries.map(() => this.gasolinaEstimacion),
+            borderColor: '#f97316', borderDash: [6, 4], backgroundColor: 'transparent',
+            tension: 0, fill: false, pointRadius: 0,
+          });
+        }
+        yAxisTitle = '$ acumulados';
+        break;
+      }
+    }
+
     this.chart?.destroy();
     this.chart = new Chart(this.vehicleChartRef.nativeElement, {
       type: 'line',
-      data: {
-        labels,
-        datasets: [
-          { label: 'Rendimiento (km recorridos)', data: rendimientoSeries, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.2)', tension: 0.3 },
-        ],
-      },
+      data: { labels, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { labels: { color: textColor } } },
         scales: {
           x: { ticks: { color: textColor }, grid: { color: gridColor } },
-          y: { ticks: { color: textColor }, grid: { color: gridColor } },
+          y: {
+            ticks: { color: textColor },
+            grid: { color: gridColor },
+            title: { display: true, text: yAxisTitle, color: textColor },
+          },
         },
       },
     });

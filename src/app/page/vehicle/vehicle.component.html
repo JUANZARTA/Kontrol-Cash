@@ -97,7 +97,26 @@
 </div>
 
 <div class="app-section-card mt-6">
-  <h3 class="text-lg font-semibold text-slate-900 mb-3">Tendencia de tanqueadas</h3>
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-lg font-semibold text-slate-900">{{ currentChartLabel }}</h3>
+    <div class="relative">
+      <button (click)="showChartMenu = !showChartMenu" class="app-secondary-button text-sm flex items-center gap-1">
+        <span class="material-icons text-base leading-none">bar_chart</span>
+        Tipo de gráfica
+      </button>
+      <div *ngIf="showChartMenu" class="fixed inset-0 z-10" (click)="showChartMenu = false"></div>
+      <div *ngIf="showChartMenu" class="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-slate-200 py-1 z-20 min-w-[210px]">
+        <button *ngFor="let opt of chartOptions" (click)="selectChartType(opt.key)"
+          class="flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors"
+          [class.text-sky-700]="chartType === opt.key"
+          [class.font-semibold]="chartType === opt.key"
+          [class.bg-sky-50]="chartType === opt.key">
+          <span class="material-icons text-base leading-none">{{ opt.icon }}</span>
+          {{ opt.label }}
+        </button>
+      </div>
+    </div>
+  </div>
   <div class="vehicle-chart-wrap">
     <canvas #vehicleChart></canvas>
   </div>
