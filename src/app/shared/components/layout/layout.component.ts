@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { HeaderComponent } from '../header/header.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { FooterComponent } from '../footer/footer.component';
 import { RouterOutlet } from '@angular/router';
+import { UserSettingsService } from '../../../services/user-settings.service';
+import { ThemeService } from '../../../services/theme.service';
 
 @Component({
   selector: 'app-layout',
@@ -11,6 +13,22 @@ import { RouterOutlet } from '@angular/router';
   templateUrl: './layout.component.html',
   styleUrl: './layout.component.css'
 })
-export default class LayoutComponent {
+export default class LayoutComponent implements OnInit {
+  private settingsService = inject(UserSettingsService);
+  private themeService = inject(ThemeService);
 
+  ngOnInit(): void {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user?.localId;
+    if (!userId) return;
+
+    this.settingsService.getSettings(userId).subscribe(settings => {
+      if (!settings) return;
+      this.themeService.setTheme(settings.darkMode ? 'dark' : 'light');
+      this.themeService.setCustomColorMode(
+        settings.useCustomColor ?? false,
+        settings.accentColor || '#0ea5e9'
+      );
+    });
+  }
 }

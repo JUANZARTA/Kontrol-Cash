@@ -156,6 +156,10 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     return this.vehicleExpenses.reduce((sum, e) => sum + e.valor, 0);
   }
 
+  get vehicleExpEstimacionTotal(): number {
+    return this.vehicleExpenses.reduce((sum, e) => sum + (e.estimacion || 0), 0);
+  }
+
   getWalletBalance(id: string): number {
     return this.wallets.find(w => w.id === id)?.valor || 0;
   }
