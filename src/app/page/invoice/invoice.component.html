@@ -7,6 +7,26 @@
     class="app-link-button app-link-button-primary">Agregar +</button>
 </div>
 
+<!-- Resumen facturas -->
+<div class="flex flex-wrap gap-3 mb-4 animate-fadeSlideDown">
+  <div class="app-summary-card">
+    <span class="material-icons summary-icon">pending_actions</span>
+    <div>
+      <p class="summary-label">Facturas no pagadas</p>
+      <p class="summary-value">${{ formatCurrency(getTotalUnpaid()) }}</p>
+      <p class="summary-sub">{{ getUnpaidCount() }} pendiente(s)</p>
+    </div>
+  </div>
+  <div class="app-summary-card">
+    <span class="material-icons summary-icon">receipt_long</span>
+    <div>
+      <p class="summary-label">Total facturas</p>
+      <p class="summary-value">${{ formatCurrency(getTotalInvoices()) }}</p>
+      <p class="summary-sub">{{ invoices.length }} factura(s)</p>
+    </div>
+  </div>
+</div>
+
 <!-- Contenedor de tarjetas -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
   <div *ngFor="let invoice of getSortedInvoices()"

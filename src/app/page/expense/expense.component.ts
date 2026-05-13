@@ -694,10 +694,10 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Método para eliminar todos los gastos
   getTotalExpenses(): number {
     return this.expenses.reduce((sum, e) => sum + Number(e.valor), 0);
   }
+
 
   // Método para obtener el total estimado de gastos
   getTotalEstimated(): number {
@@ -827,6 +827,63 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     else this.newExpense.estimacion = numericValue;
 
     input.value = this.formatCurrency(numericValue);
+  }
+
+  // Pagar gasto fijo
+  showPayFijoModal = false;
+  payFijoExpense: ExpenseWithId | null = null;
+  selectedWalletForFijo = '';
+
+  openPayFijoModal(id: string): void {
+    const expense = this.expenses.find(e => e.id === id);
+    if (!expense) return;
+    this.payFijoExpense = expense;
+    this.selectedWalletForFijo = '';
+    this.showPayFijoModal = true;
+    this.loadWallets();
+  }
+
+  closePayFijoModal(): void {
+    this.showPayFijoModal = false;
+    this.payFijoExpense = null;
+    this.selectedWalletForFijo = '';
+  }
+
+  confirmPayFijo(): void {
+    if (!this.payFijoExpense || !this.selectedWalletForFijo) return;
+
+    const expense = this.payFijoExpense;
+    const account = this.wallet.find(w => w.id === this.selectedWalletForFijo);
+    if (!account) return;
+
+    const monto = Number(expense.estimacion);
+
+    if (account.valor < monto) {
+      this.showToast('Saldo insuficiente en la billetera seleccionada.');
+      return;
+    }
+
+    account.valor -= monto;
+
+    this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, account.id, { tipo: account.tipo, valor: account.valor })
+      .subscribe({
+        next: () => {
+          this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, expense.id, {
+            descripcion: expense.descripcion,
+            categoria: expense.categoria,
+            valor: Number(expense.valor) + monto,
+            estimacion: expense.estimacion,
+          }).subscribe({
+            next: () => {
+              this.closePayFijoModal();
+              this.loadExpenses();
+              this.showToast(`$${this.formatCurrency(monto)} descontados de ${account.tipo}.`);
+            },
+            error: err => console.error('Error al actualizar gasto fijo:', err),
+          });
+        },
+        error: err => console.error('Error al actualizar billetera:', err),
+      });
   }
 
   // Scan receipt

@@ -449,6 +449,20 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
   // ======================
   // Ordenar facturas: vencidas primero, pendientes, pagadas al final
   // ======================
+  getTotalUnpaid(): number {
+    return this.invoices
+      .filter(i => i.estado !== 'Pagada')
+      .reduce((sum, i) => sum + Number(i.valor), 0);
+  }
+
+  getUnpaidCount(): number {
+    return this.invoices.filter(i => i.estado !== 'Pagada').length;
+  }
+
+  getTotalInvoices(): number {
+    return this.invoices.reduce((sum, i) => sum + Number(i.valor), 0);
+  }
+
   getSortedInvoices(): InvoiceWithId[] {
     return this.invoices.slice().sort((a, b) => {
       const aPagada = a.estado === 'Pagada';

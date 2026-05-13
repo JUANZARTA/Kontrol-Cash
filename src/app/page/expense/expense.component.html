@@ -55,10 +55,17 @@
           <button (click)="openEditModal(expense.id)" class="text-sky-700 mr-2">
             <mat-icon>edit</mat-icon>
           </button>
-          <label class="text-indigo-600 mr-2 cursor-pointer" title="Adjuntar comprobante">
-            <mat-icon>attach_file</mat-icon>
-            <input type="file" class="hidden" (change)="onUploadAttachment(expense.id, $event)" />
-          </label>
+          <ng-container *ngIf="expense.categoria === 'Fijo'; else attachBtn">
+            <button (click)="openPayFijoModal(expense.id)" class="text-teal-600 mr-2" title="Pagar gasto fijo">
+              <mat-icon>check_circle</mat-icon>
+            </button>
+          </ng-container>
+          <ng-template #attachBtn>
+            <label class="text-indigo-600 mr-2 cursor-pointer" title="Adjuntar comprobante">
+              <mat-icon>attach_file</mat-icon>
+              <input type="file" class="hidden" (change)="onUploadAttachment(expense.id, $event)" />
+            </label>
+          </ng-template>
           <button (click)="openDeleteModal(expense.id)" class="text-orange-600">
             <mat-icon>delete</mat-icon>
           </button>
@@ -281,6 +288,30 @@
   message="¿Estás seguro de que deseas eliminar este gasto? Esta acción no se puede deshacer."
   confirmText="Eliminar" tone="danger" icon="report_problem" (cancel)="closeDeleteModal()"
   (confirm)="confirmDeleteExpense()" />
+
+<!-- Modal: Pagar gasto fijo -->
+<app-modal-shell *ngIf="showPayFijoModal" title="Pagar gasto fijo"
+  [description]="'Se descontará $' + formatCurrency(payFijoExpense?.estimacion ?? 0) + ' de la billetera seleccionada.'"
+  size="sm" panelClass="animate-pop-in">
+
+  <p class="text-sm font-semibold text-slate-700 mb-4">{{ payFijoExpense?.descripcion }}</p>
+
+  <label class="app-field-label">Seleccioná una billetera:</label>
+  <select [(ngModel)]="selectedWalletForFijo" class="app-input mb-1">
+    <option value="" disabled>Seleccioná billetera</option>
+    <option *ngFor="let w of wallet" [value]="w.id">{{ w.tipo }}</option>
+  </select>
+  <p *ngIf="selectedWalletForFijo" class="text-sm text-gray-500 mb-4">
+    ${{ getWalletBalance(selectedWalletForFijo) }} disponibles
+  </p>
+
+  <div class="flex justify-end gap-2 mt-4">
+    <button (click)="closePayFijoModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="confirmPayFijo()" [disabled]="!selectedWalletForFijo" class="app-success-button disabled:opacity-50">
+      Confirmar
+    </button>
+  </div>
+</app-modal-shell>
 
 <!-- Modal: Escanear factura -->
 <app-modal-shell *ngIf="showScanModal" title="Escanear Factura"
