@@ -5,3 +5,34 @@
 :host-context(.dark-theme) .vehicle-chart-wrap {
   background: transparent;
 }
+
+.vehicle-exp-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: default;
+  user-select: none;
+}
+
+.vehicle-exp-chip .chip-label { font-weight: 600; color: #475569; }
+.vehicle-exp-chip .chip-value { font-weight: 700; color: #0d9488; }
+
+:host-context(.dark-theme) .vehicle-exp-chip {
+  background: var(--app-bg-soft, #1e293b);
+  border-color: var(--app-border, #334155);
+}
+
+:host-context(.dark-theme) .vehicle-exp-chip .chip-label { color: #94a3b8; }
+:host-context(.dark-theme) .vehicle-exp-chip .chip-value { color: #2dd4bf; }
+
+:host-context(.custom-color) .vehicle-exp-chip {
+  background: var(--app-accent-muted, #e0f2fe);
+  border-color: var(--app-accent, #0ea5e9);
+}
+
+:host-context(.custom-color) .vehicle-exp-chip .chip-value { color: var(--app-accent-dark, #0369a1); }

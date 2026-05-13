@@ -8,6 +8,7 @@ export enum CategoriaGasto {
     Salud = 'Salud',
     Emergencia = 'Emergencia',
     Transporte = 'Transporte',
+    Vehiculo = 'Vehículo',
     Otro = 'Otro',
   }
 

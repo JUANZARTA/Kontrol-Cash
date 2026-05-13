@@ -11,7 +11,7 @@ import { ConfirmModalComponent } from '../../shared/components/confirm-modal/con
 import { ThemeService } from '../../services/theme.service';
 import { WalletService } from '../../services/wallet.service';
 import { ExpenseService } from '../../services/expense.service';
-import { Expense } from '../../models/expense.model';
+import { Expense, ExpenseWithId } from '../../models/expense.model';
 
 Chart.register(...registerables);
 
@@ -64,6 +64,20 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   gasolinaEstimacion = 0;
   newEstimacion = 0;
+  vehicleExpenses: ExpenseWithId[] = [];
+  vehicleExpenseSummary: { descripcion: string; total: number }[] = [];
+  isVehicleExpModalOpen = false;
+  isVehicleExpEditModalOpen = false;
+  isVehicleExpDeleteModalOpen = false;
+  newVehicleExp: { descripcion: string; valor: number; estimacion: number } = { descripcion: '', valor: 0, estimacion: 0 };
+  editedVehicleExp: ExpenseWithId | null = null;
+  vehicleExpToDeleteId: string | null = null;
+  selectedWalletForVehicleExp = '';
+
+  isVehicleExpAddValModalOpen = false;
+  vehicleExpAddValTarget: ExpenseWithId | null = null;
+  vehicleExpAddVal = 0;
+  selectedWalletForVehicleExpAdd = '';
 
   chartType: ChartType = 'rendimiento';
   showChartMenu = false;
@@ -121,14 +135,120 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
       this.refreshChart();
     });
-    this.loadGasolinaEstimacion();
+    this.loadGasolinaAndVehicleExpenses();
   }
 
-  loadGasolinaEstimacion(): void {
+  loadGasolinaAndVehicleExpenses(): void {
     this.expenseService.getExpenses(this.userId, this.currentYear, this.currentMonth).subscribe((data: any) => {
-      const expenses = Object.values(data || {}) as any[];
-      const gasolina = expenses.find(e => e.descripcion === 'Gasolina' && e.categoria === 'Transporte');
+      const all: ExpenseWithId[] = Object.entries(data || {}).map(([eid, item]: [string, any]) => ({ id: eid, ...item }));
+      const gasolina = all.find(e => e.categoria === 'Vehículo' && e.descripcion === 'Gasolina');
       this.gasolinaEstimacion = gasolina?.estimacion || 0;
+      this.vehicleExpenses = all.filter(e => e.categoria === 'Vehículo' && e.descripcion !== 'Gasolina');
+      const map = new Map<string, number>();
+      for (const exp of this.vehicleExpenses) {
+        map.set(exp.descripcion, (map.get(exp.descripcion) || 0) + exp.valor);
+      }
+      this.vehicleExpenseSummary = Array.from(map.entries()).map(([descripcion, total]) => ({ descripcion, total }));
+    });
+  }
+
+  get vehicleExpTotal(): number {
+    return this.vehicleExpenses.reduce((sum, e) => sum + e.valor, 0);
+  }
+
+  getWalletBalance(id: string): number {
+    return this.wallets.find(w => w.id === id)?.valor || 0;
+  }
+
+  openVehicleExpModal(): void {
+    this.newVehicleExp = { descripcion: '', valor: 0, estimacion: 0 };
+    this.selectedWalletForVehicleExp = '';
+    this.isVehicleExpModalOpen = true;
+  }
+
+  closeVehicleExpModal(): void { this.isVehicleExpModalOpen = false; }
+
+  addVehicleExpense(): void {
+    if (!this.newVehicleExp.descripcion.trim() || this.newVehicleExp.valor <= 0) {
+      alert('Completá descripción y valor.');
+      return;
+    }
+    const expense = new Expense(this.newVehicleExp.descripcion, 'Vehículo', this.newVehicleExp.valor, this.newVehicleExp.estimacion);
+    this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe(() => {
+      if (this.selectedWalletForVehicleExp) {
+        const wallet = this.wallets.find(w => w.id === this.selectedWalletForVehicleExp);
+        if (wallet && wallet.valor >= this.newVehicleExp.valor) {
+          const updated = { tipo: wallet.tipo, valor: wallet.valor - this.newVehicleExp.valor };
+          this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, updated).subscribe(() => this.loadWallets());
+        }
+      }
+      this.closeVehicleExpModal();
+      this.loadGasolinaAndVehicleExpenses();
+    });
+  }
+
+  openVehicleExpAddValModal(id: string): void {
+    const found = this.vehicleExpenses.find(e => e.id === id);
+    if (!found) return;
+    this.vehicleExpAddValTarget = { ...found };
+    this.vehicleExpAddVal = 0;
+    this.selectedWalletForVehicleExpAdd = '';
+    this.isVehicleExpAddValModalOpen = true;
+  }
+
+  closeVehicleExpAddValModal(): void {
+    this.isVehicleExpAddValModalOpen = false;
+    this.vehicleExpAddValTarget = null;
+  }
+
+  applyVehicleExpValue(action: 'add' | 'subtract'): void {
+    if (!this.vehicleExpAddValTarget || this.vehicleExpAddVal <= 0) return;
+    const exp = this.vehicleExpAddValTarget;
+    const newValor = action === 'add'
+      ? exp.valor + this.vehicleExpAddVal
+      : Math.max(0, exp.valor - this.vehicleExpAddVal);
+
+    const updated = new Expense(exp.descripcion, exp.categoria, newValor, exp.estimacion);
+    this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, exp.id, updated).subscribe(() => {
+      if (this.selectedWalletForVehicleExpAdd) {
+        const wallet = this.wallets.find(w => w.id === this.selectedWalletForVehicleExpAdd);
+        if (wallet) {
+          const delta = action === 'add' ? -this.vehicleExpAddVal : this.vehicleExpAddVal;
+          const updatedWallet = { tipo: wallet.tipo, valor: wallet.valor + delta };
+          this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, updatedWallet).subscribe(() => this.loadWallets());
+        }
+      }
+      this.closeVehicleExpAddValModal();
+      this.loadGasolinaAndVehicleExpenses();
+    });
+  }
+
+  openVehicleExpEditModal(id: string): void {
+    const found = this.vehicleExpenses.find(e => e.id === id);
+    if (!found) return;
+    this.editedVehicleExp = { ...found };
+    this.isVehicleExpEditModalOpen = true;
+  }
+
+  closeVehicleExpEditModal(): void { this.isVehicleExpEditModalOpen = false; this.editedVehicleExp = null; }
+
+  saveVehicleExpense(): void {
+    if (!this.editedVehicleExp) return;
+    const { id, ...data } = this.editedVehicleExp;
+    this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, id, data as Expense).subscribe(() => {
+      this.closeVehicleExpEditModal();
+      this.loadGasolinaAndVehicleExpenses();
+    });
+  }
+
+  openVehicleExpDeleteModal(id: string): void { this.vehicleExpToDeleteId = id; this.isVehicleExpDeleteModalOpen = true; }
+  closeVehicleExpDeleteModal(): void { this.vehicleExpToDeleteId = null; this.isVehicleExpDeleteModalOpen = false; }
+
+  confirmDeleteVehicleExp(): void {
+    if (!this.vehicleExpToDeleteId) return;
+    this.expenseService.deleteExpense(this.userId, this.currentYear, this.currentMonth, this.vehicleExpToDeleteId).subscribe(() => {
+      this.closeVehicleExpDeleteModal();
+      this.loadGasolinaAndVehicleExpenses();
     });
   }
 
@@ -147,11 +267,11 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       if (existingId) {
         // Actualiza solo la estimación del gasto existente
         const total = this.entries.reduce((sum, e) => sum + (e.monto || 0), 0);
-        const expense = new Expense('Gasolina', 'Transporte', total, this.gasolinaEstimacion);
+        const expense = new Expense('Gasolina', 'Vehículo',total, this.gasolinaEstimacion);
         this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, existingId, expense).subscribe();
       } else {
         // Crea el gasto con valor=0 y la estimación definida
-        const expense = new Expense('Gasolina', 'Transporte', 0, this.gasolinaEstimacion);
+        const expense = new Expense('Gasolina', 'Vehículo',0, this.gasolinaEstimacion);
         this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe((res: any) => {
           const newId = res?.name;
           if (newId) {
@@ -388,7 +508,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   formatCurrencyInput(v: number): string { return v ? this.formatCurrency(v) : ''; }
   formatNumberInput(v: number): string { return v ? this.formatNumber(v) : ''; }
 
-  onMoneyInput(event: Event, field: 'newMonto' | 'editMonto' | 'pumpNew' | 'pumpEdit' | 'estimacion'): void {
+  onMoneyInput(event: Event, field: 'newMonto' | 'editMonto' | 'pumpNew' | 'pumpEdit' | 'estimacion' | 'vehicleExpNew' | 'vehicleExpEstimacion' | 'vehicleExpEdit' | 'vehicleExpEditEstimacion' | 'vehicleExpAddVal'): void {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/[^\d]/g, '');
     const value = Number(raw) || 0;
@@ -398,6 +518,11 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     if (field === 'pumpNew') this.newPump.precioGalon = value;
     if (field === 'pumpEdit') this.editedPump.precioGalon = value;
     if (field === 'estimacion') this.newEstimacion = value;
+    if (field === 'vehicleExpNew') this.newVehicleExp.valor = value;
+    if (field === 'vehicleExpEstimacion') this.newVehicleExp.estimacion = value;
+    if (field === 'vehicleExpEdit' && this.editedVehicleExp) this.editedVehicleExp.valor = value;
+    if (field === 'vehicleExpEditEstimacion' && this.editedVehicleExp) this.editedVehicleExp.estimacion = value;
+    if (field === 'vehicleExpAddVal') this.vehicleExpAddVal = value;
 
     input.value = value ? this.formatCurrency(value) : '';
   }
@@ -439,7 +564,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         }
         return;
       }
-      const expense = new Expense('Gasolina', 'Transporte', total, this.gasolinaEstimacion);
+      const expense = new Expense('Gasolina', 'Vehículo',total, this.gasolinaEstimacion);
       if (existingId) {
         this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, existingId, expense).subscribe();
       } else {

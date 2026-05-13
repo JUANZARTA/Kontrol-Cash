@@ -122,6 +122,120 @@
   </div>
 </div>
 
+<!-- Gastos del Vehículo -->
+<div class="app-section-card mt-4">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-lg font-semibold text-slate-900">Gastos del Vehículo</h3>
+    <button (click)="openVehicleExpModal()" class="app-primary-button">Agregar +</button>
+  </div>
+
+  <!-- Botones resumen por descripción -->
+  <div class="flex flex-wrap gap-2 mb-4" *ngIf="vehicleExpenseSummary.length > 0">
+    <div *ngFor="let s of vehicleExpenseSummary" class="vehicle-exp-chip">
+      <span class="chip-label">{{ s.descripcion }}</span>
+      <span class="chip-value">${{ formatCurrency(s.total) }}</span>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="app-table">
+      <thead class="app-table-head">
+        <tr>
+          <th class="text-left py-2 px-3 sm:px-4">Descripción</th>
+          <th class="text-right py-2 px-3 sm:px-4">Gastado</th>
+          <th class="text-right py-2 px-3 sm:px-4">Estimación</th>
+          <th class="text-center py-2 px-3 sm:px-4">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let exp of vehicleExpenses" class="app-table-row">
+          <td class="py-2 px-3 sm:px-4">{{ exp.descripcion }}</td>
+          <td class="py-2 px-3 sm:px-4 text-right font-semibold text-teal-600">${{ formatCurrency(exp.valor) }}</td>
+          <td class="py-2 px-3 sm:px-4 text-right text-slate-400">${{ formatCurrency(exp.estimacion) }}</td>
+          <td class="py-2 px-3 sm:px-4 text-center">
+            <button (click)="openVehicleExpAddValModal(exp.id)" class="text-lime-600 mr-2"><span class="material-icons">add</span></button>
+            <button (click)="openVehicleExpEditModal(exp.id)" class="text-sky-700 mr-2"><span class="material-icons">edit</span></button>
+            <button (click)="openVehicleExpDeleteModal(exp.id)" class="text-orange-600"><span class="material-icons">delete</span></button>
+          </td>
+        </tr>
+        <tr *ngIf="vehicleExpenses.length === 0">
+          <td colspan="4" class="py-6 text-center text-sm text-slate-400">Sin gastos de vehículo este mes</td>
+        </tr>
+      </tbody>
+      <tfoot *ngIf="vehicleExpenses.length > 0">
+        <tr class="app-table-total">
+          <td class="py-3 px-3 sm:px-4 text-left font-semibold">Total</td>
+          <td class="py-3 px-3 sm:px-4 text-right font-bold">${{ formatCurrency(vehicleExpTotal) }}</td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- Modal agregar gasto de vehículo -->
+<app-modal-shell *ngIf="isVehicleExpModalOpen" title="Agregar gasto de vehículo" size="sm" panelClass="animate-pop-in">
+  <label class="app-field-label">Descripción</label>
+  <input [(ngModel)]="newVehicleExp.descripcion" placeholder="Ej: Mantenimiento, SOAT, Repuestos" class="app-input mb-3" />
+  <label class="app-field-label">Valor</label>
+  <input type="text" [value]="formatCurrencyInput(newVehicleExp.valor)" (input)="onMoneyInput($event, 'vehicleExpNew')" class="app-input mb-3" />
+  <label class="app-field-label">Estimación</label>
+  <input type="text" [value]="formatCurrencyInput(newVehicleExp.estimacion)" (input)="onMoneyInput($event, 'vehicleExpEstimacion')" class="app-input mb-3" />
+  <label class="app-field-label">Billetera de pago</label>
+  <select [(ngModel)]="selectedWalletForVehicleExp" class="app-input mb-1">
+    <option value="" disabled>Seleccioná la billetera</option>
+    <option *ngFor="let w of wallets" [value]="w.id">{{ w.tipo }}</option>
+  </select>
+  <p *ngIf="selectedWalletForVehicleExp" class="text-xs text-slate-500 mb-3">
+    Saldo: ${{ formatCurrency(getWalletBalance(selectedWalletForVehicleExp)) }}
+  </p>
+  <div class="flex justify-end gap-2">
+    <button (click)="closeVehicleExpModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="addVehicleExpense()" class="app-primary-button">Guardar</button>
+  </div>
+</app-modal-shell>
+
+<!-- Modal editar gasto de vehículo -->
+<app-modal-shell *ngIf="isVehicleExpEditModalOpen && editedVehicleExp" title="Editar gasto de vehículo" size="sm" panelClass="animate-pop-in">
+  <label class="app-field-label">Descripción</label>
+  <input [(ngModel)]="editedVehicleExp!.descripcion" class="app-input mb-3" />
+  <label class="app-field-label">Valor</label>
+  <input type="text" [value]="formatCurrencyInput(editedVehicleExp!.valor)" (input)="onMoneyInput($event, 'vehicleExpEdit')" class="app-input mb-3" />
+  <label class="app-field-label">Estimación</label>
+  <input type="text" [value]="formatCurrencyInput(editedVehicleExp!.estimacion)" (input)="onMoneyInput($event, 'vehicleExpEditEstimacion')" class="app-input mb-3" />
+  <div class="flex justify-end gap-2">
+    <button (click)="closeVehicleExpEditModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="saveVehicleExpense()" class="app-primary-button">Guardar</button>
+  </div>
+</app-modal-shell>
+
+<!-- Modal suma/resta gasto de vehículo -->
+<app-modal-shell *ngIf="isVehicleExpAddValModalOpen && vehicleExpAddValTarget" title="Agregar o Restar Valor" size="sm" panelClass="animate-pop-in">
+  <p class="text-sm font-semibold text-slate-700 mb-4">{{ vehicleExpAddValTarget!.descripcion }}</p>
+  <label class="app-field-label">Valor</label>
+  <input type="text" [value]="formatCurrencyInput(vehicleExpAddVal)" (input)="onMoneyInput($event, 'vehicleExpAddVal')"
+    placeholder="Ej: 50.000" class="app-input mb-3" />
+  <label class="app-field-label">Billetera</label>
+  <select [(ngModel)]="selectedWalletForVehicleExpAdd" class="app-input mb-1">
+    <option value="" disabled>Seleccioná billetera</option>
+    <option *ngFor="let w of wallets" [value]="w.id">{{ w.tipo }}</option>
+  </select>
+  <p *ngIf="selectedWalletForVehicleExpAdd" class="text-xs text-slate-500 mb-3">
+    Saldo: ${{ formatCurrency(getWalletBalance(selectedWalletForVehicleExpAdd)) }}
+  </p>
+  <div class="flex justify-end gap-2">
+    <button (click)="closeVehicleExpAddValModal()" class="app-secondary-button">Cancelar</button>
+    <button (click)="applyVehicleExpValue('subtract')" class="app-primary-button">Restar</button>
+    <button (click)="applyVehicleExpValue('add')" class="app-success-button">Sumar</button>
+  </div>
+</app-modal-shell>
+
+<app-confirm-modal *ngIf="isVehicleExpDeleteModalOpen" title="¿Eliminar gasto?"
+  message="Esta acción no se puede deshacer."
+  confirmText="Eliminar" tone="danger" icon="report_problem"
+  (cancel)="closeVehicleExpDeleteModal()" (confirm)="confirmDeleteVehicleExp()" />
+
 <app-modal-shell *ngIf="isEstimacionModalOpen" title="Estimación de consumo" size="sm" panelClass="animate-pop-in">
   <p class="text-sm text-slate-500 mb-4">Definí el presupuesto mensual esperado para gasolina.</p>
   <label class="app-field-label">Estimación $</label>
