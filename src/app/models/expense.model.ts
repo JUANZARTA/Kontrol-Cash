@@ -1,13 +1,14 @@
 export enum CategoriaGasto {
     Fijo = 'Fijo',
     Variable = 'Variables',
-    Facturas = 'Facturas',
     Comida = 'Comida',
-    Transporte = 'Transporte',
-    Salud = 'Salud',
+    Facturas = 'Facturas',
+    Deuda = 'Deuda',
     Entretenimiento = 'Entretenimiento',
+    Salud = 'Salud',
     Emergencia = 'Emergencia',
-    Otro = 'Otro'
+    Transporte = 'Transporte',
+    Otro = 'Otro',
   }
 
   export class Expense {

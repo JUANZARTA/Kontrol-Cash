@@ -137,10 +137,16 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
 
   private dateSubscription: Subscription | undefined; // ✅ Nuevo
 
+  private readonly categoryOrder = Object.values(CategoriaGasto);
+
   get sortedExpenses() {
-    return [...this.expenses].sort((a, b) =>
-      a.categoria.localeCompare(b.categoria)
-    );
+    return [...this.expenses].sort((a, b) => {
+      const ai = this.categoryOrder.indexOf(a.categoria as CategoriaGasto);
+      const bi = this.categoryOrder.indexOf(b.categoria as CategoriaGasto);
+      const aIdx = ai === -1 ? this.categoryOrder.length : ai;
+      const bIdx = bi === -1 ? this.categoryOrder.length : bi;
+      return aIdx - bIdx || a.descripcion.localeCompare(b.descripcion);
+    });
   }
 
   // Variables para el gráfico
