@@ -1,0 +1,199 @@
+<!-- Proyección de fin de mes -->
+<div class="mb-6 app-section-card animate-fadeSlideDown" *ngIf="projection">
+  <h3 class="text-lg font-semibold" style="color: var(--app-text)">Proyección de fin de mes</h3>
+  <p class="text-sm" style="color: var(--app-muted)">Estimación por ritmo actual.</p>
+  <div class="mt-3 grid gap-2 md:grid-cols-3" style="color: var(--app-text)">
+    <p><strong>Saldo proyectado:</strong> {{ projection.projectedEndBalance | currency }}</p>
+    <p><strong>Desvío:</strong> {{ projection.variancePct | percent:'1.0-1' }}</p>
+    <p><strong>Confianza:</strong> {{ projection.confidence }}</p>
+  </div>
+</div>
+
+<!-- Gráfico circular + Resumen General -->
+<div class="grid w-full grid-cols-1 items-stretch gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+  <div class="app-section-card flex items-center justify-center animate-pop-in">
+    <app-financial-chart
+      [ingresosTotales]="ingresosTotales"
+      [gastosTotales]="gastosTotales"
+      [totalDeuda]="totalDeuda"
+      [totalBilletera]="totalBilletera"
+      [totalPrestamo]="totalPrestamo">
+    </app-financial-chart>
+  </div>
+
+  <div class="app-section-card animate-fadeSlideUp">
+    <h3 class="mb-4 text-lg font-semibold" style="color: var(--app-text)">Resumen General</h3>
+    <div class="overflow-hidden rounded-2xl border" style="border-color: var(--app-border)">
+      <table class="w-full text-sm">
+        <tbody>
+          <tr class="border-b" style="border-color: var(--app-border); color: var(--app-text)">
+            <td class="px-4 py-3 font-medium">Gastos realizados en el mes</td>
+            <td class="px-4 py-3 text-right font-semibold">{{ formatCurrency(gastadoActualmente) }}</td>
+          </tr>
+          <tr class="border-b" style="border-color: var(--app-border); color: var(--app-text)">
+            <td class="px-4 py-3 font-medium">Saldo actual en cartera</td>
+            <td class="px-4 py-3 text-right font-semibold text-teal-600">{{ formatCurrency(restanteActualmente) }}</td>
+          </tr>
+          <tr class="border-b font-semibold text-orange-600" style="border-color: var(--app-border)">
+            <td class="px-4 py-3">Gastaste de más</td>
+            <td class="px-4 py-3 text-right">{{ diferenciaSaldo < 0 ? formatCurrency(0) : formatCurrency(diferenciaSaldo) }}</td>
+          </tr>
+          <tr class="border-b" style="border-color: var(--app-border); color: var(--app-text)">
+            <td class="px-4 py-3 font-medium">Total disponible (cartera + préstamos)</td>
+            <td class="px-4 py-3 text-right font-semibold">{{ formatCurrency(restanteTotal) }}</td>
+          </tr>
+          <tr class="border-b" style="border-color: var(--app-border); color: var(--app-text)">
+            <td class="px-4 py-3 font-medium">Gastos planificados del mes</td>
+            <td class="px-4 py-3 text-right font-semibold">{{ formatCurrency(estimacionGastosMes) }}</td>
+          </tr>
+          <tr class="font-bold text-sky-600">
+            <td class="px-4 py-3">Saldo estimado al final del mes</td>
+            <td class="px-4 py-3 text-right">{{ formatCurrency(estimacionDineroRestanteMes) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Alcancías + Ingresos vs Gastos vs Ahorros -->
+<div class="mt-6 grid gap-6 lg:grid-cols-[1fr_0.95fr]">
+
+  <!-- Alcancías -->
+  <div class="app-section-card">
+    <div class="flex items-center justify-between gap-4 mb-4">
+      <div>
+        <h3 class="text-lg font-semibold" style="color: var(--app-text)">Alcancías</h3>
+        <p class="text-sm" style="color: var(--app-muted)">Acceso rápido para ver progreso y entrar.</p>
+      </div>
+      <div class="text-right">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em]" style="color: var(--app-muted)">Promedio</p>
+        <p class="text-2xl font-semibold text-teal-600">{{ getAveragePiggybankProgress() }}%</p>
+      </div>
+    </div>
+    <div *ngIf="savings && savings.length > 0; else noGoal" class="space-y-3">
+      <div *ngFor="let piggy of savings" class="rounded-2xl border px-4 py-3" style="border-color: var(--app-border)">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="font-semibold" style="color: var(--app-text)">{{ getPiggybankName(piggy) }}</p>
+            <p class="text-xs" style="color: var(--app-muted)">{{ getPiggybankProgress(piggy) }}% completado</p>
+          </div>
+          <button (click)="enterPiggybankFromHome(piggy.id)" class="app-primary-button">Entrar</button>
+        </div>
+        <div class="mt-3 h-2 rounded-full overflow-hidden" style="background-color: var(--app-border)">
+          <div class="h-full rounded-full bg-teal-500" [style.width.%]="getPiggybankProgress(piggy)"></div>
+        </div>
+      </div>
+    </div>
+    <ng-template #noGoal>
+      <p class="text-sm" style="color: var(--app-muted)">Creá alcancías desde su sección para verlas acá.</p>
+    </ng-template>
+  </div>
+
+  <!-- Ingresos vs Gastos vs Ahorros -->
+  <div class="app-section-card">
+    <h3 class="mb-4 text-lg font-semibold" style="color: var(--app-text)">Ingresos vs Gastos vs Ahorros</h3>
+    <div class="flex justify-center w-full h-72">
+      <app-bar-chart [ingresos]="ingresosTotales" [billetera]="restanteActualmente" [gastos]="gastosTotales">
+      </app-bar-chart>
+    </div>
+  </div>
+</div>
+
+<!-- Gastos por categoría + Top gastos -->
+<div class="mt-6 grid gap-6 lg:grid-cols-2">
+
+  <!-- Gastos por categoría -->
+  <div class="app-section-card">
+    <h3 class="text-lg font-semibold mb-4" style="color: var(--app-text)">Gastos por categoría</h3>
+    <div *ngIf="gastosPorCategoria.length > 0; else sinGastos" class="space-y-3">
+      <div *ngFor="let cat of gastosPorCategoria" class="flex flex-col gap-1">
+        <div class="flex justify-between text-sm">
+          <span class="font-medium" style="color: var(--app-text)">{{ cat.categoria }}</span>
+          <span style="color: var(--app-muted)">{{ cat.pct }}% · {{ formatCurrency(cat.total) }}</span>
+        </div>
+        <div class="h-2 rounded-full overflow-hidden" style="background-color: var(--app-border)">
+          <div class="h-full rounded-full bg-orange-500 transition-all duration-500"
+            [style.width.%]="cat.pct"></div>
+        </div>
+      </div>
+    </div>
+    <ng-template #sinGastos>
+      <p class="text-sm" style="color: var(--app-muted)">Sin gastos este mes.</p>
+    </ng-template>
+  </div>
+
+  <!-- Top 5 gastos del mes -->
+  <div class="app-section-card">
+    <h3 class="text-lg font-semibold mb-4" style="color: var(--app-text)">Top gastos del mes</h3>
+    <div *ngIf="topGastos.length > 0; else sinTop" class="space-y-2">
+      <div *ngFor="let gasto of topGastos; let i = index"
+        class="flex items-center justify-between rounded-xl px-3 py-2"
+        style="background-color: var(--app-border)">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold w-5 text-center" style="color: var(--app-muted)">{{ i + 1 }}</span>
+          <div>
+            <p class="text-sm font-semibold" style="color: var(--app-text)">{{ gasto.descripcion }}</p>
+            <p class="text-xs" style="color: var(--app-muted)">{{ gasto.categoria }}</p>
+          </div>
+        </div>
+        <span class="text-sm font-bold text-orange-500">{{ formatCurrency(gasto.valor) }}</span>
+      </div>
+    </div>
+    <ng-template #sinTop>
+      <p class="text-sm" style="color: var(--app-muted)">Sin gastos este mes.</p>
+    </ng-template>
+  </div>
+
+</div>
+
+<!-- Historial mensual -->
+<div class="mt-6 app-section-card">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="text-lg font-semibold" style="color: var(--app-text)">Historial mensual</h3>
+    <span *ngIf="tendenciaBalance.direccion !== 'estable'"
+      class="app-status-chip"
+      [ngClass]="{
+        'chip-success': tendenciaBalance.direccion === 'sube',
+        'chip-danger':  tendenciaBalance.direccion === 'baja'
+      }">
+      <span class="material-icons text-[15px]">{{ tendenciaBalance.direccion === 'sube' ? 'trending_up' : 'trending_down' }}</span>
+      {{ tendenciaBalance.pct }}% vs mes anterior
+    </span>
+  </div>
+  <p class="text-sm mb-4" style="color: var(--app-muted)">Resumen de tus últimos meses para ver evolución real.</p>
+  <div class="space-y-3" *ngIf="monthlyHistory.length > 0; else noHistory">
+    <div *ngFor="let month of monthlyHistory" class="rounded-2xl border px-4 py-3" style="border-color: var(--app-border)">
+      <div class="mb-3 flex items-center justify-between gap-3 text-sm">
+        <span class="font-semibold" style="color: var(--app-text)">{{ month.period }}</span>
+        <span class="text-xs font-semibold uppercase tracking-[0.18em]" style="color: var(--app-muted)">Saldo {{ month.saldo | currency }}</span>
+      </div>
+      <div class="grid grid-cols-3 gap-3 text-sm">
+        <div>
+          <p style="color: var(--app-muted)">Ingresos</p>
+          <p class="font-semibold text-sky-600">{{ month.ingresos | currency }}</p>
+          <div class="mt-2 h-2 rounded-full overflow-hidden" style="background-color: var(--app-border)">
+            <div class="h-full rounded-full bg-sky-500" [style.width.%]="(month.ingresos / historyMaxValue) * 100"></div>
+          </div>
+        </div>
+        <div>
+          <p style="color: var(--app-muted)">Gastos</p>
+          <p class="font-semibold text-rose-600">{{ month.gastos | currency }}</p>
+          <div class="mt-2 h-2 rounded-full overflow-hidden" style="background-color: var(--app-border)">
+            <div class="h-full rounded-full bg-rose-500" [style.width.%]="(month.gastos / historyMaxValue) * 100"></div>
+          </div>
+        </div>
+        <div>
+          <p style="color: var(--app-muted)">Ahorro</p>
+          <p class="font-semibold text-teal-600">{{ month.ahorro | currency }}</p>
+          <div class="mt-2 h-2 rounded-full overflow-hidden" style="background-color: var(--app-border)">
+            <div class="h-full rounded-full bg-teal-500" [style.width.%]="(month.ahorro / historyMaxValue) * 100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ng-template #noHistory>
+    <p class="text-sm" style="color: var(--app-muted)">Todavía no hay suficiente historial para mostrar.</p>
+  </ng-template>
+</div>

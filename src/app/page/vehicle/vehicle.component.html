@@ -51,6 +51,9 @@
     <p class="text-sm opacity-90"><strong>Control de tanqueos y consumo</strong></p>
   </div>
   <div class="flex items-center gap-2">
+    <button *ngIf="selectionMode" (click)="exitSelectionMode()" class="app-secondary-button">
+      Cancelar selección
+    </button>
     <button *ngIf="hasSelection" (click)="showBulkDeleteConfirm = true" class="app-warning-button">
       Eliminar ({{ selectionCount }})
     </button>
@@ -66,7 +69,7 @@
   <table class="app-table">
     <thead class="app-table-head">
       <tr>
-        <th class="w-10 py-2 px-2 text-center">
+        <th *ngIf="selectionMode" class="w-10 py-2 px-2 text-center">
           <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll()" class="cursor-pointer" />
         </th>
         <th class="text-left py-2 px-3 sm:px-4">Bomba</th>
@@ -78,8 +81,9 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let item of entries; let i = index" class="app-table-row">
-        <td class="py-2 px-2 text-center">
+      <tr *ngFor="let item of entries; let i = index" class="app-table-row"
+        appLongPress (longPress)="activateSelection(item.id)">
+        <td *ngIf="selectionMode" class="py-2 px-2 text-center">
           <input type="checkbox" [checked]="selectedIds.has(item.id)" (change)="toggleSelect(item.id)" class="cursor-pointer" />
         </td>
         <td class="py-2 px-3 sm:px-4 font-semibold">{{ item.nombreBomba }}</td>

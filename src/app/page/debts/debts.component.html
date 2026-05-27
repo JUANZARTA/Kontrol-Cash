@@ -9,6 +9,9 @@
     </p>
   </div>
   <div class="flex items-center gap-2">
+    <button *ngIf="selectionMode" (click)="exitSelectionMode()" class="app-secondary-button">
+      Cancelar selección
+    </button>
     <button *ngIf="hasSelection" (click)="showBulkDeleteConfirm = true" class="app-warning-button">
       Eliminar ({{ selectionCount }})
     </button>
@@ -18,23 +21,13 @@
   </div>
 </div>
 
-<div class="app-section-card mb-4" *ngIf="rankedDebts.length">
-  <h3 class="text-lg font-semibold">Prioridad inteligente de deudas</h3>
-  <p class="text-sm text-slate-500 mb-2">Ordenadas por costo/riesgo de pago.</p>
-  <ol class="list-decimal pl-5">
-    <li *ngFor="let item of rankedDebts" class="mb-2">
-      <strong>{{ item.debt.acreedor }}</strong> — score {{ item.score.total | number:'1.2-2' }}
-      <span class="text-xs text-slate-500">(interés {{ item.score.factors.interest | number:'1.2-2' }}, mora {{ item.score.factors.penalty | number:'1.2-2' }})</span>
-    </li>
-  </ol>
-</div>
 
 <!-- Tabla de Deudas -->
 <div class="overflow-x-auto">
   <table class="app-table">
     <thead class="app-table-head">
       <tr>
-        <th class="w-10 py-2 px-2 text-center">
+        <th *ngIf="selectionMode" class="w-10 py-2 px-2 text-center">
           <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll()" class="cursor-pointer" />
         </th>
         <th class="text-left py-2 px-3 sm:px-4">Nombre Deuda</th>
@@ -49,8 +42,9 @@
     </thead>
     <tbody>
       <tr *ngFor="let debt of debts; let i = index" class="app-table-row opacity-0 animate-fadeSlideDown"
-        [style.animationDelay]="getRowAnimationDelay(debt, i)">
-        <td class="py-2 px-2 text-center">
+        [style.animationDelay]="getRowAnimationDelay(debt, i)"
+        appLongPress (longPress)="activateSelection(debt.id)">
+        <td *ngIf="selectionMode" class="py-2 px-2 text-center">
           <input type="checkbox" [checked]="selectedIds.has(debt.id)" (change)="toggleSelect(debt.id)" class="cursor-pointer" />
         </td>
         <td class="py-2 px-3 sm:px-4 font-semibold">{{ debt.acreedor }}</td>
@@ -92,7 +86,7 @@
       <!-- Total Deudas Pendientes -->
       <tr class="app-table-total-positive opacity-0 animate-fadeSlideDown"
         [style.animationDelay]="getRowAnimationDelay('total', debts.length)">
-        <td></td>
+        <td *ngIf="selectionMode"></td>
         <td class="py-3 px-3 sm:px-4 text-left" colspan="5">Total Deudas Pendientes</td>
         <td class="py-3 px-3 sm:px-4 text-right">
           ${{ formatCurrency(getTotalPendingDebts()) }}
@@ -121,6 +115,14 @@
     <label class="app-field-label animate-fadeIn">Valor:</label>
     <input type="text" [value]="formatCurrency(newDebt.valor)" (input)="onValueInput($event, 'new')"
       placeholder="Ejm: 35.000" class="app-input mb-3 animate-fadeIn" />
+
+    <label class="app-field-label animate-fadeIn">Interés <span style="color: var(--app-muted)">(% — opcional)</span>:</label>
+    <input type="number" min="0" step="0.1" [(ngModel)]="newDebt.interestRate"
+      placeholder="Ej: 5.5" class="app-input mb-1 animate-fadeIn" />
+    <p class="text-xs mb-3 animate-fadeIn" style="color: var(--app-muted)" *ngIf="newDebt.valor > 0">
+      Con <strong>{{ newDebt.interestRate || 0 }}%</strong> de interés →
+      total: <strong>${{ getValorConInteres(newDebt.valor, newDebt.interestRate || 0) }}</strong>
+    </p>
 
     <label class="app-field-label animate-fadeIn">Cantidad de cuotas:</label>
     <input type="number" min="1" [(ngModel)]="newDebtTotalCuotas" class="app-input mb-3 animate-fadeIn" />
@@ -152,6 +154,14 @@
     <label class="app-field-label animate-fadeIn">Valor:</label>
     <input type="text" [value]="formatCurrency(editedDebt.valor)" (input)="onValueInput($event, 'edit')"
       placeholder="Ejm: 50.000" class="app-input mb-3 animate-fadeIn" />
+
+    <label class="app-field-label animate-fadeIn">Interés <span style="color: var(--app-muted)">(% — opcional)</span>:</label>
+    <input type="number" min="0" step="0.1" [(ngModel)]="editedDebt.interestRate"
+      placeholder="Ej: 5.5" class="app-input mb-1 animate-fadeIn" />
+    <p class="text-xs mb-3 animate-fadeIn" style="color: var(--app-muted)" *ngIf="editedDebt.valor > 0">
+      Con <strong>{{ editedDebt.interestRate || 0 }}%</strong> de interés →
+      total: <strong>${{ getValorConInteres(editedDebt.valor, editedDebt.interestRate || 0) }}</strong>
+    </p>
 
     <label class="app-field-label animate-fadeIn">Cantidad de cuotas:</label>
     <input type="number" min="1" [(ngModel)]="editedDebtTotalCuotas" class="app-input mb-3 animate-fadeIn" />

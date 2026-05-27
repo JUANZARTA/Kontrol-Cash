@@ -121,6 +121,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   toggleTheme(): void {
     this.themeService.toggleTheme();
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = storedUser?.localId || '';
+    if (userId) {
+      const updated = { ...this.userSettingsService.current, darkMode: this.themeService.isDarkMode() };
+      this.userSettingsService.saveSettings(userId, updated).subscribe();
+    }
   }
 
   generateYearRange(start: number, end: number): void {

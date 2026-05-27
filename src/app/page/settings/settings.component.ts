@@ -124,7 +124,7 @@ export default class SettingsComponent implements OnInit {
     });
   }
 
-  toggleSetting(key: 'darkMode' | 'showVehicle' | 'showLoans' | 'showDebts' | 'useCustomColor'): void {
+  toggleSetting(key: 'darkMode' | 'showVehicle' | 'showLoans' | 'showDebts' | 'showStatistics' | 'useCustomColor'): void {
     this.settings[key] = !this.settings[key];
     if (key === 'darkMode') this.onDarkModeToggle();
     if (key === 'useCustomColor') this.onCustomColorToggle();

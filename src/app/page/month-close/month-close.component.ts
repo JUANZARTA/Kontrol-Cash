@@ -161,10 +161,16 @@ export default class MonthCloseComponent implements OnInit, OnDestroy {
               l.totalCuotas, l.cuotasPagadas)));
         });
 
-        // 5. Facturas → todas en estado Pendiente, misma fecha
+        // 5. Facturas → todas en estado Pendiente, mismo día/año pero mes siguiente
+        const advanceMonth = (dateStr: string, y: string, m: string): string => {
+          if (!dateStr) return dateStr;
+          const day = new Date(dateStr).getDate();
+          const adjusted = new Date(parseInt(y), parseInt(m) - 1, day);
+          return adjusted.toISOString().split('T')[0];
+        };
         (Object.values(data.invoices || {}) as Invoice[]).forEach(inv => {
           ops.push(this.invoiceService.addInvoice(this.userId, next.year, next.month,
-            { nombre: inv.nombre, fechaPago: inv.fechaPago, valor: inv.valor, estado: 'Pendiente' }));
+            { nombre: inv.nombre, fechaPago: advanceMonth(inv.fechaPago, next.year, next.month), valor: inv.valor, estado: 'Pendiente' }));
         });
 
         // 6. Gastos → sin Gasolina, valor gastado en 0, estimación intacta, sin adjuntos

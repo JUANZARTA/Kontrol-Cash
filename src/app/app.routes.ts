@@ -28,6 +28,7 @@ export const routes: Routes = [
       { path: 'debt', loadComponent: () => import('./page/debts/debts.component') },
       { path: 'invoice', loadComponent: () => import('./page/invoice/invoice.component') },
       { path: 'vehicle', loadComponent: () => import('./page/vehicle/vehicle.component') },
+      { path: 'statistics', loadComponent: () => import('./page/statistics/statistics.component') },
       { path: 'settings', loadComponent: () => import('./page/settings/settings.component') },
       { path: 'month-close', loadComponent: () => import('./page/month-close/month-close.component') },
       { path: '', redirectTo: 'home', pathMatch: 'full' }

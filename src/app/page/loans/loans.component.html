@@ -9,6 +9,9 @@
     </p>
   </div>
   <div class="flex items-center gap-2">
+    <button *ngIf="selectionMode" (click)="exitSelectionMode()" class="app-secondary-button">
+      Cancelar selección
+    </button>
     <button *ngIf="hasSelection" (click)="showBulkDeleteConfirm = true" class="app-warning-button">
       Eliminar ({{ selectionCount }})
     </button>
@@ -23,7 +26,7 @@
   <table class="app-table">
     <thead class="app-table-head">
       <tr>
-        <th class="w-10 py-2 px-2 text-center">
+        <th *ngIf="selectionMode" class="w-10 py-2 px-2 text-center">
           <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll()" class="cursor-pointer" />
         </th>
         <th class="text-left py-2 px-3 sm:px-4">Nombre Deudor</th>
@@ -38,8 +41,9 @@
     </thead>
     <tbody>
       <tr *ngFor="let loan of loans; let i = index" class="app-table-row opacity-0 animate-fadeSlideDown"
-        [style.animationDelay]="getRowAnimationDelay(loan)">
-        <td class="py-2 px-2 text-center">
+        [style.animationDelay]="getRowAnimationDelay(loan)"
+        appLongPress (longPress)="activateSelection(loan.id)">
+        <td *ngIf="selectionMode" class="py-2 px-2 text-center">
           <input type="checkbox" [checked]="selectedIds.has(loan.id)" (change)="toggleSelect(loan.id)" class="cursor-pointer" />
         </td>
         <td class="py-2 px-3 sm:px-4 font-semibold">{{ loan.deudor }}</td>
@@ -81,7 +85,7 @@
     <!-- Total Deudores Pendientes -->
     <tfoot>
       <tr class="app-table-total-positive opacity-0 animate-fadeSlideDown">
-        <td></td>
+        <td *ngIf="selectionMode"></td>
         <td class="py-3 px-3 sm:px-4 text-left" colspan="5">Total Deudores Pendientes</td>
         <td class="py-3 px-3 sm:px-4 text-right">
           ${{ formatCurrency(getTotalPendingLoans()) }}

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ExpenseService } from '../../services/expense.service';
 import { CategoriaGasto, Expense } from '../../models/expense.model';
 import { DateService } from '../../services/date.service';
@@ -17,6 +18,8 @@ import { AttachmentsService } from '../../services/attachments.service';
 import { MovementAttachment } from '../../models/attachment.model';
 import { ScanReceiptService, ScannedItem } from '../../services/scan-receipt.service';
 
+import { LongPressDirective } from '../../shared/directives/long-press.directive';
+
 import {
   trigger,
   state,
@@ -32,7 +35,7 @@ export interface ExpenseWithId extends Expense {
 @Component({
   selector: 'app-expense',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent, LongPressDirective],
   templateUrl: './expense.component.html',
   styleUrls: ['./expense.component.css'],
   providers: [DecimalPipe],
@@ -92,6 +95,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   isDeleteModalOpen: boolean = false;
   selectedIds = new Set<string>();
   showBulkDeleteConfirm = false;
+  selectionMode = false;
   selectedExpenseId: string | null = null;
   expenseToDeleteId: string | null = null;
   newValue: number = 0;
@@ -141,7 +145,6 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
 
   // Variables para el gráfico
   ngOnInit() {
-    // ✅ Suscripción reactiva al cambio de año/mes
     this.dateSubscription = this.dateService.selectedDate$.subscribe((date) => {
       if (date.year && date.month) {
         this.currentYear = date.year;
@@ -150,6 +153,13 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
         this.loadExpenses();
       }
     });
+
+    inject(ActivatedRoute).queryParamMap.subscribe((params) => {
+      if (params.get('action') === 'add') {
+        setTimeout(() => this.openModal(), 0);
+      }
+    });
+
     this.finanzasService.mostrarEstadoFinanciero(
       this,
       this.userId,
@@ -851,6 +861,17 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       this.loadExpenses();
       this.showToast(`${ops.length} gasto(s) importados como estimación.`);
     });
+  }
+
+  activateSelection(id: string): void {
+    this.selectionMode = true;
+    this.selectedIds.add(id);
+  }
+
+  exitSelectionMode(): void {
+    this.selectionMode = false;
+    this.selectedIds.clear();
+    this.showBulkDeleteConfirm = false;
   }
 
   get hasSelection(): boolean { return this.selectedIds.size > 0; }

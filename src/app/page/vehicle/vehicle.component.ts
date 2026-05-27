@@ -12,6 +12,7 @@ import { ThemeService } from '../../services/theme.service';
 import { WalletService } from '../../services/wallet.service';
 import { ExpenseService } from '../../services/expense.service';
 import { Expense, ExpenseWithId } from '../../models/expense.model';
+import { LongPressDirective } from '../../shared/directives/long-press.directive';
 
 Chart.register(...registerables);
 
@@ -20,7 +21,7 @@ type ChartType = 'rendimiento' | 'dias' | 'kmGalon' | 'costoKm' | 'acumulado';
 @Component({
   selector: 'app-vehicle',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalShellComponent, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, ModalShellComponent, ConfirmModalComponent, LongPressDirective],
   templateUrl: './vehicle.component.html',
   styleUrls: ['./vehicle.component.css'],
   providers: [DecimalPipe],
@@ -55,6 +56,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   entryToDeleteId: string | null = null;
   selectedIds = new Set<string>();
   showBulkDeleteConfirm = false;
+  selectionMode = false;
 
   isAddModalOpen = false;
   isEditModalOpen = false;
@@ -500,6 +502,17 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     });
   }
 
+  activateSelection(id: string): void {
+    this.selectionMode = true;
+    this.selectedIds.add(id);
+  }
+
+  exitSelectionMode(): void {
+    this.selectionMode = false;
+    this.selectedIds.clear();
+    this.showBulkDeleteConfirm = false;
+  }
+
   get hasSelection(): boolean { return this.selectedIds.size > 0; }
   get selectionCount(): number { return this.selectedIds.size; }
   get allSelected(): boolean { return this.entries.length > 0 && this.entries.every(e => this.selectedIds.has(e.id)); }
@@ -652,7 +665,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       return;
     }
 
-    const labels = src.map(e => {
+    let labels = src.map(e => {
       const d = new Date(e.fecha);
       return d.toLocaleDateString('es', { day: '2-digit', month: 'short', year: '2-digit' });
     });
@@ -720,11 +733,24 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       }
       case 'acumulado': {
         let cumulative = 0;
+        const monthEntries = this.entries;
+        labels = monthEntries.map(e => {
+          const d = new Date(e.fecha);
+          return d.toLocaleDateString('es', { day: '2-digit', month: 'short', year: '2-digit' });
+        });
         datasets = [{
           label: 'Gasto acumulado ($)',
-          data: src.map(e => { cumulative += e.monto; return cumulative; }),
+          data: monthEntries.map(e => { cumulative += e.monto; return cumulative; }),
           borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.15)', tension: 0.3, fill: true,
         }];
+        if (this.gasolinaEstimacion > 0) {
+          datasets.push({
+            label: 'Presupuesto mensual',
+            data: monthEntries.map(() => this.gasolinaEstimacion),
+            borderColor: '#f97316', borderDash: [6, 4], backgroundColor: 'transparent',
+            tension: 0, fill: false, pointRadius: 0,
+          });
+        }
         yAxisTitle = '$ acumulados';
         break;
       }

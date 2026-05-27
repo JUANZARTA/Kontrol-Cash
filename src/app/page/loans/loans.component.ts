@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
+import { LongPressDirective } from '../../shared/directives/long-press.directive';
 
 export interface LoanWithId extends Loan {
   id: string;
@@ -20,7 +21,7 @@ export interface LoanWithId extends Loan {
 @Component({
   selector: 'app-loans',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent, LongPressDirective],
   templateUrl: './loans.component.html',
   styleUrls: ['./loans.component.css'],
   providers: [DecimalPipe],
@@ -39,6 +40,7 @@ export default class LoansComponent implements OnInit, OnDestroy {
   isDeleteModalOpen: boolean = false;
   selectedIds = new Set<string>();
   showBulkDeleteConfirm = false;
+  selectionMode = false;
   selectedLoanId: string | null = null;
   loanToDeleteId: string | null = null;
   newValue: number = 0;
@@ -731,6 +733,17 @@ export default class LoansComponent implements OnInit, OnDestroy {
     const value = Number(raw) || 0;
     this.editedLoan.valor = value;
     input.value = this.formatCurrency(value);
+  }
+
+  activateSelection(id: string): void {
+    this.selectionMode = true;
+    this.selectedIds.add(id);
+  }
+
+  exitSelectionMode(): void {
+    this.selectionMode = false;
+    this.selectedIds.clear();
+    this.showBulkDeleteConfirm = false;
   }
 
   get hasSelection(): boolean { return this.selectedIds.size > 0; }

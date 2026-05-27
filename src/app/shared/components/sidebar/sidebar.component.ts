@@ -25,6 +25,7 @@ export class SidebarComponent {
   showVehicle = true;
   showLoans = true;
   showDebts = true;
+  showStatistics = true;
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -32,7 +33,6 @@ export class SidebarComponent {
     private router: Router,
     private userSettingsService: UserSettingsService
   ) {
-    // Solo ejecutar en navegador
     if (isPlatformBrowser(this.platformId)) {
       this.checkScreenSize();
     }
@@ -43,11 +43,13 @@ export class SidebarComponent {
         this.showVehicle = settings.showVehicle;
         this.showLoans = settings.showLoans;
         this.showDebts = settings.showDebts;
+        this.showStatistics = settings.showStatistics ?? true;
       });
       this.settingsSub = this.userSettingsService.settings$.subscribe((settings) => {
         this.showVehicle = settings.showVehicle;
         this.showLoans = settings.showLoans;
         this.showDebts = settings.showDebts;
+        this.showStatistics = settings.showStatistics ?? true;
       });
     }
   }

@@ -71,6 +71,11 @@
       <span>Mostrar deudas</span>
       <button type="button" class="switch-pill" [class.on]="settings.showDebts" (click)="toggleSetting('showDebts')"><span class="switch-knob"></span><span class="switch-text">{{ settings.showDebts ? 'ON' : 'OFF' }}</span></button>
     </label>
+
+    <label class="settings-toggle-row">
+      <span>Mostrar estadísticas</span>
+      <button type="button" class="switch-pill" [class.on]="settings.showStatistics" (click)="toggleSetting('showStatistics')"><span class="switch-knob"></span><span class="switch-text">{{ settings.showStatistics ? 'ON' : 'OFF' }}</span></button>
+    </label>
   </div>
 
   <div class="mt-8 flex justify-end">

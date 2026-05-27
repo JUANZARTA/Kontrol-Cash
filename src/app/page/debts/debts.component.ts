@@ -15,6 +15,7 @@ import { DebtPriorityService, RankedDebt } from '../../services/debt-priority.se
 import { WalletService } from '../../services/wallet.service';
 import { ExpenseService } from '../../services/expense.service';
 import { Expense, CategoriaGasto } from '../../models/expense.model';
+import { LongPressDirective } from '../../shared/directives/long-press.directive';
 
 export interface DebtWithId extends Debt {
   id: string;
@@ -23,7 +24,7 @@ export interface DebtWithId extends Debt {
 @Component({
   selector: 'app-debts',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent, LongPressDirective],
   templateUrl: './debts.component.html',
   styleUrls: ['./debts.component.css'],
   providers: [DecimalPipe],
@@ -63,6 +64,7 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   isDeleteModalOpen = false;
   selectedIds = new Set<string>();
   showBulkDeleteConfirm = false;
+  selectionMode = false;
   debtToDeleteId: string | null = null;
 
   // Nuevo Modal de Agregar Valor
@@ -532,6 +534,11 @@ export default class DebtsComponent implements OnInit, OnDestroy {
     return this.decimalPipe.transform(value, '1.0-0') || '';
   }
 
+  getValorConInteres(valor: number, interes: number): string {
+    const total = valor + valor * ((interes || 0) / 100);
+    return this.formatCurrency(total);
+  }
+
   onValueInput(event: Event, type: 'new' | 'edit' | 'add') {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/[^\d-]/g, '');
@@ -764,6 +771,17 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   getRowAnimationDelay(item: any, index?: number): string {
     const i = index ?? this.debts.indexOf(item);
     return `${0.1 + i * 0.05}s`;
+  }
+
+  activateSelection(id: string): void {
+    this.selectionMode = true;
+    this.selectedIds.add(id);
+  }
+
+  exitSelectionMode(): void {
+    this.selectionMode = false;
+    this.selectedIds.clear();
+    this.showBulkDeleteConfirm = false;
   }
 
   get hasSelection(): boolean { return this.selectedIds.size > 0; }

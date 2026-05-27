@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { IncomeService } from '../../services/income.service';
 import { CategoriaIngreso, Income } from '../../models/income.model';
 import { DateService } from '../../services/date.service'; // ✅ Nuevo
@@ -20,6 +21,7 @@ import { ConfirmModalComponent } from '../../shared/components/confirm-modal/con
 import { PlannerService } from '../../services/planner.service';
 import { AttachmentsService } from '../../services/attachments.service';
 import { MovementAttachment } from '../../models/attachment.model';
+import { LongPressDirective } from '../../shared/directives/long-press.directive';
 
 // Extiende WalletAccount para agregar id y showMenu
 export interface WalletAccountWithId extends WalletAccount {
@@ -33,7 +35,7 @@ export interface IncomeWithId extends Income {
 @Component({
   selector: 'app-income',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, FinancialStatusBadgeComponent, ModalShellComponent, ConfirmModalComponent, LongPressDirective],
   templateUrl: './income.component.html',
   styleUrls: ['./income.component.css'],
   providers: [DecimalPipe],
@@ -64,6 +66,7 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   isDeleteModalOpen: boolean = false;
   selectedIds = new Set<string>();
   showBulkDeleteConfirm = false;
+  selectionMode = false;
   selectedIncomeId: string | null = null;
   incomeToDeleteId: string | null = null;
   newValue: number = 0;
@@ -118,7 +121,6 @@ export default class IncomeComponent implements OnInit, OnDestroy {
 
   // Variables para el gráfico
   ngOnInit() {
-    // Suscripción a cambios de fecha
     this.dateSubscription = this.dateService.selectedDate$.subscribe((date) => {
       if (date.year && date.month) {
         this.currentYear = date.year;
@@ -129,13 +131,18 @@ export default class IncomeComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Estado financiero
     this.finanzasService.mostrarEstadoFinanciero(
       this,
       this.userId,
       this.currentYear,
       this.currentMonth
     );
+
+    inject(ActivatedRoute).queryParamMap.subscribe((params) => {
+      if (params.get('action') === 'add') {
+        setTimeout(() => this.openModal(), 0);
+      }
+    });
   }
 
   // Método para limpiar suscripciones al destruir el componente
@@ -742,6 +749,17 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   getRowAnimationDelay(income: IncomeWithId) {
     const index = this.incomes.indexOf(income);
     return `${0.2 + index * 0.1}s`;
+  }
+
+  activateSelection(id: string): void {
+    this.selectionMode = true;
+    this.selectedIds.add(id);
+  }
+
+  exitSelectionMode(): void {
+    this.selectionMode = false;
+    this.selectedIds.clear();
+    this.showBulkDeleteConfirm = false;
   }
 
   get hasSelection(): boolean { return this.selectedIds.size > 0; }

@@ -5,311 +5,161 @@
 
 
 <!-- Indicador de salud financiera + estado financiero -->
-<div id="alerts-panel" class="mb-6 flex flex-wrap items-center gap-3">
+<div id="alerts-panel" class="mb-6 flex flex-wrap justify-center items-center gap-2">
 
-  <!-- Mensaje de salud financiera -->
-  <span [ngClass]="{
-    'from-teal-600 to-teal-600': saludFinanciera === 'positiva',
-    'from-yellow-600 to-yellow-600': saludFinanciera === 'advertencia',
-    'from-orange-600 to-orange-600': saludFinanciera === 'critica'
-  }" class="app-status-pill bg-gradient-to-r px-5 py-2.5 animate-fadeSlideDown">
+  <span class="app-status-chip animate-fadeSlideDown"
+    [ngClass]="{
+      'chip-success': saludFinanciera === 'positiva',
+      'chip-warning': saludFinanciera === 'advertencia',
+      'chip-danger': saludFinanciera === 'critica'
+    }">
+    <span class="material-icons text-[16px]">{{
+      saludFinanciera === 'positiva' ? 'check_circle' :
+      saludFinanciera === 'advertencia' ? 'warning_amber' : 'error_outline'
+    }}</span>
     {{ mensajeSaludFinanciera || 'Estado desconocido' }}
   </span>
-  <!-- Estado financiero (cuadre/descuadre) -->
-  <span [ngClass]="{
-      'bg-gradient-to-r from-orange-600 to-orange-600': estadoFinanciero.toLowerCase().includes('descuadre'),
-      'bg-gradient-to-r from-sky-600 to-sky-600': estadoFinanciero.toLowerCase().includes('sin justificar'),
-      'bg-gradient-to-r from-teal-600 to-teal-600': estadoFinanciero.toLowerCase().includes('al día')
-    }" class="app-status-pill px-5 py-2.5 animate-fadeSlideDown">
+
+  <span class="app-status-chip animate-fadeSlideDown"
+    [ngClass]="{
+      'chip-danger':   estadoFinanciero.toLowerCase().includes('descuadre'),
+      'chip-info':     estadoFinanciero.toLowerCase().includes('sin justificar'),
+      'chip-success':  estadoFinanciero.toLowerCase().includes('al día')
+    }">
+    <span class="material-icons text-[16px]">{{
+      estadoFinanciero.toLowerCase().includes('al día') ? 'check_circle' :
+      estadoFinanciero.toLowerCase().includes('sin justificar') ? 'info' : 'warning_amber'
+    }}</span>
     {{ estadoFinanciero || 'Sin información' }}
   </span>
 
 </div>
 
-<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-  <div class="app-kpi-card animate-fadeSlideUp">
-    <p class="app-kpi-label">Saldo Actual</p>
-    <p class="app-kpi-value text-sky-800">{{ restanteActualmente | currency }}</p>
-  </div>
 
-  <div class="app-kpi-card animate-fadeSlideUp">
-    <p class="app-kpi-label">Gasto del Mes</p>
-    <p class="app-kpi-value text-orange-600">{{ gastadoActualmente | currency }}</p>
-  </div>
+<!-- Accesos rápidos -->
+<div class="mt-6 grid gap-3"
+  [style.grid-template-columns]="'repeat(' + ((showVehicle ? 1 : 0) + (showStatistics ? 1 : 0) + 3) + ', 1fr)'"  >
 
-  <div class="app-kpi-card animate-fadeSlideUp">
-    <p class="app-kpi-label">Deuda Pendiente</p>
-    <p class="app-kpi-value text-rose-600">{{ totalPendingDebts | currency }}</p>
-  </div>
+  <button (click)="isAddIncomeModalOpen = true" class="app-quick-action animate-fadeSlideUp">
+    <span class="material-icons text-[24px] text-teal-500">add_circle</span>
+    <span class="label">Ingresos</span>
+  </button>
+
+  <button (click)="isAddExpenseModalOpen = true" class="app-quick-action animate-fadeSlideUp">
+    <span class="material-icons text-[24px] text-orange-500">remove_circle</span>
+    <span class="label">Gastos</span>
+  </button>
+
+  <button (click)="router.navigate(['/app/wallet'])" class="app-quick-action animate-fadeSlideUp">
+    <span class="material-icons text-[24px] text-indigo-500">account_balance_wallet</span>
+    <span class="label">Billetera</span>
+  </button>
+
+  <button *ngIf="showStatistics" (click)="router.navigate(['/app/statistics'])" class="app-quick-action animate-fadeSlideUp">
+    <span class="material-icons text-[24px] text-cyan-500">bar_chart</span>
+    <span class="label">Estadísticas</span>
+  </button>
+
+  <button *ngIf="showVehicle" (click)="router.navigate(['/app/vehicle'])" class="app-quick-action animate-fadeSlideUp">
+    <span class="material-icons text-[24px] text-slate-500">directions_car</span>
+    <span class="label">Vehículo</span>
+  </button>
+
 </div>
 
-<div class="mt-4 app-section-card" *ngIf="projection">
-  <h3 class="text-lg font-semibold text-slate-900">Proyección de fin de mes</h3>
-  <p class="text-sm text-slate-500">Estimación por ritmo actual.</p>
-  <div class="mt-3 grid gap-2 md:grid-cols-3">
-    <p><strong>Saldo proyectado:</strong> {{ projection.projectedEndBalance | currency }}</p>
-    <p><strong>Desvío:</strong> {{ projection.variancePct | percent:'1.0-1' }}</p>
-    <p><strong>Confianza:</strong> {{ projection.confidence }}</p>
-  </div>
-</div>
+<!-- Alcancías + KPIs -->
+<div class="mt-6 app-section-card animate-fadeSlideUp">
+  <div class="flex gap-6 items-start">
 
-<!-- Resumen Financiero Compacto -->
-<div class="mt-6 grid w-full max-w-6xl grid-cols-1 items-stretch gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-
-  <!-- 🥧 Gráfica circular -->
-  <div class="app-section-card flex items-center justify-center animate-pop-in">
-    <app-financial-chart [ingresosTotales]="ingresosTotales" [gastosTotales]="gastosTotales" [totalDeuda]="totalDeuda"
-      [totalBilletera]="totalBilletera" [totalPrestamo]="totalPrestamo">
-    </app-financial-chart>
-  </div>
-
-  <!-- 📊 Resumen General -->
-  <div class="app-section-card animate-fadeSlideUp">
-    <h3 class="mb-4 text-lg font-semibold text-slate-900">
-      Resumen General
-    </h3>
-
-    <div class="overflow-hidden rounded-2xl border border-gray-100">
-      <table class="w-full text-sm text-gray-700">
-        <tbody>
-          <tr class="border-b hover:bg-sky-50 transition-colors duration-200">
-            <td class="px-4 py-3 font-medium">Gastos realizados en el mes</td>
-            <td class="px-4 py-3 text-right text-gray-800 font-semibold">
-              {{ formatCurrency(gastadoActualmente) }}
-            </td>
-          </tr>
-          <tr class="border-b hover:bg-sky-50 transition-colors duration-200">
-            <td class="px-4 py-3 font-medium">Saldo actual en cartera</td>
-            <td class="px-4 py-3 text-right text-green-600 font-semibold">
-              {{ formatCurrency(restanteActualmente) }}
-            </td>
-          </tr>
-          <tr
-            class="border-b bg-orange-50 text-orange-700 font-semibold hover:bg-orange-100 transition-colors duration-200">
-            <td class="px-4 py-3">Gastaste de más</td>
-            <td class="px-4 py-3 text-right">
-              {{ diferenciaSaldo < 0 ? formatCurrency(0) : formatCurrency(diferenciaSaldo) }} </td>
-          </tr>
-
-          <tr class="border-b hover:bg-sky-50 transition-colors duration-200">
-            <td class="px-4 py-3 font-medium">
-              Total disponible (cartera + préstamos)
-            </td>
-            <td class="px-4 py-3 text-right text-gray-800 font-semibold">
-              {{ formatCurrency(restanteTotal) }}
-            </td>
-          </tr>
-          <tr class="border-b hover:bg-sky-50 transition-colors duration-200">
-            <td class="px-4 py-3 font-medium">Gastos planificados del mes</td>
-            <td class="px-4 py-3 text-right text-gray-700 font-semibold">
-              {{ formatCurrency(estimacionGastosMes) }}
-            </td>
-          </tr>
-          <tr class="bg-sky-50 font-bold text-sky-800 hover:bg-sky-100 transition-colors duration-200">
-            <td class="px-4 py-3">Saldo estimado al final del mes</td>
-            <td class="px-4 py-3 text-right">
-              {{ formatCurrency(estimacionDineroRestanteMes) }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Alcancías (izquierda, solo si hay) -->
+    <div class="flex-1 min-w-0" *ngIf="savings && savings.length > 0">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-sm font-semibold uppercase tracking-[0.18em]" style="color: var(--app-muted)">Alcancías</h4>
+        <span class="text-sm font-semibold text-teal-600">{{ getAveragePiggybankProgress() }}%</span>
+      </div>
+      <div class="space-y-3">
+        <div *ngFor="let piggy of savings" class="rounded-2xl border px-4 py-3" style="border-color: var(--app-border)">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-semibold text-sm" style="color: var(--app-text)">{{ getPiggybankName(piggy) }}</p>
+              <p class="text-xs" style="color: var(--app-muted)">{{ getPiggybankProgress(piggy) }}% completado</p>
+            </div>
+            <button (click)="enterPiggybankFromHome(piggy.id)" class="app-primary-button">Entrar</button>
+          </div>
+          <div class="mt-3 h-2 rounded-full overflow-hidden" style="background-color: var(--app-border)">
+            <div class="h-full rounded-full bg-teal-500 transition-all duration-500"
+              [style.width.%]="getPiggybankProgress(piggy)"></div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
-<div class="mt-6 grid gap-6 lg:grid-cols-[1fr_0.95fr]">
-  <div class="app-section-card">
-    <div class="flex items-center justify-between gap-4 mb-4">
+    <!-- KPIs (derecha, siempre visibles) -->
+    <div class="flex flex-col gap-3 shrink-0" [class.border-l]="savings && savings.length > 0" [style.padding-left]="(savings && savings.length > 0) ? '1.5rem' : '0'" [style.border-color]="'var(--app-border)'">
       <div>
-        <h3 class="text-lg font-semibold text-slate-900">Alcancías</h3>
-        <p class="text-sm text-slate-500">Acceso rápido para ver progreso y entrar.</p>
+        <p class="text-xs font-semibold uppercase tracking-[0.18em]" style="color: var(--app-muted)">Saldo Actual</p>
+        <p class="mt-1 text-lg font-semibold text-sky-600">{{ restanteActualmente | currency }}</p>
       </div>
-      <div class="text-right">
-        <p class="app-kpi-label">Promedio</p>
-        <p class="text-2xl font-semibold text-teal-700">{{ getAveragePiggybankProgress() }}%</p>
-      </div>
-    </div>
-
-    <div *ngIf="savings && savings.length > 0; else noGoal" class="space-y-3">
-      <div *ngFor="let piggy of savings" class="rounded-2xl border border-gray-200 px-4 py-3">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="font-semibold text-slate-800">{{ getPiggybankName(piggy) }}</p>
-            <p class="text-xs text-slate-500">{{ getPiggybankProgress(piggy) }}% completado</p>
-          </div>
-          <button (click)="enterPiggybankFromHome(piggy.id)" class="app-primary-button">Entrar</button>
-        </div>
-
-        <div class="mt-3 h-2 rounded-full bg-slate-100 overflow-hidden">
-          <div class="h-full rounded-full bg-teal-500" [style.width.%]="getPiggybankProgress(piggy)"></div>
-        </div>
+      <div style="border-top: 1px solid var(--app-border); padding-top: 0.75rem;">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em]" style="color: var(--app-muted)">Gasto del Mes</p>
+        <p class="mt-1 text-lg font-semibold text-orange-500">{{ gastadoActualmente | currency }}</p>
       </div>
     </div>
 
-    <ng-template #noGoal>
-      <p class="text-sm text-slate-500">Creá alcancías desde su sección para verlas acá.</p>
-    </ng-template>
-  </div>
-
-  <div class="app-section-card">
-    <h3 class="text-lg font-semibold text-slate-900 mb-2">Historial mensual</h3>
-    <p class="text-sm text-slate-500 mb-4">Resumen de tus últimos meses para ver evolución real.</p>
-
-    <div class="space-y-3" *ngIf="monthlyHistory.length > 0; else noHistory">
-      <div *ngFor="let month of monthlyHistory" class="rounded-2xl border border-gray-200 px-4 py-3">
-        <div class="mb-3 flex items-center justify-between gap-3 text-sm">
-          <span class="font-semibold text-slate-700">{{ month.period }}</span>
-          <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Saldo {{ month.saldo | currency }}</span>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3 text-sm">
-          <div>
-            <p class="text-slate-400">Ingresos</p>
-            <p class="font-semibold text-sky-700">{{ month.ingresos | currency }}</p>
-            <div class="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
-              <div class="h-full rounded-full bg-sky-500" [style.width.%]="(month.ingresos / historyMaxValue) * 100"></div>
-            </div>
-          </div>
-          <div>
-            <p class="text-slate-400">Gastos</p>
-            <p class="font-semibold text-rose-600">{{ month.gastos | currency }}</p>
-            <div class="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
-              <div class="h-full rounded-full bg-rose-500" [style.width.%]="(month.gastos / historyMaxValue) * 100"></div>
-            </div>
-          </div>
-          <div>
-            <p class="text-slate-400">Ahorro</p>
-            <p class="font-semibold text-teal-700">{{ month.ahorro | currency }}</p>
-            <div class="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
-              <div class="h-full rounded-full bg-teal-500" [style.width.%]="(month.ahorro / historyMaxValue) * 100"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <ng-template #noHistory>
-      <p class="text-sm text-slate-500">Todavía no hay suficiente historial para mostrar.</p>
-    </ng-template>
   </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-
-  <!-- Total en Cartera -->
-  <div class="app-kpi-card animate-pop-in">
-    <p class="app-kpi-label">Total en Cartera</p>
-    <p class="app-kpi-value text-sky-800">{{ totalWallet | currency }}</p>
-  </div>
-
-  <!-- Total Deudas Pendientes -->
-  <div class="app-kpi-card animate-pop-in">
-    <p class="app-kpi-label">Deudas Pendientes</p>
-    <p class="app-kpi-value text-rose-600">{{ totalPendingDebts | currency }}</p>
-  </div>
-
-  <!-- Total Préstamos Pendientes -->
-  <div class="app-kpi-card animate-pop-in">
-    <p class="app-kpi-label">Préstamos Pendientes</p>
-    <p class="app-kpi-value text-teal-700">{{ totalPendingLoans | currency }}</p>
-  </div>
-
-</div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-6">
 
-  <!-- 🟦 Lado izquierdo: Dos tarjetas -->
-  <div class="flex flex-col gap-4">
-
-    <!-- Tarjeta 1: Deudas Pendientes -->
-    <div class="app-section-card">
-      <h4 class="mb-4 text-lg font-semibold text-slate-900">Deudas Pendientes</h4>
-
-      <!-- Si no hay deudas pendientes -->
-      <div *ngIf="getPendingDebts().length === 0" class="text-gray-500 text-sm text-center">
-        No tienes deudas pendientes 🎉
-      </div>
-
-      <!-- Lista de deudas pendientes -->
-      <div *ngFor="let debt of getPendingDebts()"
-        class="flex justify-between items-center py-2 border-b last:border-b-0">
-
-        <span class="font-medium text-gray-700">
-          {{ debt.acreedor }}
-        </span>
-
-        <button (click)="togglePaymentStatus(debt)"
-          class="px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full hover:bg-red-600 transition">
-          Pagar
-        </button>
-
-
-      </div>
+  <!-- Tarjeta 1: Deudas Pendientes -->
+  <div class="app-section-card">
+    <h4 class="mb-4 text-lg font-semibold" style="color: var(--app-text)">Deudas Pendientes</h4>
+    <div *ngIf="getPendingDebts().length === 0" class="text-sm text-center" style="color: var(--app-muted)">
+      No tienes deudas pendientes 🎉
     </div>
-
-    <!-- Tarjeta 2: Facturas -->
-    <div class="app-section-card">
-      <h4 class="mb-4 text-lg font-semibold text-slate-900">Facturas</h4>
-
-      <!-- Si no hay facturas -->
-      <div *ngIf="getSortedInvoices().length === 0" class="text-gray-500 text-sm text-center">
-        No tienes facturas pendientes 🎉
-      </div>
-
-      <!-- Lista de facturas -->
-      <div *ngFor="let inv of getSortedInvoices()"
-        class="flex justify-between items-center py-2 border-b last:border-b-0" [ngClass]="{
-         'text-red-600 font-semibold': inv.estado === 'Vencida'
-       }">
-
-        <!-- Nombre -->
-        <span>{{ inv.nombre }}</span>
-
-        <!-- Valor -->
-        <span class="font-semibold"> {{ formatCurrency(inv.valor) }}</span>
-
-        <!-- Botón pagar -->
-        <button (click)="openPayInvoiceModal(inv.id)"
-          class="px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full hover:bg-red-600 transition">
-          Pagar
-        </button>
-
-      </div>
+    <div *ngFor="let debt of getPendingDebts()"
+      class="flex justify-between items-center py-2 border-b last:border-b-0" style="border-color: var(--app-border)">
+      <span class="font-medium" style="color: var(--app-text)">{{ debt.acreedor }}</span>
+      <button (click)="togglePaymentStatus(debt)"
+        class="app-primary-button text-xs">
+        Pagar
+      </button>
     </div>
-
   </div>
 
-  <!-- 🟥 Lado derecho: Gráfica -->
-  <div class="app-section-card p-5">
-    <h3 class="mb-4 text-lg font-semibold text-slate-900">
-      Ingresos vs Gastos vs Ahorros
-    </h3>
-
-    <div class="flex justify-center w-full h-72">
-      <app-bar-chart [ingresos]="ingresosTotales" [billetera]="restanteActualmente" [gastos]="gastosTotales">
-      </app-bar-chart>
+  <!-- Tarjeta 2: Facturas -->
+  <div class="app-section-card">
+    <h4 class="mb-4 text-lg font-semibold" style="color: var(--app-text)">Facturas</h4>
+    <div *ngIf="getSortedInvoices().length === 0" class="text-sm text-center" style="color: var(--app-muted)">
+      No tienes facturas pendientes 🎉
+    </div>
+    <div *ngFor="let inv of getSortedInvoices()"
+      class="flex justify-between items-center py-2 border-b last:border-b-0"
+      style="border-color: var(--app-border)"
+      [ngClass]="{ 'text-red-600 font-semibold': inv.estado === 'Vencida' }">
+      <span style="color: var(--app-text)">{{ inv.nombre }}</span>
+      <span class="font-semibold" style="color: var(--app-text)">{{ formatCurrency(inv.valor) }}</span>
+      <button (click)="openPayInvoiceModal(inv.id)"
+        class="app-primary-button text-xs">
+        Pagar
+      </button>
     </div>
   </div>
 
 </div>
 
 
-<!-- Botón para copiar mes anterior -->
-<div class="flex justify-center mb-4">
-  <button
-    (click)="copiarMesAnterior()"
-    class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:shadow-xl animate-fadeSlideDown">
-    📋 Copiar Mes Anterior
-  </button>
-</div>
 
-<div class="mt-6 rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-4 home-install-card" *ngIf="!appInstalled">
-  <p class="text-sm font-semibold text-sky-900 home-install-title mb-2">Descargá Mi Cartera en tu celular</p>
+<div class="mt-6 rounded-2xl px-4 py-4 home-install-card"
+  style="border: 1px solid var(--app-border); background-color: var(--app-surface);"
+  *ngIf="!appInstalled">
+  <p class="text-sm font-semibold mb-2" style="color: var(--app-text)">Descargá Mi Cartera en tu celular</p>
 
   <!-- iOS: instrucciones manuales -->
   <ng-container *ngIf="isIos">
-    <p class="text-xs text-sky-800 mb-3">En iPhone no hay botón automático. Seguí estos pasos en Safari:</p>
-    <ol class="text-xs text-sky-800 space-y-2">
+    <p class="text-xs mb-3" style="color: var(--app-muted)">En iPhone no hay botón automático. Seguí estos pasos en Safari:</p>
+    <ol class="text-xs space-y-2" style="color: var(--app-muted)">
       <li class="flex items-start gap-2">
         <span class="font-bold shrink-0">1.</span>
         <span>Tocá el botón <strong>Compartir</strong> <span style="font-size:1rem">⎋</span> en la barra inferior de Safari</span>
@@ -323,25 +173,65 @@
         <span>Tocá <strong>"Agregar"</strong> en la esquina superior derecha</span>
       </li>
     </ol>
-    <p class="mt-3 text-xs text-sky-600 font-medium">⚠️ Solo funciona desde Safari, no desde Chrome ni otros navegadores.</p>
+    <p class="mt-3 text-xs font-medium" style="color: var(--app-muted)">⚠️ Solo funciona desde Safari, no desde Chrome ni otros navegadores.</p>
   </ng-container>
 
   <!-- Otros dispositivos: botón normal -->
   <ng-container *ngIf="!isIos">
     <div class="flex flex-wrap items-start justify-between gap-3">
-      <p class="text-xs leading-5 text-sky-800 home-install-text">
+      <p class="text-xs leading-5" style="color: var(--app-muted)">
         Instalála como app para entrar más rápido desde la pantalla de inicio.
       </p>
       <button type="button" (click)="installApp()" class="app-primary-button whitespace-nowrap">
         Instalar app
       </button>
     </div>
-    <p *ngIf="installHelpVisible" class="mt-3 text-xs text-sky-800 home-install-text">
+    <p *ngIf="installHelpVisible" class="mt-3 text-xs" style="color: var(--app-muted)">
       Si no aparece el diálogo, abrí el menú del navegador y elegí <strong>Instalar app</strong>.
     </p>
   </ng-container>
 </div>
 
+
+<!-- Modal Agregar Ingreso -->
+<app-modal-shell *ngIf="isAddIncomeModalOpen" title="Agregar Ingreso" panelClass="animate-pop-in">
+  <label class="app-field-label">Nombre:</label>
+  <input type="text" [(ngModel)]="quickIncome.nombre" placeholder="Ej: Sueldo" class="app-input mb-3" />
+
+  <label class="app-field-label">Categoría:</label>
+  <select [(ngModel)]="quickIncome.categoria" class="app-input mb-3">
+    <option *ngFor="let c of categoriasIngreso" [value]="c">{{ c }}</option>
+  </select>
+
+  <label class="app-field-label">Valor:</label>
+  <input type="text" [value]="quickIncome.valor ? quickIncome.valor.toLocaleString('es-CO') : ''"
+    (input)="onQuickIncomeValueInput($event)" placeholder="Ej: 1.000.000" class="app-input mb-3" />
+
+  <div class="flex justify-end gap-2">
+    <button (click)="isAddIncomeModalOpen = false" class="app-secondary-button">Cancelar</button>
+    <button (click)="addQuickIncome()" class="app-primary-button">Agregar</button>
+  </div>
+</app-modal-shell>
+
+<!-- Modal Agregar Gasto -->
+<app-modal-shell *ngIf="isAddExpenseModalOpen" title="Agregar Gasto" panelClass="animate-pop-in">
+  <label class="app-field-label">Descripción:</label>
+  <input type="text" [(ngModel)]="quickExpense.descripcion" placeholder="Ej: Mercado" class="app-input mb-3" />
+
+  <label class="app-field-label">Categoría:</label>
+  <select [(ngModel)]="quickExpense.categoria" class="app-input mb-3">
+    <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+  </select>
+
+  <label class="app-field-label">Valor:</label>
+  <input type="text" [value]="quickExpense.valor ? quickExpense.valor.toLocaleString('es-CO') : ''"
+    (input)="onQuickExpenseValueInput($event)" placeholder="Ej: 50.000" class="app-input mb-3" />
+
+  <div class="flex justify-end gap-2">
+    <button (click)="isAddExpenseModalOpen = false" class="app-secondary-button">Cancelar</button>
+    <button (click)="addQuickExpense()" class="app-primary-button">Agregar</button>
+  </div>
+</app-modal-shell>
 
 <!-- Modal Pagar Factura -->
 <app-modal-shell *ngIf="isPayInvoiceModalOpen" title="Realizar Pago">

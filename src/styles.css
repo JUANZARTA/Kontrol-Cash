@@ -150,6 +150,81 @@
     @apply inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm;
   }
 
+  .app-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 9999px;
+    border: 1px solid;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .app-status-chip.chip-success {
+    color: #0d9488;
+    border-color: rgba(13, 148, 136, 0.5);
+    background-color: rgba(13, 148, 136, 0.08);
+  }
+  .app-status-chip.chip-warning {
+    color: #b45309;
+    border-color: rgba(180, 83, 9, 0.5);
+    background-color: rgba(217, 119, 6, 0.08);
+  }
+  .app-status-chip.chip-danger {
+    color: #c2410c;
+    border-color: rgba(194, 65, 12, 0.5);
+    background-color: rgba(234, 88, 12, 0.08);
+  }
+  .app-status-chip.chip-info {
+    color: #0369a1;
+    border-color: rgba(3, 105, 161, 0.5);
+    background-color: rgba(2, 132, 199, 0.08);
+  }
+  .dark-theme .app-status-chip.chip-success {
+    color: #2dd4bf;
+    border-color: rgba(45, 212, 191, 0.4);
+    background-color: rgba(13, 148, 136, 0.15);
+  }
+  .dark-theme .app-status-chip.chip-warning {
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.4);
+    background-color: rgba(217, 119, 6, 0.15);
+  }
+  .dark-theme .app-status-chip.chip-danger {
+    color: #fb923c;
+    border-color: rgba(251, 146, 60, 0.4);
+    background-color: rgba(234, 88, 12, 0.15);
+  }
+  .dark-theme .app-status-chip.chip-info {
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.4);
+    background-color: rgba(2, 132, 199, 0.15);
+  }
+
+  .app-quick-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 1rem;
+    border: 1px solid var(--app-border);
+    background-color: var(--app-surface);
+    padding: 1.25rem 1rem;
+    color: var(--app-text);
+    transition: background-color 0.2s, border-color 0.2s;
+    cursor: pointer;
+    width: 100%;
+  }
+  .app-quick-action:hover {
+    background-color: var(--app-accent-soft);
+    border-color: var(--app-accent, currentColor);
+  }
+  .app-quick-action span.label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--app-muted);
+  }
+
   .app-auth-shell {
     @apply relative min-h-screen overflow-hidden px-4 py-10;
   }
@@ -795,7 +870,8 @@ textarea {
 .dark-theme.custom-color .app-section-card,
 .dark-theme.custom-color .app-page-toolbar,
 .dark-theme.custom-color .app-modal-panel,
-.dark-theme.custom-color .app-menu-panel {
+.dark-theme.custom-color .app-menu-panel,
+.dark-theme.custom-color .app-quick-action {
   background-color: var(--app-accent-dark-surface) !important;
 }
 .dark-theme.custom-color .bg-white,

@@ -54,106 +54,106 @@
         routerLinkActive="app-sidebar-link-active" [routerLinkActiveOptions]="{ exact: true }"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.1s">
-        <span class="material-icons text-[20px]">home</span>
+        <span class="material-icons text-[20px] text-sky-300">home</span>
         Inicio
       </a>
+
+      <hr class="border-white/10 mx-2 opacity-0 animate-fadeSlideLeft" style="animation-delay:0.12s" />
 
       <!-- Tabla de Ingresos -->
       <a routerLink="/app/income" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
-        style="animation-delay:0.2s">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
-          <path
-            d="M12 2.25a9.75 9.75 0 100 19.5 9.75 9.75 0 000-19.5zM7.5 12a4.5 4.5 0 019 0 4.5 4.5 0 01-9 0zM12 9a3 3 0 110 6 3 3 0 010-6z" />
-        </svg>
+        style="animation-delay:0.15s">
+        <span class="material-icons text-[20px] text-teal-400">add_circle</span>
         Tabla de Ingresos
-      </a>
-
-      <!-- Mi Cartera -->
-      <a routerLink="/app/wallet" (click)="closeSidebar()"
-        routerLinkActive="app-sidebar-link-active"
-        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
-        style="animation-delay:0.25s">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
-          <path
-            d="M4.5 5.25a2.25 2.25 0 012.25-2.25h10.5A2.25 2.25 0 0119.5 5.25v2.25H4.5V5.25zM3 9.75a.75.75 0 01.75-.75h16.5a.75.75 0 01.75.75V18a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18V9.75z" />
-        </svg>
-        Mi Billetera
-      </a>
-
-      <!-- Tabla Facturas -->
-      <a routerLink="/app/invoice" (click)="closeSidebar()"
-        routerLinkActive="app-sidebar-link-active"
-        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
-        style="animation-delay:0.3s">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
-          <path d="M5 4h14v2H5V4zm0 4h14v2H5V8zm0 4h14v2H5v-2zm0 4h14v2H5v-2z" />
-        </svg>
-        Facturas
       </a>
 
       <!-- Tabla de Gastos -->
       <a routerLink="/app/expense" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
-        style="animation-delay:0.15s">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
-          <path
-            d="M5 3a1 1 0 000 2h14a1 1 0 100-2H5zM3 7h18v12H3V7zm2 2v8h14V9H5zm5 1a1 1 0 011 1v4a1 1 0 01-2 0v-4a1 1 0 011-1zm6 0a1 1 0 011 1v4a1 1 0 01-2 0v-4a1 1 0 011-1z" />
-        </svg>
+        style="animation-delay:0.2s">
+        <span class="material-icons text-[20px] text-orange-400">remove_circle</span>
         Tabla de Gastos
       </a>
+
+      <!-- Tabla Facturas -->
+      <a routerLink="/app/invoice" (click)="closeSidebar()"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
+        style="animation-delay:0.25s">
+        <span class="material-icons text-[20px] text-sky-400">receipt_long</span>
+        Facturas
+      </a>
+
+      <hr class="border-white/10 mx-2 opacity-0 animate-fadeSlideLeft" style="animation-delay:0.27s" />
+
+      <!-- Mi Billetera -->
+      <a routerLink="/app/wallet" (click)="closeSidebar()"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
+        style="animation-delay:0.3s">
+        <span class="material-icons text-[20px] text-indigo-400">account_balance_wallet</span>
+        Mi Billetera
+      </a>
+
       <!-- Alcancías -->
       <a routerLink="/app/saving" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.35s">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
-          <path
-            d="M12 2.25a9.75 9.75 0 100 19.5 9.75 9.75 0 000-19.5zM6 10.5h12a.75.75 0 010 1.5H6a.75.75 0 010-1.5zM7.5 15h9a.75.75 0 010 1.5h-9a.75.75 0 010-1.5z" />
-        </svg>
+        <span class="material-icons text-[20px] text-emerald-400">savings</span>
         Alcancías
       </a>
 
-      <!-- Préstamos -->
-      <a routerLink="/app/loan" (click)="closeSidebar()"
-        routerLinkActive="app-sidebar-link-active"
-        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
-        style="animation-delay:0.4s" *ngIf="showLoans">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
-          <path
-            d="M3 5h18a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2zm0 2v2h18V7H3zm0 4v6h18v-6H3zm2 2h2v2H5v-2z" />
-        </svg>
-        Deudores
-      </a>
+      <hr class="border-white/10 mx-2 opacity-0 animate-fadeSlideLeft" style="animation-delay:0.37s" />
 
       <!-- Deudas -->
       <a routerLink="/app/debt" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
-        style="animation-delay:0.45s" *ngIf="showDebts">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5">
-          <path
-            d="M2.25 12a9.75 9.75 0 1019.5 0 9.75 9.75 0 00-19.5 0zM13.5 9.75a.75.75 0 00-1.5 0V12H9.75a.75.75 0 000 1.5H12v2.25a.75.75 0 001.5 0V13.5h2.25a.75.75 0 000-1.5H13.5V9.75z" />
-        </svg>
+        style="animation-delay:0.4s" *ngIf="showDebts">
+        <span class="material-icons text-[20px] text-rose-400">credit_score</span>
         Deudas
       </a>
+
+      <!-- Deudores -->
+      <a routerLink="/app/loan" (click)="closeSidebar()"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
+        style="animation-delay:0.45s" *ngIf="showLoans">
+        <span class="material-icons text-[20px] text-purple-400">people</span>
+        Deudores
+      </a>
+
+      <hr class="border-white/10 mx-2 opacity-0 animate-fadeSlideLeft" style="animation-delay:0.47s" />
 
       <!-- Mi Vehículo -->
       <a routerLink="/app/vehicle" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.48s" *ngIf="showVehicle">
-        <span class="material-icons text-[20px]">directions_car</span>
+        <span class="material-icons text-[20px] text-slate-400">directions_car</span>
         Mi Vehículo
       </a>
+
+      <!-- Estadísticas -->
+      <a routerLink="/app/statistics" (click)="closeSidebar()"
+        routerLinkActive="app-sidebar-link-active"
+        class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
+        style="animation-delay:0.49s" *ngIf="showStatistics">
+        <span class="material-icons text-[20px] text-cyan-400">bar_chart</span>
+        Estadísticas
+      </a>
+
+      <hr class="border-white/10 mx-2 opacity-0 animate-fadeSlideLeft" style="animation-delay:0.495s" />
 
       <a routerLink="/app/settings" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.5s">
-        <span class="material-icons text-[20px]">settings</span>
+        <span class="material-icons text-[20px] text-gray-400">settings</span>
         Configuración
       </a>
 
