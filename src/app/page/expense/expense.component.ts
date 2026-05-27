@@ -13,7 +13,6 @@ import { FinancialStatusBadgeComponent } from '../../shared/components/financial
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 import { PlannerService } from '../../services/planner.service';
-import { RecurrentItem } from '../../models/planner.model';
 import { AttachmentsService } from '../../services/attachments.service';
 import { MovementAttachment } from '../../models/attachment.model';
 import { ScanReceiptService, ScannedItem } from '../../services/scan-receipt.service';
@@ -101,16 +100,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   categorias: string[] = [...this.defaultCategorias];
   customCategories: string[] = [];
   customCategoryName = '';
-  recurringItems: RecurrentItem[] = [];
-  editingRecurringExpenseId: string | null = null;
-  newRecurringExpense: RecurrentItem = {
-    nombre: '',
-    categoria: CategoriaGasto.Variable,
-    monto: 0,
-    tipo: 'expense',
-    activo: true,
-  };
-
+  showCustomCategories = false;
   // Gasto nuevo (modal)
   newExpense: Expense = new Expense(
     '',
@@ -156,18 +146,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       if (date.year && date.month) {
         this.currentYear = date.year;
         this.currentMonth = date.month;
-        this.plannerService
-          .ensureRecurringItemsApplied(
-            this.userId,
-            this.currentYear,
-            this.currentMonth,
-            this.incomeServiceProxy(),
-            this.expenseService
-          )
-          .subscribe(() => {
-            this.loadPlannerConfig();
-            this.loadExpenses();
-          });
+        this.loadPlannerConfig();
+        this.loadExpenses();
       }
     });
     this.finanzasService.mostrarEstadoFinanciero(
@@ -227,14 +207,6 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       });
   }
 
-  private incomeServiceProxy() {
-    return {
-      addIncome: () => {
-        return of(null);
-      },
-    };
-  }
-
   loadPlannerConfig() {
     this.plannerService.getCustomCategories(this.userId, 'expense').subscribe((categories) => {
       this.customCategories = categories;
@@ -245,13 +217,6 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       if (!this.categorias.includes(this.editedExpense.categoria)) {
         this.editedExpense.categoria = this.categorias[0] || CategoriaGasto.Variable;
       }
-      if (!this.categorias.includes(this.newRecurringExpense.categoria)) {
-        this.newRecurringExpense.categoria = this.categorias[0] || CategoriaGasto.Variable;
-      }
-    });
-
-    this.plannerService.getRecurringItems(this.userId, 'expense').subscribe((items) => {
-      this.recurringItems = items;
     });
   }
 
@@ -283,80 +248,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     });
   }
 
-  addRecurringExpense() {
-    if (!this.newRecurringExpense.nombre.trim() || this.newRecurringExpense.monto <= 0) {
-      return;
-    }
-
-    const payload: RecurrentItem = {
-      ...this.newRecurringExpense,
-      nombre: this.newRecurringExpense.nombre.trim(),
-      categoria: this.newRecurringExpense.categoria,
-      tipo: 'expense',
-      activo: true,
-    };
-
-    const request = this.editingRecurringExpenseId
-      ? this.plannerService.updateRecurringItem(this.userId, this.editingRecurringExpenseId, payload)
-      : this.plannerService.addRecurringItem(this.userId, payload);
-
-    request.subscribe(() => {
-      this.resetRecurringExpenseForm();
-      this.loadPlannerConfig();
-    });
-  }
-
-  onRecurringExpenseAmountInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const rawValue = input.value.replace(/\D/g, '');
-    const numericValue = Number(rawValue) || 0;
-    this.newRecurringExpense.monto = numericValue;
-    input.value = this.formatCurrency(numericValue);
-  }
-
-  startEditRecurringExpense(item: RecurrentItem) {
-    this.editingRecurringExpenseId = item.id || null;
-    this.newRecurringExpense = {
-      nombre: item.nombre,
-      categoria: item.categoria,
-      monto: item.monto,
-      tipo: 'expense',
-      activo: item.activo,
-    };
-  }
-
-  toggleRecurringExpense(item: RecurrentItem) {
-    if (!item.id) return;
-    this.plannerService
-      .updateRecurringItem(this.userId, item.id, { ...item, activo: !item.activo })
-      .subscribe(() => this.loadPlannerConfig());
-  }
-
-  resetRecurringExpenseForm() {
-    this.editingRecurringExpenseId = null;
-    this.newRecurringExpense = {
-      nombre: '',
-      categoria: this.categorias[0] || CategoriaGasto.Variable,
-      monto: 0,
-      tipo: 'expense',
-      activo: true,
-    };
-  }
-
-  deleteRecurringExpense(itemId?: string) {
-    if (!itemId) return;
-    this.plannerService.deleteRecurringItem(this.userId, itemId).subscribe(() => {
-      if (this.editingRecurringExpenseId === itemId) {
-        this.resetRecurringExpenseForm();
-      }
-      this.loadPlannerConfig();
-    });
-  }
-
   isCustomCategoryInUse(category: string): boolean {
-    const usedInExpenses = this.expenses.some((item) => item.categoria === category);
-    const usedInRecurring = this.recurringItems.some((item) => item.categoria === category);
-    return usedInExpenses || usedInRecurring;
+    return this.expenses.some((item) => item.categoria === category);
   }
   setAction(action: 'add' | 'subtract'): void {
     this.currentAction = action;

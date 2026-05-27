@@ -43,6 +43,8 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   currentMonth = '';
 
   entries: FuelEntryWithId[] = [];
+  allEntries: FuelEntryWithId[] = [];
+  private allEntriesLoaded = false;
   pumps: FuelPumpWithId[] = [];
   wallets: Array<{ id: string; tipo: string; valor: number }> = [];
   selectedPumpId = '';
@@ -112,6 +114,10 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         this.loadEntries();
         this.loadWallets();
         this.loadPumps();
+        if (!this.allEntriesLoaded) {
+          this.allEntriesLoaded = true;
+          this.loadAllEntriesForChart();
+        }
       }
     });
 
@@ -133,9 +139,15 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       this.entries = Object.entries(data || {})
         .map(([id, item]: [string, any]) => ({ id, ...item }))
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-      this.refreshChart();
     });
     this.loadGasolinaAndVehicleExpenses();
+  }
+
+  loadAllEntriesForChart(): void {
+    this.vehicleService.getAllRecentFuelEntries(this.userId, this.currentYear, this.currentMonth).subscribe(entries => {
+      this.allEntries = entries;
+      this.refreshChart();
+    });
   }
 
   loadGasolinaAndVehicleExpenses(): void {
@@ -149,6 +161,35 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         map.set(exp.descripcion, (map.get(exp.descripcion) || 0) + exp.valor);
       }
       this.vehicleExpenseSummary = Array.from(map.entries()).map(([descripcion, total]) => ({ descripcion, total }));
+
+      if (this.gasolinaEstimacion === 0) {
+        this.carryOverEstimacion();
+      }
+    });
+  }
+
+  private getPreviousMonth(): { year: string; month: string } {
+    let m = parseInt(this.currentMonth, 10) - 1;
+    let y = parseInt(this.currentYear, 10);
+    if (m === 0) { m = 12; y--; }
+    return { year: String(y), month: String(m).padStart(2, '0') };
+  }
+
+  private carryOverEstimacion(): void {
+    const prev = this.getPreviousMonth();
+    this.expenseService.getExpenses(this.userId, prev.year, prev.month).subscribe((data: any) => {
+      const all: ExpenseWithId[] = Object.entries(data || {}).map(([eid, item]: [string, any]) => ({ id: eid, ...item }));
+      const prevGasolina = all.find(e => e.categoria === 'Vehículo' && e.descripcion === 'Gasolina');
+      if (!prevGasolina?.estimacion || prevGasolina.estimacion <= 0) return;
+
+      this.gasolinaEstimacion = prevGasolina.estimacion;
+      const expense = new Expense('Gasolina', 'Vehículo', 0, this.gasolinaEstimacion);
+      this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe((res: any) => {
+        const newId = res?.name;
+        if (newId) {
+          this.vehicleService.setGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth, newId).subscribe();
+        }
+      });
     });
   }
 
@@ -488,17 +529,31 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     return entry.galones > 0 ? entry.monto / entry.galones : 0;
   }
 
+  private getPrevEntryForFirst(): FuelEntryWithId | null {
+    if (this.entries.length === 0 || this.allEntries.length === 0) return null;
+    const firstId = this.entries[0].id;
+    const allIdx = this.allEntries.findIndex(e => e.id === firstId);
+    return allIdx > 0 ? this.allEntries[allIdx - 1] : null;
+  }
+
   getDistanceFromPrevious(index: number): number {
-    if (index === 0) return 0;
+    if (index === 0) {
+      const prev = this.getPrevEntryForFirst();
+      return prev ? Math.max(0, this.entries[0].kilometraje - prev.kilometraje) : 0;
+    }
     return Math.max(0, this.entries[index].kilometraje - this.entries[index - 1].kilometraje);
   }
 
   getDaysFromPrevious(index: number): number {
-    if (index === 0) return 0;
+    if (index === 0) {
+      const prev = this.getPrevEntryForFirst();
+      if (!prev) return 0;
+      const diff = new Date(this.entries[0].fecha).getTime() - new Date(prev.fecha).getTime();
+      return Math.max(0, Math.round(diff / 86400000));
+    }
     const current = new Date(this.entries[index].fecha).getTime();
     const prev = new Date(this.entries[index - 1].fecha).getTime();
-    const diff = Math.round((current - prev) / (1000 * 60 * 60 * 24));
-    return Math.max(0, diff);
+    return Math.max(0, Math.round((current - prev) / 86400000));
   }
 
   getKmPerGallon(index: number): number {
@@ -553,10 +608,10 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       this.entries = Object.entries(data || {})
         .map(([id, item]: [string, any]) => ({ id, ...item }))
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-      this.refreshChart();
       const total = this.entries.reduce((sum, e) => sum + (e.monto || 0), 0);
       this.syncGasolinaExpense(total);
     });
+    this.loadAllEntriesForChart();
   }
 
   private syncGasolinaExpense(total: number): void {
@@ -589,7 +644,34 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     const textColor = isDark ? '#cbd5e1' : '#334155';
     const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.25)';
 
-    const labels = this.entries.map((_, i) => `Tanqueo ${i + 1}`);
+    const src = this.allEntries;
+
+    if (src.length === 0) {
+      this.chart?.destroy();
+      this.chart = undefined;
+      return;
+    }
+
+    const labels = src.map(e => {
+      const d = new Date(e.fecha);
+      return d.toLocaleDateString('es', { day: '2-digit', month: 'short', year: '2-digit' });
+    });
+
+    const getDist = (i: number) =>
+      i === 0 ? 0 : Math.max(0, src[i].kilometraje - src[i - 1].kilometraje);
+
+    const getDays = (i: number) => {
+      if (i === 0) return 0;
+      const diff = new Date(src[i].fecha).getTime() - new Date(src[i - 1].fecha).getTime();
+      return Math.max(0, Math.round(diff / 86400000));
+    };
+
+    const getKmG = (i: number) => {
+      const km = getDist(i);
+      const g = src[i]?.galones || 0;
+      return g > 0 ? Math.round((km / g) * 10) / 10 : 0;
+    };
+
     let datasets: any[] = [];
     let yAxisTitle = '';
 
@@ -597,7 +679,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       case 'rendimiento': {
         datasets = [{
           label: 'KM recorridos',
-          data: this.entries.map((_, i) => this.getDistanceFromPrevious(i)),
+          data: src.map((_, i) => getDist(i)),
           borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.15)', tension: 0.3, fill: true,
         }];
         yAxisTitle = 'Kilómetros';
@@ -606,10 +688,9 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       case 'dias': {
         datasets = [{
           label: 'KM por día',
-          data: this.entries.map((_, i) => {
-            const km = this.getDistanceFromPrevious(i);
-            const days = this.getDaysFromPrevious(i);
-            return days > 0 ? Math.round((km / days) * 10) / 10 : 0;
+          data: src.map((_, i) => {
+            const days = getDays(i);
+            return days > 0 ? Math.round((getDist(i) / days) * 10) / 10 : 0;
           }),
           borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)', tension: 0.3, fill: true,
         }];
@@ -619,7 +700,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       case 'kmGalon': {
         datasets = [{
           label: 'KM por galón',
-          data: this.entries.map((_, i) => Math.round(this.getKmPerGallon(i) * 10) / 10),
+          data: src.map((_, i) => getKmG(i)),
           borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.15)', tension: 0.3, fill: true,
         }];
         yAxisTitle = 'KM / galón';
@@ -628,9 +709,9 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       case 'costoKm': {
         datasets = [{
           label: 'Costo por KM ($)',
-          data: this.entries.map((entry, i) => {
-            const km = this.getDistanceFromPrevious(i);
-            return km > 0 ? Math.round((entry.monto / km) * 10) / 10 : 0;
+          data: src.map((e, i) => {
+            const km = getDist(i);
+            return km > 0 ? Math.round((e.monto / km) * 10) / 10 : 0;
           }),
           borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.15)', tension: 0.3, fill: true,
         }];
@@ -641,17 +722,9 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         let cumulative = 0;
         datasets = [{
           label: 'Gasto acumulado ($)',
-          data: this.entries.map(e => { cumulative += e.monto; return cumulative; }),
+          data: src.map(e => { cumulative += e.monto; return cumulative; }),
           borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.15)', tension: 0.3, fill: true,
         }];
-        if (this.gasolinaEstimacion > 0) {
-          datasets.push({
-            label: 'Presupuesto mensual',
-            data: this.entries.map(() => this.gasolinaEstimacion),
-            borderColor: '#f97316', borderDash: [6, 4], backgroundColor: 'transparent',
-            tension: 0, fill: false, pointRadius: 0,
-          });
-        }
         yAxisTitle = '$ acumulados';
         break;
       }

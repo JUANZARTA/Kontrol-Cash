@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, from } from 'rxjs';
+import { Observable, of, from, forkJoin } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
-import { FuelEntry, FuelPump } from '../models/vehicle.model';
+import { FuelEntry, FuelEntryWithId, FuelPump } from '../models/vehicle.model';
 
 @Injectable({ providedIn: 'root' })
 export class VehicleService {
@@ -160,6 +160,28 @@ export class VehicleService {
         const url = token ? `${base}?auth=${token}` : base;
         return this.http.delete(url).pipe(catchError(() => of(null)));
       })
+    );
+  }
+
+  getAllRecentFuelEntries(userId: string, year: string, month: string, monthsBack = 18): Observable<FuelEntryWithId[]> {
+    const periods: { year: string; month: string }[] = [];
+    let y = parseInt(year, 10);
+    let m = parseInt(month, 10);
+    for (let i = 0; i < monthsBack; i++) {
+      periods.push({ year: String(y), month: String(m).padStart(2, '0') });
+      m--;
+      if (m === 0) { m = 12; y--; }
+    }
+    return forkJoin(
+      periods.map(p =>
+        this.getFuelEntries(userId, p.year, p.month).pipe(
+          map(data => Object.entries(data || {}).map(([id, item]: [string, any]) => ({ id, ...item } as FuelEntryWithId)))
+        )
+      )
+    ).pipe(
+      map(results => results.flat().filter((e: any) => e.fecha).sort((a: any, b: any) =>
+        new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+      ))
     );
   }
 }
