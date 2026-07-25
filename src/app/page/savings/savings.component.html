@@ -124,7 +124,7 @@
   </div>
 </app-modal-shell>
 
-<app-modal-shell *ngIf="isEditPiggybankModalOpen" title="Editar Alcancía" description="Actualizá nombre, meta o valor." panelClass="animate-pop-in">
+<app-modal-shell *ngIf="isEditPiggybankModalOpen" title="Editar Alcancía" description="Actualiza nombre, meta o valor." panelClass="animate-pop-in">
   <label class="app-field-label">Nombre de la alcancía:</label>
   <input type="text" [(ngModel)]="editedPiggybank.nombre" class="app-input mb-3" />
 
@@ -140,7 +140,7 @@
   </div>
 </app-modal-shell>
 
-<app-modal-shell *ngIf="isMovementModalOpen" title="Agregar Movimiento" description="Registrá un ingreso o retiro de esta alcancía." size="sm" panelClass="animate-pop-in">
+<app-modal-shell *ngIf="isMovementModalOpen" title="Agregar Movimiento" description="Registra un ingreso o retiro de esta alcancía." size="sm" panelClass="animate-pop-in">
   <label class="app-field-label">Nombre:</label>
   <input type="text" [(ngModel)]="newMovement.nombre" class="app-input mb-3" placeholder="Ej: Aporte semanal" />
 

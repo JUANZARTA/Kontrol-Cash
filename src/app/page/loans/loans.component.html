@@ -216,12 +216,12 @@
   size="sm" panelClass="animate-pop-in">
 
   <p class="text-sm text-slate-500 mb-4">
-    El deudor aún tiene saldo pendiente. Seleccioná la billetera donde se devuelve ese dinero antes de eliminarlo.
+    El deudor aún tiene saldo pendiente. Selecciona la billetera donde se devuelve ese dinero antes de eliminarlo.
   </p>
 
   <label class="app-field-label">Billetera:</label>
   <select [(ngModel)]="selectedReturnWallet" class="app-input mb-1">
-    <option value="" disabled>Seleccioná billetera</option>
+    <option value="" disabled>Selecciona billetera</option>
     <option *ngFor="let w of wallet" [value]="w.id">{{ w.tipo }}</option>
   </select>
   <p *ngIf="selectedReturnWallet" class="text-sm text-gray-500 mb-4">
@@ -255,7 +255,7 @@
 
   <label class="app-field-label">¿A qué billetera ingresa el dinero?</label>
   <select [(ngModel)]="selectedPaymentWallet" class="app-input mb-1">
-    <option value="" disabled>Seleccioná billetera</option>
+    <option value="" disabled>Selecciona billetera</option>
     <option *ngFor="let account of wallet" [value]="account.id">{{ account.tipo }}</option>
   </select>
   <p *ngIf="selectedPaymentWallet" class="text-sm text-gray-500 mb-4">

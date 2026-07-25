@@ -110,7 +110,7 @@
     </div>
 
     <div *ngIf="showCustomCategories" class="mt-4">
-      <p class="mb-4 text-sm text-slate-500">Agregá categorías propias para tus gastos especiales.</p>
+      <p class="mb-4 text-sm text-slate-500">Agrega categorías propias para tus gastos especiales.</p>
 
       <div class="flex gap-3">
         <input [(ngModel)]="customCategoryName" class="app-input" placeholder="Ej: Mascotas" />
@@ -272,9 +272,9 @@
 
   <p class="text-sm font-semibold text-slate-700 mb-4">{{ payFijoExpense?.descripcion }}</p>
 
-  <label class="app-field-label">Seleccioná una billetera:</label>
+  <label class="app-field-label">Selecciona una billetera:</label>
   <select [(ngModel)]="selectedWalletForFijo" class="app-input mb-1">
-    <option value="" disabled>Seleccioná billetera</option>
+    <option value="" disabled>Selecciona billetera</option>
     <option *ngFor="let w of wallet" [value]="w.id">{{ w.tipo }}</option>
   </select>
   <p *ngIf="selectedWalletForFijo" class="text-sm text-gray-500 mb-4">
@@ -291,13 +291,13 @@
 
 <!-- Modal: Escanear factura -->
 <app-modal-shell *ngIf="showScanModal" title="Escanear Factura"
-  description="Subí una foto de tu factura y Gemini AI detectará los ítems automáticamente."
+  description="Sube una foto de tu factura y Gemini AI detectará los ítems automáticamente."
   panelClass="animate-pop-in">
 
   <!-- Estado inicial: selector de archivo -->
   <div *ngIf="!scanLoading && scannedItems.length === 0 && !scanError" class="text-center py-4">
     <span class="material-icons text-5xl text-slate-300 mb-3 block">document_scanner</span>
-    <p class="text-sm text-slate-500 mb-4">Seleccioná una imagen de la factura (JPG, PNG, WebP)</p>
+    <p class="text-sm text-slate-500 mb-4">Selecciona una imagen de la factura (JPG, PNG, WebP)</p>
     <label class="app-primary-button cursor-pointer inline-flex items-center gap-2">
       <span class="material-icons text-sm">upload</span>
       Subir imagen
@@ -328,7 +328,7 @@
 
   <!-- Estado: resultados -->
   <div *ngIf="!scanLoading && scannedItems.length > 0">
-    <p class="text-xs text-slate-500 mb-3">Seleccioná los ítems que querés importar como gastos (estimación):</p>
+    <p class="text-xs text-slate-500 mb-3">Selecciona los ítems que quieres importar como gastos (estimación):</p>
     <div class="max-h-64 overflow-y-auto space-y-2 mb-4 pr-1">
       <label *ngFor="let item of scannedItems; let i = index"
         class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3 cursor-pointer hover:bg-slate-50 transition">

@@ -831,7 +831,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('[Scan] error:', err);
-        this.scanError = 'No se pudo leer la imagen. Intentá con una foto más clara y bien iluminada.';
+        this.scanError = 'No se pudo leer la imagen. Intenta con una foto más clara y bien iluminada.';
         this.scanLoading = false;
       }
     });

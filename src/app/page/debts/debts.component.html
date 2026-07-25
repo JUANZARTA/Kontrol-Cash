@@ -216,9 +216,9 @@
     <strong>${{ formatCurrency(getPayModalMonto()) }}</strong>
   </p>
 
-  <label class="app-field-label">Seleccioná una billetera:</label>
+  <label class="app-field-label">Selecciona una billetera:</label>
   <select [(ngModel)]="selectedWalletForDebt" class="app-input mb-1">
-    <option value="" disabled>Seleccioná billetera</option>
+    <option value="" disabled>Selecciona billetera</option>
     <option *ngFor="let w of wallet" [value]="w.id">{{ w.tipo }}</option>
   </select>
   <p *ngIf="selectedWalletForDebt" class="text-sm text-gray-500 mb-4">

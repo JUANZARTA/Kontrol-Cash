@@ -217,7 +217,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   addVehicleExpense(): void {
     if (!this.newVehicleExp.descripcion.trim() || this.newVehicleExp.valor <= 0) {
-      alert('Completá descripción y valor.');
+      alert('Completa descripción y valor.');
       return;
     }
     const expense = new Expense(this.newVehicleExp.descripcion, 'Vehículo', this.newVehicleExp.valor, this.newVehicleExp.estimacion);
@@ -333,12 +333,12 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   addEntry(): void {
     if (!this.newEntry.fecha || this.newEntry.kilometraje <= 0 || this.newEntry.monto <= 0) {
-      alert('Completá todos los campos con valores válidos.');
+      alert('Completa todos los campos con valores válidos.');
       return;
     }
 
     if (!this.selectedPumpId) {
-      alert('Seleccioná una bomba.');
+      alert('Selecciona una bomba.');
       return;
     }
 
@@ -349,7 +349,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     }
 
     if (!this.selectedWalletId) {
-      alert('Seleccioná una billetera para descontar el tanqueo.');
+      alert('Selecciona una billetera para descontar el tanqueo.');
       return;
     }
 
@@ -435,7 +435,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   addPump(): void {
     if (!this.newPump.nombre.trim() || this.newPump.precioGalon <= 0) {
-      alert('Completá nombre y precio por galón válidos.');
+      alert('Completa nombre y precio por galón válidos.');
       return;
     }
     this.vehicleService.addFuelPump(this.userId, this.newPump).subscribe(() => {

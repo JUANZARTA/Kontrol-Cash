@@ -246,7 +246,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
     if (!this.selectedPiggybank) return;
     const nombre = (this.newMovement.nombre || '').trim();
     if (!nombre || this.newMovement.valor <= 0) {
-      alert('Completá nombre y valor del movimiento.');
+      alert('Completa nombre y valor del movimiento.');
       return;
     }
 
