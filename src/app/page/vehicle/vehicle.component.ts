@@ -475,7 +475,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   openEditModal(id: string): void {
     const original = this.entries.find((e) => e.id === id);
-    if (!original) return;
+    if (!original || original.esReferencia) return;
     this.editedEntry = { ...original };
     this.editedId = id;
     this.isEditModalOpen = true;
@@ -491,7 +491,12 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     });
   }
 
-  openDeleteModal(id: string): void { this.entryToDeleteId = id; this.isDeleteModalOpen = true; }
+  openDeleteModal(id: string): void {
+    const entry = this.entries.find((e) => e.id === id);
+    if (!entry || entry.esReferencia) return;
+    this.entryToDeleteId = id;
+    this.isDeleteModalOpen = true;
+  }
   closeDeleteModal(): void { this.entryToDeleteId = null; this.isDeleteModalOpen = false; }
 
   confirmDelete(): void {
@@ -503,6 +508,8 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   activateSelection(id: string): void {
+    const entry = this.entries.find((e) => e.id === id);
+    if (!entry || entry.esReferencia) return;
     this.selectionMode = true;
     this.selectedIds.add(id);
   }
@@ -515,16 +522,20 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   get hasSelection(): boolean { return this.selectedIds.size > 0; }
   get selectionCount(): number { return this.selectedIds.size; }
-  get allSelected(): boolean { return this.entries.length > 0 && this.entries.every(e => this.selectedIds.has(e.id)); }
+  private get selectableEntries(): FuelEntryWithId[] { return this.entries.filter(e => !e.esReferencia); }
+
+  get allSelected(): boolean { return this.selectableEntries.length > 0 && this.selectableEntries.every(e => this.selectedIds.has(e.id)); }
 
   toggleSelect(id: string): void {
+    const entry = this.entries.find((e) => e.id === id);
+    if (!entry || entry.esReferencia) return;
     if (this.selectedIds.has(id)) this.selectedIds.delete(id);
     else this.selectedIds.add(id);
   }
 
   toggleSelectAll(): void {
     if (this.allSelected) this.selectedIds.clear();
-    else this.entries.forEach(e => this.selectedIds.add(e.id));
+    else this.selectableEntries.forEach(e => this.selectedIds.add(e.id));
   }
 
   confirmBulkDelete(): void {
@@ -621,7 +632,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       this.entries = Object.entries(data || {})
         .map(([id, item]: [string, any]) => ({ id, ...item }))
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-      const total = this.entries.reduce((sum, e) => sum + (e.monto || 0), 0);
+      const total = this.entries.filter(e => !e.esReferencia).reduce((sum, e) => sum + (e.monto || 0), 0);
       this.syncGasolinaExpense(total);
     });
     this.loadAllEntriesForChart();
@@ -733,7 +744,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       }
       case 'acumulado': {
         let cumulative = 0;
-        const monthEntries = this.entries;
+        const monthEntries = this.entries.filter(e => !e.esReferencia);
         labels = monthEntries.map(e => {
           const d = new Date(e.fecha);
           return d.toLocaleDateString('es', { day: '2-digit', month: 'short', year: '2-digit' });

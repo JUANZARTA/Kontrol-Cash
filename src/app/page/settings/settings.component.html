@@ -28,6 +28,18 @@
     </div>
   </div>
 
+  <div class="mt-6 border-t border-slate-200 pt-6">
+    <h3 class="text-sm font-semibold uppercase tracking-wide" style="color: var(--app-muted)">
+      Mes activo: <span class="capitalize">{{ currentPeriodLabel }}</span>
+    </h3>
+
+    <div class="mt-3">
+      <button (click)="goToMonthClose()" class="app-primary-button w-full sm:w-auto self-start">
+        <span class="material-icons text-sm align-middle mr-1">event_repeat</span>Cierre de Mes
+      </button>
+    </div>
+  </div>
+
   <div class="mt-6 space-y-4">
     <div class="settings-toggle-row flex-col items-start gap-3">
       <div class="flex w-full items-center justify-between">
@@ -84,3 +96,21 @@
 
   <p *ngIf="feedbackMessage" class="mt-3 text-sm text-slate-600">{{ feedbackMessage }}</p>
 </section>
+
+<section class="app-section-card mt-4">
+  <p class="text-sm font-semibold text-red-600">Vaciar mes</p>
+  <p class="text-xs text-red-600 mb-3">Elimina TODOS los datos del mes actual ({{ currentPeriodLabel }}) y lo deja completamente en blanco. Pensado para pruebas — esta acción no se puede deshacer.</p>
+  <button (click)="showClearMonthConfirm = true" [disabled]="isClearingMonth" class="app-warning-button text-sm">
+    {{ isClearingMonth ? 'Vaciando...' : 'Vaciar mes' }}
+  </button>
+  <p *ngIf="clearMonthMessage" class="mt-2 text-xs text-red-600">{{ clearMonthMessage }}</p>
+</section>
+
+<app-confirm-modal *ngIf="showClearMonthConfirm"
+  title="¿Vaciar el mes?"
+  [message]="'Se van a borrar TODOS los datos de ' + currentPeriodLabel + ': ingresos, gastos, billeteras, deudas, deudores, facturas, ahorros y vehículo. Esta acción no se puede deshacer.'"
+  confirmText="Vaciar mes"
+  tone="danger"
+  icon="delete_forever"
+  (cancel)="showClearMonthConfirm = false"
+  (confirm)="clearMonth()" />

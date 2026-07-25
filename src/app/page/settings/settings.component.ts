@@ -1,20 +1,28 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { UserSettingsService } from '../../services/user-settings.service';
 import { ThemeService } from '../../services/theme.service';
+import { DateService } from '../../services/date.service';
+import { MonthlyCloseService } from '../../services/monthly-close.service';
 import { UserSystemSettings, defaultUserSystemSettings } from '../../models/user-settings.model';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmModalComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
 })
-export default class SettingsComponent implements OnInit {
+export default class SettingsComponent implements OnInit, OnDestroy {
   private settingsService = inject(UserSettingsService);
   private themeService = inject(ThemeService);
+  private dateService = inject(DateService);
+  private closeService = inject(MonthlyCloseService);
+  private router = inject(Router);
 
   readonly user = JSON.parse(localStorage.getItem('user') || '{}');
   readonly userId = this.user?.localId || '';
@@ -25,7 +33,21 @@ export default class SettingsComponent implements OnInit {
   isSaving = false;
   feedbackMessage = '';
 
+  currentYear = '';
+  currentMonth = '';
+  showClearMonthConfirm = false;
+  isClearingMonth = false;
+  clearMonthMessage = '';
+  private dateSub?: Subscription;
+
   ngOnInit(): void {
+    this.dateSub = this.dateService.selectedDate$.subscribe((date) => {
+      if (date.year && date.month) {
+        this.currentYear = date.year;
+        this.currentMonth = date.month;
+      }
+    });
+
     if (!this.userId) return;
     this.settingsService.getSettings(this.userId).subscribe((settings) => {
       this.settings = {
@@ -39,6 +61,31 @@ export default class SettingsComponent implements OnInit {
       // No llamamos setTheme() aquí para no revertir cambios hechos desde el navbar.
       this.settings.darkMode = this.themeService.isDarkMode();
       this.themeService.setCustomColorMode(this.settings.useCustomColor, this.settings.accentColor);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.dateSub?.unsubscribe();
+  }
+
+  get currentPeriodLabel(): string {
+    if (!this.currentYear || !this.currentMonth) return '';
+    const date = new Date(parseInt(this.currentYear), parseInt(this.currentMonth) - 1, 1);
+    return date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+  }
+
+  goToMonthClose(): void {
+    this.router.navigate(['/app/month-close']);
+  }
+
+  clearMonth(): void {
+    this.showClearMonthConfirm = false;
+    this.isClearingMonth = true;
+    this.clearMonthMessage = '';
+    const clearedPeriodLabel = this.currentPeriodLabel;
+    this.closeService.clearMonth(this.userId, this.currentYear, this.currentMonth).subscribe(() => {
+      this.isClearingMonth = false;
+      this.clearMonthMessage = `Se vació el mes de ${clearedPeriodLabel}.`;
     });
   }
 

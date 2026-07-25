@@ -5,6 +5,22 @@
     <div class="app-content">
       <app-header />
 
+      <div *ngIf="autoCloseNotice" class="app-section-card mt-4 flex items-center justify-between flex-wrap gap-3" style="border-color: rgba(13, 148, 136, 0.4);">
+        <div class="flex items-center gap-3">
+          <span class="material-icons text-teal-600">event_available</span>
+          <p class="text-sm" style="color: var(--app-text)">
+            <strong class="capitalize">{{ periodLabel(autoCloseNotice.period) }}</strong> se cerró automáticamente.
+            Los datos pasaron a <strong class="capitalize">{{ periodLabel(autoCloseNotice.nextPeriod) }}</strong>.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button (click)="goToMonthClose()" class="app-secondary-button text-xs">Ver resumen</button>
+          <button (click)="dismissAutoCloseNotice()" class="text-slate-400" title="Cerrar">
+            <span class="material-icons text-base">close</span>
+          </button>
+        </div>
+      </div>
+
       <main class="mt-8">
         <router-outlet />
       </main>

@@ -179,7 +179,7 @@ export class VehicleService {
         )
       )
     ).pipe(
-      map(results => results.flat().filter((e: any) => e.fecha).sort((a: any, b: any) =>
+      map(results => results.flat().filter((e: any) => e.fecha && !e.esReferencia).sort((a: any, b: any) =>
         new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
       ))
     );

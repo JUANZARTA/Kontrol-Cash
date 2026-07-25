@@ -102,13 +102,18 @@ export class ThemeService {
     root.style.setProperty('--app-sidebar-to', `hsl(${h}, ${Math.min(s, 80)}%, 5%)`);
 
     // Dark mode
-    const sDark = Math.max(Math.round(s * 0.4), 14);
+    // Los pisos de saturación de abajo son para que colores poco saturados no se vean
+    // "lavados" en dark mode. Pero si el color elegido es gris puro (s=0: negro, blanco,
+    // grises), no tiene tono real — forzar un piso lo tiñe con el hue=0 (rojo) por defecto
+    // de hexToHsl. Por eso a s=0 lo dejamos en 0 siempre, sin piso.
+    const sDark = s === 0 ? 0 : Math.max(Math.round(s * 0.4), 14);
+    const sBtnDark = s === 0 ? 0 : Math.max(s - 14, 28);
     root.style.setProperty('--app-accent-dark-bg', `hsl(${h}, ${sDark}%, 4%)`);
     root.style.setProperty('--app-accent-dark-bg-soft', `hsl(${h}, ${sDark}%, 7%)`);
     root.style.setProperty('--app-accent-dark-surface', `hsla(${h}, ${sDark}%, 10%, 0.92)`);
     root.style.setProperty('--app-accent-dark-row', `hsla(${h}, ${sDark}%, 8%, 0.88)`);
-    root.style.setProperty('--app-accent-dark-btn', `hsl(${h}, ${Math.max(s - 14, 28)}%, 28%)`);
-    root.style.setProperty('--app-accent-dark-btn-hover', `hsl(${h}, ${Math.max(s - 14, 28)}%, 22%)`);
+    root.style.setProperty('--app-accent-dark-btn', `hsl(${h}, ${sBtnDark}%, 28%)`);
+    root.style.setProperty('--app-accent-dark-btn-hover', `hsl(${h}, ${sBtnDark}%, 22%)`);
     root.style.setProperty('--app-accent-dark-glow-1', `hsla(${h}, ${sPct}, 55%, 0.07)`);
     root.style.setProperty('--app-accent-dark-glow-2', `hsla(${h}, ${sPct}, 45%, 0.09)`);
   }

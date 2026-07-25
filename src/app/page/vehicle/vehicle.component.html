@@ -82,18 +82,24 @@
     </thead>
     <tbody>
       <tr *ngFor="let item of entries; let i = index" class="app-table-row"
+        [class.opacity-50]="item.esReferencia"
         appLongPress (longPress)="activateSelection(item.id)">
         <td *ngIf="selectionMode" class="py-2 px-2 text-center">
-          <input type="checkbox" [checked]="selectedIds.has(item.id)" (change)="toggleSelect(item.id)" class="cursor-pointer" />
+          <input *ngIf="!item.esReferencia" type="checkbox" [checked]="selectedIds.has(item.id)" (change)="toggleSelect(item.id)" class="cursor-pointer" />
         </td>
-        <td class="py-2 px-3 sm:px-4 font-semibold">{{ item.nombreBomba }}</td>
+        <td class="py-2 px-3 sm:px-4 font-semibold">
+          {{ item.nombreBomba }}
+          <span *ngIf="item.esReferencia" class="ml-1 text-[10px] uppercase tracking-wide text-slate-400">(referencia)</span>
+        </td>
         <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(item.monto) }}</td>
         <td class="py-2 px-3 sm:px-4 text-right">{{ formatNumber(item.galones) }}</td>
         <td class="py-2 px-3 sm:px-4 text-right">{{ formatCurrency(item.kilometraje) }}</td>
-        <td class="py-2 px-3 sm:px-4 text-right">{{ getDistanceFromPrevious(i) > 0 ? formatCurrency(getDistanceFromPrevious(i)) + ' km' : '—' }}</td>
+        <td class="py-2 px-3 sm:px-4 text-right">{{ !item.esReferencia && getDistanceFromPrevious(i) > 0 ? formatCurrency(getDistanceFromPrevious(i)) + ' km' : '—' }}</td>
         <td class="py-2 px-3 sm:px-4 text-center">
-          <button (click)="openEditModal(item.id)" class="text-sky-700 mr-2"><span class="material-icons">edit</span></button>
-          <button (click)="openDeleteModal(item.id)" class="text-orange-600"><span class="material-icons">delete</span></button>
+          <ng-container *ngIf="!item.esReferencia">
+            <button (click)="openEditModal(item.id)" class="text-sky-700 mr-2"><span class="material-icons">edit</span></button>
+            <button (click)="openDeleteModal(item.id)" class="text-orange-600"><span class="material-icons">delete</span></button>
+          </ng-container>
         </td>
       </tr>
     </tbody>

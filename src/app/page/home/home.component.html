@@ -38,7 +38,7 @@
 
 <!-- Accesos rápidos -->
 <div class="mt-6 grid gap-3"
-  [style.grid-template-columns]="'repeat(' + ((showVehicle ? 1 : 0) + (showStatistics ? 1 : 0) + 3) + ', 1fr)'"  >
+  [style.grid-template-columns]="'repeat(' + ((showVehicle ? 1 : 0) + (showStatistics ? 1 : 0) + 4) + ', 1fr)'"  >
 
   <button (click)="isAddIncomeModalOpen = true" class="app-quick-action animate-fadeSlideUp">
     <span class="material-icons text-[24px] text-teal-500">add_circle</span>
@@ -63,6 +63,11 @@
   <button *ngIf="showVehicle" (click)="router.navigate(['/app/vehicle'])" class="app-quick-action animate-fadeSlideUp">
     <span class="material-icons text-[24px] text-slate-500">directions_car</span>
     <span class="label">Vehículo</span>
+  </button>
+
+  <button (click)="router.navigate(['/app/month-close'])" class="app-quick-action animate-fadeSlideUp">
+    <span class="material-icons text-[24px] text-amber-500">event_repeat</span>
+    <span class="label">Cierre de Mes</span>
   </button>
 
 </div>

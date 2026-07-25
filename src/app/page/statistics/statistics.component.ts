@@ -24,7 +24,7 @@ import { Debt } from '../../models/debt.model';
 
 import { Loan } from '../../models/loans.model';
 import { CategoriaGasto, Expense } from '../../models/expense.model';
-import { Income, CategoriaIngreso } from '../../models/income.model';
+import { Income } from '../../models/income.model';
 import { FinanzasService } from '../../services/finanzas.service';
 import { Saving } from '../../models/savings.model';
 import { BarChartComponent } from '../../shared/components/bar-chart/bar-chart.component';
@@ -174,8 +174,6 @@ export default class StatisticsComponent implements OnInit, OnDestroy {
     this.setupInstallPrompt();
     this.loadInvoices();
 
-    this.verificarYCopiarMesAnteriorAutomatico();
-
     this.dateSubscription = this.dateService.selectedDate$.subscribe(
       ({ year, month }: { year: string; month: string }) => {
         if (year && month) {
@@ -194,7 +192,6 @@ export default class StatisticsComponent implements OnInit, OnDestroy {
               this.loadSavingGoal();
               this.loadMonthlyHistory();
             });
-          this.verificarYCopiarMesAnteriorAutomatico();
         }
       }
     );
@@ -593,117 +590,6 @@ export default class StatisticsComponent implements OnInit, OnDestroy {
         if (!vencidaA && vencidaB) return 1;
         return fechaA.getTime() - fechaB.getTime();
       });
-  }
-
-  verificarYCopiarMesAnteriorAutomatico() {
-    if (!isPlatformBrowser(this.platformId)) return;
-    const userId = this.currentUser;
-    if (!userId) return;
-    const hoy = new Date();
-    const diaActual = hoy.getDate();
-    const mesActual = (hoy.getMonth() + 1).toString().padStart(2, '0');
-    const añoActual = hoy.getFullYear().toString();
-    if (diaActual !== 1) return;
-    const claveMesCopiado = `mesCopiado_${añoActual}_${mesActual}`;
-    if (localStorage.getItem(claveMesCopiado) === 'true') return;
-    if (this.currentYear !== añoActual || this.currentMonth !== mesActual) return;
-    this.ejecutarCopiaMesAnterior(false, claveMesCopiado);
-  }
-
-  copiarMesAnterior() {
-    if (!confirm('¿Estás seguro de copiar todos los datos del mes anterior?')) return;
-    this.ejecutarCopiaMesAnterior(true);
-  }
-
-  ejecutarCopiaMesAnterior(mostrarMensaje: boolean = true, claveMesCopiado?: string) {
-    const userId = this.currentUser;
-    if (!userId) { if (mostrarMensaje) alert('Error: No se pudo identificar el usuario'); return; }
-    const currentDate = new Date(parseInt(this.currentYear), parseInt(this.currentMonth) - 1, 1);
-    currentDate.setMonth(currentDate.getMonth() - 1);
-    const previousYear = currentDate.getFullYear().toString();
-    const previousMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-    this.incomeService.getIncomes(userId, this.currentYear, this.currentMonth).subscribe((currentIncomes) => {
-      if (currentIncomes) {
-        Object.entries(currentIncomes).forEach(([id, income]: [string, any]) => {
-          if (income.nombre === 'Mes anterior') {
-            this.incomeService.deleteIncome(userId, this.currentYear, this.currentMonth, id).subscribe();
-          }
-        });
-      }
-      this.obtenerYCopiarDatosMesAnterior(userId, previousYear, previousMonth, mostrarMensaje, claveMesCopiado);
-    });
-  }
-
-  obtenerYCopiarDatosMesAnterior(userId: string, previousYear: string, previousMonth: string, mostrarMensaje: boolean, claveMesCopiado?: string) {
-    forkJoin({
-      wallet: this.walletService.getWallet(userId, previousYear, previousMonth),
-      incomes: this.incomeService.getIncomes(userId, previousYear, previousMonth),
-      invoices: this.invoiceService.getInvoices(userId, previousYear, previousMonth),
-      expenses: this.expenseService.getExpenses(userId, previousYear, previousMonth),
-      savings: this.savingsService.getSavings(userId, previousYear, previousMonth),
-      debts: this.debtService.getDebts(userId, previousYear, previousMonth),
-      loans: this.loanService.getLoans(userId, previousYear, previousMonth),
-    }).subscribe({
-      next: ({ wallet, incomes, invoices, expenses, savings, debts, loans }) => {
-        let totalBilletera = 0;
-        if (wallet) {
-          Object.entries(wallet).forEach(([id, account]: [string, any]) => {
-            const nuevaCuenta = new WalletAccount(account.tipo, account.valor);
-            totalBilletera += account.valor || 0;
-            this.walletService.addAccount(userId, this.currentYear, this.currentMonth, nuevaCuenta).subscribe();
-          });
-        }
-        if (incomes) {
-          Object.entries(incomes).forEach(([id, income]: [string, any]) => {
-            this.incomeService.addIncome(userId, this.currentYear, this.currentMonth, new Income(income.nombre, income.categoria, 0)).subscribe();
-          });
-        }
-        if (totalBilletera > 0) {
-          this.incomeService.addIncome(userId, this.currentYear, this.currentMonth, new Income('Mes anterior', CategoriaIngreso.Fijo, totalBilletera)).subscribe();
-        }
-        if (invoices) {
-          Object.entries(invoices).forEach(([id, invoice]: [string, any]) => {
-            const fechaAnterior = new Date(invoice.fechaPago);
-            let dia = fechaAnterior.getDate();
-            const mesActual = parseInt(this.currentMonth) - 1;
-            const añoActual = parseInt(this.currentYear);
-            const ultimoDia = new Date(añoActual, mesActual + 1, 0).getDate();
-            if (dia > ultimoDia) dia = ultimoDia;
-            const fechaFormateada = new Date(añoActual, mesActual, dia).toISOString().split('T')[0];
-            this.invoiceService.addInvoice(userId, this.currentYear, this.currentMonth, { nombre: invoice.nombre, fechaPago: fechaFormateada, valor: invoice.valor, estado: 'Pendiente' }).subscribe();
-          });
-        }
-        if (expenses) {
-          Object.entries(expenses).forEach(([id, expense]: [string, any]) => {
-            if (expense.categoria === CategoriaGasto.Facturas) return;
-            this.expenseService.addExpense(userId, this.currentYear, this.currentMonth, new Expense(expense.descripcion, expense.categoria, 0, expense.estimacion)).subscribe();
-          });
-        }
-        if (savings) {
-          Object.entries(savings).forEach(([id, saving]: [string, any]) => {
-            this.savingsService.addSaving(userId, this.currentYear, this.currentMonth, new Saving(saving.tipo, saving.valor)).subscribe();
-          });
-        }
-        if (debts) {
-          Object.entries(debts).forEach(([id, debt]: [string, any]) => {
-            this.debtService.addDebt(userId, this.currentYear, this.currentMonth, new Debt(debt.acreedor, debt.fecha_deuda, debt.fecha_pago, debt.valor, debt.estado)).subscribe();
-          });
-        }
-        if (loans) {
-          Object.entries(loans).forEach(([id, loan]: [string, any]) => {
-            if (loan.estado === 'Pendiente') {
-              this.loanService.addLoan(userId, this.currentYear, this.currentMonth, new Loan(loan.deudor, loan.fecha_prestamo, loan.fecha_pago, loan.valor, loan.estado)).subscribe();
-            }
-          });
-        }
-        setTimeout(() => {
-          this.loadData();
-          if (claveMesCopiado) localStorage.setItem(claveMesCopiado, 'true');
-          if (mostrarMensaje) alert('Datos del mes anterior copiados exitosamente');
-        }, 1000);
-      },
-      error: () => { if (mostrarMensaje) alert('Error al copiar los datos del mes anterior'); },
-    });
   }
 
   private computeGastosPorCategoria(): void {

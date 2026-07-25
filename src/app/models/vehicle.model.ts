@@ -8,6 +8,8 @@ export interface FuelEntry {
   fecha: string;
   walletId?: string;
   expenseId?: string;
+  /** Copia del último tanqueo del mes anterior dejada como punto de partida al cerrar el mes: no editable ni parte de las estadísticas del mes actual. */
+  esReferencia?: boolean;
 }
 
 export interface FuelEntryWithId extends FuelEntry {
