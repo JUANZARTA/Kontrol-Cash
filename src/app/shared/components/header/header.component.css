@@ -1,0 +1,4 @@
+:host-context(.dark-theme) .header-logo {
+  border-color: transparent;
+  background-color: transparent;
+}

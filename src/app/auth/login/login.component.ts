@@ -232,6 +232,10 @@ export default class LoginComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
+  }
+
   // Método para iniciar sesión con Google (maneja popup y muestra mensajes)
   onLoginWithGoogle(): void {
     this.showLoginOverlay = true;

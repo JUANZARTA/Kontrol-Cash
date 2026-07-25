@@ -10,7 +10,7 @@ import { ThemeService } from './services/theme.service';
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
-  title = 'Mi Cartera';
+  title = 'Kontrol Cash';
 
   constructor(private router: Router, private themeService: ThemeService) {}
 

@@ -1,3 +1,51 @@
+.theme-toggle-switch {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.theme-toggle-track {
+  display: flex;
+  align-items: center;
+  width: 60px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  padding: 3px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.theme-toggle-switch.is-dark .theme-toggle-track {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.theme-toggle-knob {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #fbbf24;
+  color: #ffffff;
+  transform: translateX(0);
+  transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease;
+}
+
+.theme-toggle-knob .material-icons {
+  font-size: 16px;
+}
+
+.theme-toggle-switch.is-dark .theme-toggle-knob {
+  transform: translateX(28px);
+  background: #1e293b;
+  color: #7dd3fc;
+}
+
 .install-hint-card {
   border-color: rgba(125, 211, 252, 0.6);
   background-color: rgba(240, 249, 255, 0.9);

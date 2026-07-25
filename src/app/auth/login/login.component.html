@@ -11,9 +11,10 @@
   <span class="circle" style="top:80%; left:80%; animation-delay:0s;"></span>
 
   <!-- Contenido reutilizado entre el panel izquierdo (solo desktop) y el flujo mobile -->
-  <ng-template #logoTpl>
-    <div class="flex justify-center mb-6">
-      <img src="assets/img/logoIcono.png" alt="Logo" class="h-20 w-auto" />
+  <ng-template #logoTpl let-onBlue="onBlue">
+    <div class="flex flex-col items-center mb-6">
+      <img src="assets/img/logoIcono.png" alt="Logo" [ngClass]="onBlue ? 'h-36' : 'h-20'" class="w-auto" />
+      <p class="-mt-2 font-semibold tracking-tight" [ngClass]="onBlue ? 'text-2xl text-white' : 'text-lg text-slate-900'">Kontrol Cash</p>
     </div>
   </ng-template>
 
@@ -27,7 +28,7 @@
     <div class="mb-6 rounded-2xl border px-4 py-4 install-hint-card"
       [ngClass]="onBlue ? 'border-white/25 bg-white/10' : 'border-sky-200 bg-sky-50/80'"
       *ngIf="!appInstalled">
-      <p class="text-sm font-semibold mb-2 install-hint-title" [ngClass]="onBlue ? 'text-white' : 'text-sky-900'">Instala Mi Cartera</p>
+      <p class="text-sm font-semibold mb-2 install-hint-title" [ngClass]="onBlue ? 'text-white' : 'text-sky-900'">Instala Kontrol Cash</p>
 
       <!-- iOS: instrucciones manuales -->
       <ng-container *ngIf="isIos">
@@ -66,6 +67,17 @@
     </div>
   </ng-template>
 
+  <ng-template #themeToggleTpl>
+    <button type="button" (click)="toggleTheme()" class="theme-toggle-switch" [class.is-dark]="isDarkMode"
+      title="Cambiar tema" aria-label="Cambiar tema claro u oscuro">
+      <span class="theme-toggle-track">
+        <span class="theme-toggle-knob">
+          <span class="material-icons">{{ isDarkMode ? 'dark_mode' : 'light_mode' }}</span>
+        </span>
+      </span>
+    </button>
+  </ng-template>
+
   <ng-template #guestBtnTpl let-onBlue="onBlue">
     <button type="button" (click)="loginDemo()"
       class="flex w-full items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-medium transition"
@@ -79,13 +91,22 @@
 
   <div class="app-auth-panel lg:flex lg:max-w-4xl lg:p-0 lg:overflow-hidden">
 
+    <!-- Interruptor de tema: solo mobile (en desktop vive en el panel izquierdo) -->
+    <div class="lg:hidden absolute top-4 right-4 z-20">
+      <ng-container *ngTemplateOutlet="themeToggleTpl"></ng-container>
+    </div>
+
     <!-- Panel izquierdo: solo desktop -->
-    <div class="hidden lg:flex lg:w-1/2 lg:flex-col lg:justify-center lg:p-10 bg-gradient-to-br from-sky-600 via-sky-700 to-slate-900 relative overflow-hidden">
+    <div class="hidden lg:flex lg:w-1/2 lg:flex-col lg:justify-center lg:p-10 relative overflow-hidden"
+      style="background: linear-gradient(to bottom right, var(--app-sidebar-from, #0284c7), var(--app-sidebar-via, #0369a1), var(--app-sidebar-to, #0f172a));">
+      <div class="absolute top-4 right-4 z-20">
+        <ng-container *ngTemplateOutlet="themeToggleTpl"></ng-container>
+      </div>
       <span class="absolute top-[-40px] right-[-40px] w-40 h-40 rounded-full bg-white/10 animate-floating-slow"></span>
       <span class="absolute bottom-[-60px] left-[-50px] w-48 h-48 rounded-full bg-white/5 animate-floating"></span>
 
       <div class="relative z-10">
-        <ng-container *ngTemplateOutlet="logoTpl"></ng-container>
+        <ng-container *ngTemplateOutlet="logoTpl; context: { onBlue: true }"></ng-container>
         <ng-container *ngTemplateOutlet="subtitleTpl; context: { onBlue: true }"></ng-container>
         <ng-container *ngTemplateOutlet="installCardTpl; context: { onBlue: true }"></ng-container>
         <ng-container *ngTemplateOutlet="guestBtnTpl; context: { onBlue: true }"></ng-container>
@@ -96,7 +117,7 @@
     <div class="lg:w-1/2 lg:p-10 lg:flex lg:flex-col lg:justify-center">
 
       <div class="lg:hidden">
-        <ng-container *ngTemplateOutlet="logoTpl"></ng-container>
+        <ng-container *ngTemplateOutlet="logoTpl; context: { onBlue: false }"></ng-container>
       </div>
 
       <h2 class="app-auth-title">Iniciar Sesión</h2>
@@ -137,11 +158,6 @@
           Iniciar Sesión
         </button>
 
-        <!-- Instalar app: solo mobile, entre Iniciar Sesión y Google -->
-        <div class="lg:hidden">
-          <ng-container *ngTemplateOutlet="installCardTpl; context: { onBlue: false }"></ng-container>
-        </div>
-
         <!-- Login con Google -->
         <button type="button" (click)="onLoginWithGoogle()"
           class="flex w-full items-center justify-center gap-3 rounded-2xl border border-gray-300 bg-white py-3 text-sm font-medium text-slate-700 transition hover:bg-gray-50">
@@ -164,6 +180,10 @@
           </div>
 
           <ng-container *ngTemplateOutlet="guestBtnTpl; context: { onBlue: false }"></ng-container>
+
+          <div class="mt-5">
+            <ng-container *ngTemplateOutlet="installCardTpl; context: { onBlue: false }"></ng-container>
+          </div>
         </div>
       </form>
     </div>

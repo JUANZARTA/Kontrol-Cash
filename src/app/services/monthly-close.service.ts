@@ -335,7 +335,7 @@ export class MonthlyCloseService {
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    doc.text('Mi Cartera', marginX + 24, 16);
+    doc.text('Kontrol Cash', marginX + 24, 16);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
     doc.text('Cierre de mes', marginX + 24, 23);
@@ -387,7 +387,7 @@ export class MonthlyCloseService {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
-    doc.text('Generado automáticamente por Mi Cartera', marginX, y + 12);
+    doc.text('Generado automáticamente por Kontrol Cash', marginX, y + 12);
 
     doc.save(`${safePeriod}-cierre.pdf`);
   }
