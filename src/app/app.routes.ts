@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard'; // 👈 Importa tu guard
+import { PendingCloseGuard } from './guards/pending-close.guard';
 export const routes: Routes = [
   {
     path: '',
@@ -16,7 +17,8 @@ export const routes: Routes = [
   },
   {
     path: 'app',
-    canActivate: [AuthGuard], // ✅ Aquí aplicas el guard a TODA la sección protegida
+    canActivate: [AuthGuard, PendingCloseGuard], // ✅ Auth + bloqueo por mes sin cerrar
+    canActivateChild: [PendingCloseGuard], // re-chequea al navegar entre pantallas ya dentro de /app
     loadComponent: () => import('./shared/components/layout/layout.component'),
     children: [
       { path: 'home', loadComponent: () => import('./page/home/home.component') },

@@ -56,8 +56,8 @@ export class MonthlyCloseService {
 
   /**
    * Cierra `year`/`month` y transfiere los datos al mes siguiente. Es el único punto
-   * de entrada real del cierre — tanto el botón manual como el chequeo automático
-   * de `checkAndRunAutoClose` pasan por acá, para no repetir la lógica en dos lugares.
+   * de entrada real del cierre — siempre disparado a mano por el usuario desde
+   * /app/month-close (no hay cierre automático: ver PendingCloseGuard).
    */
   executeClose(userId: string, year: string, month: string): Observable<{ incomeTotal: number; expenseTotal: number; debtPending: number }> {
     const next = this.getNextPeriod(year, month);
@@ -201,25 +201,19 @@ export class MonthlyCloseService {
 
   /**
    * Revisa si el mes calendario REAL anterior (no el mes que el usuario esté mirando en
-   * la app) ya fue cerrado. Si no, lo cierra automáticamente y devuelve qué se cerró,
-   * para que el que llama pueda mostrar una notificación. Pensado para llamarse UNA
-   * sola vez por sesión desde un lugar único (el layout raíz de /app), nunca desde
-   * páginas individuales — así no se repite el bug de doble ejecución que ya tuvimos.
+   * la app) ya fue cerrado. NO cierra nada automáticamente — solo informa cuál es el
+   * período pendiente para que el que llama (el guard de rutas) bloquee la navegación
+   * y mande al usuario a cerrarlo a mano. El cierre automático se probó antes y fallaba
+   * en producción; ahora el cierre es siempre una acción manual y obligatoria.
    */
-  checkAndRunAutoClose(userId: string): Observable<{ period: string; nextPeriod: string } | null> {
+  getPendingClosePeriod(userId: string): Observable<{ year: string; month: string } | null> {
     if (!userId) return of(null);
 
     const now = new Date();
     const prev = this.getPreviousPeriod(String(now.getFullYear()), String(now.getMonth() + 1).padStart(2, '0'));
 
     return this.isMonthClosed(userId, prev.year, prev.month).pipe(
-      switchMap(closed => {
-        if (closed) return of(null);
-        const next = this.getNextPeriod(prev.year, prev.month);
-        return this.executeClose(userId, prev.year, prev.month).pipe(
-          map(() => ({ period: `${prev.year}-${prev.month}`, nextPeriod: `${next.year}-${next.month}` }))
-        );
-      }),
+      map(closed => (closed ? null : prev)),
       catchError(() => of(null))
     );
   }

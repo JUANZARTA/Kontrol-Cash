@@ -1,9 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../header/header.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { FooterComponent } from '../footer/footer.component';
-import { Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { Subscription, filter } from 'rxjs';
 import { UserSettingsService } from '../../../services/user-settings.service';
 import { ThemeService } from '../../../services/theme.service';
 import { MonthlyCloseService } from '../../../services/monthly-close.service';
@@ -15,13 +16,14 @@ import { MonthlyCloseService } from '../../../services/monthly-close.service';
   templateUrl: './layout.component.html',
   styleUrl: './layout.component.css'
 })
-export default class LayoutComponent implements OnInit {
+export default class LayoutComponent implements OnInit, OnDestroy {
   private settingsService = inject(UserSettingsService);
   private themeService = inject(ThemeService);
   private closeService = inject(MonthlyCloseService);
   private router = inject(Router);
 
-  autoCloseNotice: { period: string; nextPeriod: string } | null = null;
+  pendingClose: { year: string; month: string } | null = null;
+  private navSub?: Subscription;
 
   ngOnInit(): void {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -37,21 +39,31 @@ export default class LayoutComponent implements OnInit {
       );
     });
 
-    this.closeService.checkAndRunAutoClose(userId).subscribe(result => {
-      if (result) this.autoCloseNotice = result;
+    this.checkPendingClose(userId);
+    // El guard de rutas ya bloquea la navegación mientras haya un mes pendiente; acá
+    // solo recalculamos el aviso para que desaparezca apenas el usuario cierre el mes
+    // y navegue a cualquier otra pantalla.
+    this.navSub = this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe(() => this.checkPendingClose(userId));
+  }
+
+  ngOnDestroy(): void {
+    this.navSub?.unsubscribe();
+  }
+
+  private checkPendingClose(userId: string): void {
+    this.closeService.getPendingClosePeriod(userId).subscribe(pending => {
+      this.pendingClose = pending;
     });
   }
 
-  periodLabel(period: string): string {
-    return this.closeService.formatPeriodLabel(period);
+  get pendingClosePeriodLabel(): string {
+    if (!this.pendingClose) return '';
+    return this.closeService.formatPeriodLabel(`${this.pendingClose.year}-${this.pendingClose.month}`);
   }
 
   goToMonthClose(): void {
-    this.autoCloseNotice = null;
     this.router.navigate(['/app/month-close']);
-  }
-
-  dismissAutoCloseNotice(): void {
-    this.autoCloseNotice = null;
   }
 }
