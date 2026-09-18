@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, HostListener } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WalletService } from '../../services/wallet.service';
@@ -148,8 +148,17 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
   // Helpers UI
   // ======================
   toggleMenu(invoice: InvoiceWithId) {
+    const wasOpen = invoice.showMenu;
     this.invoices.forEach((i) => (i.showMenu = false));
-    invoice.showMenu = !invoice.showMenu;
+    invoice.showMenu = !wasOpen;
+  }
+
+  // Cierra cualquier menú de acciones abierto si el click fue fuera de él
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (target.closest('.invoice-menu-toggle')) return;
+    this.invoices.forEach((i) => (i.showMenu = false));
   }
 
   getAnimationDelay(invoice: InvoiceWithId) {

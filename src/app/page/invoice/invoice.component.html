@@ -42,7 +42,7 @@
       <h3 class="text-sm font-bold" [ngClass]="{'text-gray-600': invoice.estado === 'Pagada'}">
         {{ invoice.nombre }}
       </h3>
-      <div class="relative">
+      <div class="relative invoice-menu-toggle">
         <button (click)="toggleMenu(invoice)" class="p-2 rounded-full hover:bg-gray-100"
           [ngClass]="{'text-gray-600': invoice.estado === 'Pagada', 'text-gray-800': invoice.estado !== 'Pagada'}">
           <span class="material-icons">more_vert</span>
