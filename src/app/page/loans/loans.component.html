@@ -41,6 +41,7 @@
     </thead>
     <tbody>
       <tr *ngFor="let loan of loans; let i = index" class="app-table-row opacity-0 animate-fadeSlideDown"
+        [ngClass]="{'!opacity-50': loan.estado === 'Pagado'}"
         [style.animationDelay]="getRowAnimationDelay(loan)"
         appLongPress (longPress)="activateSelection(loan.id)">
         <td *ngIf="selectionMode" class="py-2 px-2 text-center">
