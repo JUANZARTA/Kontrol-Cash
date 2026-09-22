@@ -72,6 +72,15 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
   cuadreDescuadre = 0;
 
+  // Valor centinela para "Descuadre" en los selects de billetera: no es una billetera real,
+  // solo aparece cuando hay un descuadre (cuadreDescuadre < 0) y al elegirlo el gasto se
+  // guarda sin tocar ninguna billetera — sirve para reconciliar gasto ya ocurrido sin registrar.
+  readonly DESCUADRE = '__descuadre__';
+
+  get hayDescuadre(): boolean {
+    return this.cuadreDescuadre < 0;
+  }
+
   // Variables nuevas en el componente
   showingToast: boolean = false;
   toastMessage: string = '';
@@ -360,8 +369,10 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          // Descontar de la billetera solo si hay valor > 0
-          if (this.newExpense.valor > 0) {
+          const isDescuadre = this.selectedWalletExpense === this.DESCUADRE;
+
+          // Descontar de la billetera solo si hay valor > 0 y no es un descuadre
+          if (this.newExpense.valor > 0 && !isDescuadre) {
             const wallet = this.wallet.find(
               (w) => w.id === this.selectedWalletExpense
             );
@@ -394,6 +405,9 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
               this.closeModal();
             }
           } else {
+            if (this.newExpense.valor > 0 && isDescuadre) {
+              this.showToast('Gasto agregado como descuadre, sin descontar billetera');
+            }
             this.loadExpenses();
             this.closeModal();
           }
@@ -445,25 +459,28 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     }
 
     const expense = this.expenses.find((e) => e.id === this.selectedExpenseId);
-    const wallet = this.wallet.find((w) => w.id === this.selectedWallet);
+    if (!expense) return;
 
-    if (!expense || !wallet) return;
+    const isDescuadre = this.selectedWallet === this.DESCUADRE;
+    const wallet = isDescuadre ? null : this.wallet.find((w) => w.id === this.selectedWallet);
+
+    if (!isDescuadre && !wallet) return;
 
     const currentExpenseValue = expense.valor;
-    const walletBalance = wallet.valor;
+    const walletBalance = wallet?.valor ?? 0;
     let valueToApply = Math.abs(this.newValue);
 
     // 🔹 VALIDACIONES PRINCIPALES
     if (action === 'add') {
-      // No permitir sumar más de lo que hay en la billetera
-      if (valueToApply > walletBalance) {
+      // No permitir sumar más de lo que hay en la billetera (no aplica para descuadre)
+      if (wallet && valueToApply > walletBalance) {
         this.showToast(
           'No puedes sumar más que el saldo disponible en la billetera'
         );
         return;
       }
       // Aplicar suma
-      wallet.valor -= valueToApply;
+      if (wallet) wallet.valor -= valueToApply;
       expense.valor += valueToApply;
     } else if (action === 'subtract') {
       // No permitir restar más que el valor actual del gasto
@@ -471,47 +488,53 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
         this.showToast('No puedes restar más que el valor actual del gasto');
         return;
       }
-      // Aplicar resta (devuelve dinero a la billetera)
-      wallet.valor += valueToApply;
+      // Aplicar resta (devuelve dinero a la billetera, salvo si es descuadre)
+      if (wallet) wallet.valor += valueToApply;
       expense.valor -= valueToApply;
     }
 
-    // 🔹 Actualizar billetera y gasto en la base de datos
-    this.walletService
-      .updateAccount(
-        this.userId,
-        this.currentYear,
-        this.currentMonth,
-        wallet.id,
-        { tipo: wallet.tipo, valor: wallet.valor }
-      )
-      .subscribe({
-        next: () => {
-          this.expenseService
-            .updateExpense(
-              this.userId,
-              this.currentYear,
-              this.currentMonth,
-              expense.id,
-              {
-                descripcion: expense.descripcion,
-                categoria: expense.categoria,
-                valor: expense.valor,
-                estimacion: expense.estimacion,
-              }
-            )
-            .subscribe({
-              next: () => {
-                this.showToast('Operación aplicada correctamente');
-                this.loadExpenses();
-                this.loadWallets();
-                this.closeAddValueModal();
-              },
-              error: (err) => console.error('Error al actualizar gasto:', err),
-            });
-        },
-        error: (err) => console.error('Error al actualizar billetera:', err),
-      });
+    const finishExpenseUpdate = () => {
+      this.expenseService
+        .updateExpense(
+          this.userId,
+          this.currentYear,
+          this.currentMonth,
+          expense.id,
+          {
+            descripcion: expense.descripcion,
+            categoria: expense.categoria,
+            valor: expense.valor,
+            estimacion: expense.estimacion,
+          }
+        )
+        .subscribe({
+          next: () => {
+            this.showToast('Operación aplicada correctamente');
+            this.loadExpenses();
+            this.loadWallets();
+            this.closeAddValueModal();
+          },
+          error: (err) => console.error('Error al actualizar gasto:', err),
+        });
+    };
+
+    // 🔹 Actualizar billetera (si aplica) y gasto en la base de datos
+    if (wallet) {
+      this.walletService
+        .updateAccount(
+          this.userId,
+          this.currentYear,
+          this.currentMonth,
+          wallet.id,
+          { tipo: wallet.tipo, valor: wallet.valor }
+        )
+        .subscribe({
+          next: finishExpenseUpdate,
+          error: (err) => console.error('Error al actualizar billetera:', err),
+        });
+    } else {
+      finishExpenseUpdate();
+    }
   }
 
   // ======================

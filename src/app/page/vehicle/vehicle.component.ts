@@ -13,6 +13,8 @@ import { WalletService } from '../../services/wallet.service';
 import { ExpenseService } from '../../services/expense.service';
 import { Expense, ExpenseWithId } from '../../models/expense.model';
 import { LongPressDirective } from '../../shared/directives/long-press.directive';
+import { FinanzasService } from '../../services/finanzas.service';
+import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
 
 Chart.register(...registerables);
 
@@ -21,7 +23,7 @@ type ChartType = 'rendimiento' | 'dias' | 'kmGalon' | 'costoKm' | 'acumulado';
 @Component({
   selector: 'app-vehicle',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalShellComponent, ConfirmModalComponent, LongPressDirective],
+  imports: [CommonModule, FormsModule, ModalShellComponent, ConfirmModalComponent, LongPressDirective, FinancialStatusBadgeComponent],
   templateUrl: './vehicle.component.html',
   styleUrls: ['./vehicle.component.css'],
   providers: [DecimalPipe],
@@ -33,6 +35,19 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   private themeService = inject(ThemeService);
   private walletService = inject(WalletService);
   private expenseService = inject(ExpenseService);
+  private finanzasService = inject(FinanzasService);
+
+  // Igual que en gastos: "Descuadre" solo aparece cuando hay un descuadre real (ver
+  // FinanzasService.mostrarEstadoFinanciero) y, al elegirlo, no se descuenta de ninguna billetera.
+  readonly DESCUADRE = '__descuadre__';
+  cuadreDescuadre = 0;
+  get hayDescuadre(): boolean {
+    return this.cuadreDescuadre < 0;
+  }
+
+  // Estado financiero (mismo badge que en gastos, billetera, etc.)
+  estadoFinanciero = 'Cargando...';
+  estadoFinancieroColor: 'verde' | 'rojo' | 'azul' = 'verde';
 
   @ViewChild('vehicleChart') vehicleChartRef!: ElementRef<HTMLCanvasElement>;
   private chart?: Chart;
@@ -116,6 +131,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         this.loadEntries();
         this.loadWallets();
         this.loadPumps();
+        this.finanzasService.mostrarEstadoFinanciero(this, this.userId, this.currentYear, this.currentMonth);
         if (!this.allEntriesLoaded) {
           this.allEntriesLoaded = true;
           this.loadAllEntriesForChart();
@@ -225,19 +241,22 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       alert('Selecciona una billetera para descontar el gasto.');
       return;
     }
-    const wallet = this.wallets.find(w => w.id === this.selectedWalletForVehicleExp);
-    if (!wallet) {
+    const isDescuadre = this.selectedWalletForVehicleExp === this.DESCUADRE;
+    const wallet = isDescuadre ? null : this.wallets.find(w => w.id === this.selectedWalletForVehicleExp);
+    if (!isDescuadre && !wallet) {
       alert('La billetera seleccionada no existe.');
       return;
     }
-    if (wallet.valor < this.newVehicleExp.valor) {
+    if (wallet && wallet.valor < this.newVehicleExp.valor) {
       alert('Saldo insuficiente en la billetera seleccionada.');
       return;
     }
     const expense = new Expense(this.newVehicleExp.descripcion, 'Vehículo', this.newVehicleExp.valor, this.newVehicleExp.estimacion);
     this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe(() => {
-      const updated = { tipo: wallet.tipo, valor: wallet.valor - this.newVehicleExp.valor };
-      this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, updated).subscribe(() => this.loadWallets());
+      if (wallet) {
+        const updated = { tipo: wallet.tipo, valor: wallet.valor - this.newVehicleExp.valor };
+        this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, updated).subscribe(() => this.loadWallets());
+      }
       this.closeVehicleExpModal();
       this.loadGasolinaAndVehicleExpenses();
     });
@@ -263,12 +282,13 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       alert('Selecciona una billetera para descontar el gasto.');
       return;
     }
-    const wallet = this.wallets.find(w => w.id === this.selectedWalletForVehicleExpAdd);
-    if (!wallet) {
+    const isDescuadre = this.selectedWalletForVehicleExpAdd === this.DESCUADRE;
+    const wallet = isDescuadre ? null : this.wallets.find(w => w.id === this.selectedWalletForVehicleExpAdd);
+    if (!isDescuadre && !wallet) {
       alert('La billetera seleccionada no existe.');
       return;
     }
-    if (action === 'add' && wallet.valor < this.vehicleExpAddVal) {
+    if (wallet && action === 'add' && wallet.valor < this.vehicleExpAddVal) {
       alert('Saldo insuficiente en la billetera seleccionada.');
       return;
     }
@@ -280,9 +300,11 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
     const updated = new Expense(exp.descripcion, exp.categoria, newValor, exp.estimacion);
     this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, exp.id, updated).subscribe(() => {
-      const delta = action === 'add' ? -this.vehicleExpAddVal : this.vehicleExpAddVal;
-      const updatedWallet = { tipo: wallet.tipo, valor: wallet.valor + delta };
-      this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, updatedWallet).subscribe(() => this.loadWallets());
+      if (wallet) {
+        const delta = action === 'add' ? -this.vehicleExpAddVal : this.vehicleExpAddVal;
+        const updatedWallet = { tipo: wallet.tipo, valor: wallet.valor + delta };
+        this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, updatedWallet).subscribe(() => this.loadWallets());
+      }
       this.closeVehicleExpAddValModal();
       this.loadGasolinaAndVehicleExpenses();
     });
@@ -371,13 +393,14 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       return;
     }
 
-    const selectedWallet = this.wallets.find((w) => w.id === this.selectedWalletId);
-    if (!selectedWallet) {
+    const isDescuadre = this.selectedWalletId === this.DESCUADRE;
+    const selectedWallet = isDescuadre ? null : this.wallets.find((w) => w.id === this.selectedWalletId);
+    if (!isDescuadre && !selectedWallet) {
       alert('La billetera seleccionada no existe.');
       return;
     }
 
-    if (this.newEntry.monto > selectedWallet.valor) {
+    if (selectedWallet && this.newEntry.monto > selectedWallet.valor) {
       alert('El monto supera el saldo disponible de la billetera.');
       return;
     }
@@ -393,6 +416,12 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     };
 
     this.vehicleService.addFuelEntry(this.userId, this.currentYear, this.currentMonth, payload).subscribe(() => {
+      if (!selectedWallet) {
+        this.closeAddModal();
+        this.reloadAndSync();
+        this.loadWallets();
+        return;
+      }
       const updatedWallet = {
         tipo: selectedWallet.tipo,
         valor: selectedWallet.valor - this.newEntry.monto,
