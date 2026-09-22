@@ -37,6 +37,7 @@ import { ModalShellComponent } from '../../shared/components/modal-shell/modal-s
 import { PlannerService } from '../../services/planner.service';
 import { MonthlyHistoryItem, SavingGoal } from '../../models/planner.model';
 import { Projection, ProjectionService } from '../../services/projection.service';
+import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
 
 interface DebtWithId extends Debt {
   id: string;
@@ -66,6 +67,7 @@ export interface InvoiceWithId extends Invoice {
     FinancialChartComponent,
     BarChartComponent,
     ModalShellComponent,
+    FinancialStatusBadgeComponent,
   ],
   templateUrl: './statistics.component.html',
   styleUrls: ['./statistics.component.css'],
