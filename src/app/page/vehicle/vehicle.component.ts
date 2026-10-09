@@ -101,10 +101,20 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   chartType: ChartType = 'kmGalon';
   showChartMenu = false;
 
+  // Alcance de datos para rendimiento/dias/kmGalon/costoKm: "historico" usa hasta 18 meses
+  // hacia atras (comportamiento de siempre), "mes" solo los tanqueos del mes actual. El
+  // gasto acumulado ya es siempre del mes actual, no le aplica este toggle.
+  chartScope: 'historico' | 'mes' = 'mes';
+
+  setChartScope(scope: 'historico' | 'mes'): void {
+    this.chartScope = scope;
+    this.refreshChart();
+  }
+
   readonly chartOptions: { key: ChartType; label: string; icon: string }[] = [
+    { key: 'kmGalon',    label: 'KM por galón',             icon: 'speed' },
     { key: 'rendimiento', label: 'Rendimiento por tanqueo', icon: 'local_gas_station' },
     { key: 'dias',        label: 'Rendimiento por día',     icon: 'calendar_today' },
-    { key: 'kmGalon',    label: 'KM por galón',             icon: 'speed' },
     { key: 'costoKm',    label: 'Costo por KM',             icon: 'payments' },
     { key: 'acumulado',  label: 'Gasto acumulado',          icon: 'stacked_line_chart' },
   ];
@@ -184,6 +194,8 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       if (this.gasolinaEstimacion === 0) {
         this.carryOverEstimacion();
       }
+
+      this.finanzasService.mostrarEstadoFinanciero(this, this.userId, this.currentYear, this.currentMonth);
     });
   }
 
@@ -466,6 +478,9 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         nombre: item.nombre || '',
         precioGalon: Number(item.precioGalon || 0),
       }));
+      // "KM por galón" depende del precio promedio de bombas — si este load resuelve
+      // después del primer dibujo del gráfico, hay que refrescar para que no quede en 0.
+      this.refreshChart();
     });
   }
 
@@ -697,6 +712,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         .sort((a, b) => (a.esReferencia === b.esReferencia) ? 0 : (a.esReferencia ? -1 : 1));
       const total = this.entries.filter(e => !e.esReferencia).reduce((sum, e) => sum + (e.monto || 0), 0);
       this.syncGasolinaExpense(total);
+      this.finanzasService.mostrarEstadoFinanciero(this, this.userId, this.currentYear, this.currentMonth);
     });
     this.loadAllEntriesForChart();
   }
@@ -731,7 +747,11 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     const textColor = isDark ? '#cbd5e1' : '#334155';
     const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.25)';
 
-    const src = this.allEntries;
+    const src = (this.chartType !== 'acumulado' && this.chartScope === 'mes')
+      ? this.entries
+          .filter(e => !e.esReferencia)
+          .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+      : this.allEntries;
 
     if (src.length === 0) {
       this.chart?.destroy();
@@ -757,10 +777,31 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       return Math.max(0, Math.round(diff / 86400000));
     };
 
+    // KM/galón usa el precio PROMEDIO actual de todas las bombas, no el `galones` propio del
+    // tanqueo (que depende del precio de la bomba de ese día en particular) — así el valor es
+    // comparable entre bombas distintas y no depende de un precio histórico que haya quedado
+    // mal cargado. Fórmula: (precio promedio × KM recorridos) / plata gastada en ese tanqueo.
+    const avgPrecioGalon = this.pumps.length
+      ? this.pumps.reduce((sum, p) => sum + (p.precioGalon || 0), 0) / this.pumps.length
+      : 0;
+
     const getKmG = (i: number) => {
       const km = getDist(i);
-      const g = src[i]?.galones || 0;
-      return g > 0 ? Math.round((km / g) * 10) / 10 : 0;
+      const monto = src[i]?.monto || 0;
+      return (monto > 0 && avgPrecioGalon > 0) ? Math.round((avgPrecioGalon * km / monto) * 10) / 10 : 0;
+    };
+
+    // Un solo tanqueo viejo con un precio de bomba mal cargado (ej. con ceros de más) calcula
+    // un `galones` casi en cero, y al dividir la distancia por eso el resultado se dispara a
+    // millones — eso aplasta visualmente a todos los demás puntos normales contra el cero.
+    // Se descarta (null, no se dibuja) cualquier punto que supere 5x la mediana del resto.
+    const excludeOutliers = (values: (number | null)[], multiplier = 5): (number | null)[] => {
+      const positives = values.filter((v): v is number => v !== null && v > 0).sort((a, b) => a - b);
+      if (positives.length < 3) return values;
+      const mid = Math.floor(positives.length / 2);
+      const median = positives.length % 2 ? positives[mid] : (positives[mid - 1] + positives[mid]) / 2;
+      const ceiling = median * multiplier;
+      return values.map(v => (v !== null && v > ceiling) ? null : v);
     };
 
     let datasets: any[] = [];
@@ -770,7 +811,10 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       case 'rendimiento': {
         datasets = [{
           label: 'KM recorridos',
-          data: src.map((_, i) => getDist(i)),
+          // El último tanqueo todavía no tiene "próximo" con el que medir distancia — se
+          // deja en null (hueco en la línea) en vez de 0, para no simular una caída que
+          // no ocurrió.
+          data: src.map((_, i) => i === src.length - 1 ? null : getDist(i)),
           borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.15)', tension: 0.3, fill: true,
         }];
         yAxisTitle = 'Kilómetros';
@@ -780,6 +824,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         datasets = [{
           label: 'KM por día',
           data: src.map((_, i) => {
+            if (i === src.length - 1) return null;
             const days = getDays(i);
             return days > 0 ? Math.round((getDist(i) / days) * 10) / 10 : 0;
           }),
@@ -789,21 +834,24 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         break;
       }
       case 'kmGalon': {
+        const raw = src.map((_, i) => i === src.length - 1 ? null : getKmG(i));
         datasets = [{
           label: 'KM por galón',
-          data: src.map((_, i) => getKmG(i)),
+          data: excludeOutliers(raw),
           borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.15)', tension: 0.3, fill: true,
         }];
         yAxisTitle = 'KM / galón';
         break;
       }
       case 'costoKm': {
+        const raw = src.map((e, i) => {
+          if (i === src.length - 1) return null;
+          const km = getDist(i);
+          return km > 0 ? Math.round((e.monto / km) * 10) / 10 : 0;
+        });
         datasets = [{
           label: 'Costo por KM ($)',
-          data: src.map((e, i) => {
-            const km = getDist(i);
-            return km > 0 ? Math.round((e.monto / km) * 10) / 10 : 0;
-          }),
+          data: excludeOutliers(raw),
           borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.15)', tension: 0.3, fill: true,
         }];
         yAxisTitle = '$ / KM';
@@ -811,7 +859,12 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       }
       case 'acumulado': {
         let cumulative = 0;
-        const monthEntries = this.entries.filter(e => !e.esReferencia);
+        // Las filas del mes no vienen ordenadas por fecha (solo se garantiza que las de
+        // referencia queden primero) — sin este sort, un tanqueo cargado fuera de orden
+        // cronológico rompe la acumulación.
+        const monthEntries = this.entries
+          .filter(e => !e.esReferencia)
+          .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
         labels = monthEntries.map(e => {
           const d = new Date(e.fecha);
           return d.toLocaleDateString('es', { day: '2-digit', month: 'short', year: '2-digit' });
