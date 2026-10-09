@@ -128,6 +128,7 @@ export default class WalletComponent implements OnInit, OnDestroy {
             ([id, item]: [string, any]) => ({ id, ...item, showMenu: false })
           );
           this.checkLowFunds();
+          this.ensureDefaultWallet();
         },
       });
 
@@ -181,6 +182,35 @@ export default class WalletComponent implements OnInit, OnDestroy {
   // Método para revisar si el total es bajo
   checkLowFunds() {
     this.getTotalWallet();
+  }
+
+  // Crea la cuenta "Monedero" por defecto (fijo: true) si todavía no existe en el mes actual.
+  // Se identifica por el flag `fijo`, no por el nombre "tipo", para que el usuario la pueda
+  // renombrar sin perder la protección contra eliminación.
+  private isEnsuringDefaultWallet = false;
+
+  private ensureDefaultWallet(): void {
+    const hasDefault = this.wallet.some((a) => a.fijo === true);
+    if (hasDefault || this.isEnsuringDefaultWallet) return;
+
+    this.isEnsuringDefaultWallet = true;
+    this.walletService
+      .addAccount(
+        this.userId,
+        this.currentYear,
+        this.currentMonth,
+        new WalletAccount('Monedero', 0, true)
+      )
+      .subscribe({
+        next: () => {
+          this.isEnsuringDefaultWallet = false;
+          this.loadAllData();
+        },
+        error: (err) => {
+          this.isEnsuringDefaultWallet = false;
+          console.error('Error al crear la cuenta Monedero por defecto:', err);
+        },
+      });
   }
 
   // ======================
@@ -251,6 +281,7 @@ export default class WalletComponent implements OnInit, OnDestroy {
     const updatedAccount: WalletAccount = {
       tipo: account.tipo,
       valor: updatedValue,
+      fijo: account.fijo,
     };
 
     this.walletService
@@ -279,7 +310,7 @@ export default class WalletComponent implements OnInit, OnDestroy {
     const original = this.wallet.find((a) => a.id === id);
     if (!original) return;
 
-    this.editedAccount = new WalletAccount(original.tipo, original.valor);
+    this.editedAccount = new WalletAccount(original.tipo, original.valor, original.fijo);
     this.editedId = id;
     this.isEditModalOpen = true;
   }
@@ -369,6 +400,9 @@ export default class WalletComponent implements OnInit, OnDestroy {
   // Modal: Eliminar Cuenta
   // ======================
   openDeleteModal(id: string) {
+    const account = this.wallet.find((a) => a.id === id);
+    if (account?.fijo) return; // El Monedero por defecto no se puede eliminar
+
     this.isDeleteModalOpen = true;
     this.accountToDeleteId = id;
   }
@@ -449,7 +483,7 @@ export default class WalletComponent implements OnInit, OnDestroy {
         this.currentYear,
         this.currentMonth,
         source.id,
-        { tipo: source.tipo, valor: source.valor }
+        { tipo: source.tipo, valor: source.valor, fijo: source.fijo }
       )
       .subscribe();
     this.walletService
@@ -458,7 +492,7 @@ export default class WalletComponent implements OnInit, OnDestroy {
         this.currentYear,
         this.currentMonth,
         destination.id,
-        { tipo: destination.tipo, valor: destination.valor }
+        { tipo: destination.tipo, valor: destination.valor, fijo: destination.fijo }
       )
       .subscribe({
         next: () => {

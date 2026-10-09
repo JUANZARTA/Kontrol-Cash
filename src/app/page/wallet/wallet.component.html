@@ -44,7 +44,7 @@
             class="app-menu-item" type="button">
             Vaciar
           </button>
-          <button (click)="openDeleteModal(account.id); account.showMenu = false"
+          <button *ngIf="!account.fijo" (click)="openDeleteModal(account.id); account.showMenu = false"
             class="app-menu-item text-red-600" type="button">
             Eliminar
           </button>

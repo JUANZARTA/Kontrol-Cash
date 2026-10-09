@@ -1,8 +1,8 @@
 export class WalletAccount {
   constructor(
-    
     public tipo: string,
-    public valor: number
+    public valor: number,
+    public fijo?: boolean
   ) {}
 }
 
