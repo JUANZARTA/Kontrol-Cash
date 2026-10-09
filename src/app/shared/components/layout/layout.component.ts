@@ -8,6 +8,7 @@ import { Subscription, filter } from 'rxjs';
 import { UserSettingsService } from '../../../services/user-settings.service';
 import { ThemeService } from '../../../services/theme.service';
 import { MonthlyCloseService } from '../../../services/monthly-close.service';
+import { DateService } from '../../../services/date.service';
 
 @Component({
   selector: 'app-layout',
@@ -21,6 +22,7 @@ export default class LayoutComponent implements OnInit, OnDestroy {
   private themeService = inject(ThemeService);
   private closeService = inject(MonthlyCloseService);
   private router = inject(Router);
+  private dateService = inject(DateService);
 
   pendingClose: { year: string; month: string } | null = null;
   private navSub?: Subscription;
@@ -64,6 +66,12 @@ export default class LayoutComponent implements OnInit, OnDestroy {
   }
 
   goToMonthClose(): void {
+    // Sin esto, la pantalla de cierre operaba sobre lo que tuviera puesto el selector de
+    // fecha (normalmente el mes actual real) en vez del mes realmente pendiente — se podía
+    // terminar cerrando el mes equivocado y el aviso de "sin cerrar" nunca desaparecía.
+    if (this.pendingClose) {
+      this.dateService.setDate(parseInt(this.pendingClose.year, 10), parseInt(this.pendingClose.month, 10));
+    }
     this.router.navigate(['/app/month-close']);
   }
 }
