@@ -67,11 +67,14 @@
             (ngModelChange)="onDebtStatusActionChange(debt, $event)">
             <option value="Pendiente">Pendiente</option>
             <option value="Pagado">Pagado Todo</option>
-            <option value="PagarCuota">Pagar cuota</option>
-            <option value="DeshacerCuota">Deshacer cuota</option>
+            <option *ngIf="getTotalCuotas(debt) <= 1" value="PagarCuota">Pagar cuota</option>
+            <option *ngIf="getTotalCuotas(debt) <= 1" value="DeshacerCuota">Deshacer cuota</option>
           </select>
         </td>
         <td class="py-2 px-3 sm:px-4 text-center">
+          <button *ngIf="getTotalCuotas(debt) > 1" (click)="openCuotasModal(debt)" class="text-indigo-600 mr-2" title="Ver cuotas">
+            <span class="material-icons">list_alt</span>
+          </button>
           <button (click)="openAddModal(debt.id)" class="text-lime-600 mr-2" title="Sumar o restar valor total">
             <span class="material-icons">add</span>
           </button>
@@ -232,6 +235,48 @@
       class="app-success-button disabled:opacity-50">
       Confirmar pago
     </button>
+  </div>
+</app-modal-shell>
+
+<!-- Modal: Desglose de cuotas -->
+<app-modal-shell *ngIf="showCuotasModal" [title]="'Cuotas de ' + (cuotasModalTarget?.acreedor || '')"
+  description="Revisa el estado de cada cuota y paga la siguiente pendiente." panelClass="animate-pop-in">
+
+  <div class="max-h-80 overflow-y-auto mb-3">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs text-slate-500">
+          <th class="py-1 pr-2">Cuota</th>
+          <th class="py-1 pr-2 text-right">Valor</th>
+          <th class="py-1 pr-2 text-center">Estado</th>
+          <th class="py-1 text-center">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let n of getCuotasArray(cuotasModalTarget!)" class="border-t border-slate-100">
+          <td class="py-2 pr-2 font-medium">{{ n }}/{{ getTotalCuotas(cuotasModalTarget!) }}</td>
+          <td class="py-2 pr-2 text-right">${{ formatCurrency(getCuotaMonto(cuotasModalTarget!)) }}</td>
+          <td class="py-2 pr-2 text-center">
+            <span *ngIf="n <= getCuotasPagadas(cuotasModalTarget!)" class="text-emerald-600 font-semibold">Pagada</span>
+            <span *ngIf="n > getCuotasPagadas(cuotasModalTarget!)" class="text-slate-400">Pendiente</span>
+          </td>
+          <td class="py-2 text-center">
+            <button *ngIf="n === getCuotasPagadas(cuotasModalTarget!) + 1"
+              (click)="payCuotaFromModal(cuotasModalTarget!)" class="app-success-button !py-1 !px-2 text-xs">
+              Pagar
+            </button>
+            <button *ngIf="n === getCuotasPagadas(cuotasModalTarget!)"
+              (click)="undoCuotaFromModal(cuotasModalTarget!)" class="text-orange-600 text-xs underline">
+              Deshacer
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex justify-end">
+    <button (click)="closeCuotasModal()" class="app-secondary-button">Cerrar</button>
   </div>
 </app-modal-shell>
 

@@ -56,6 +56,10 @@ export default class LoansComponent implements OnInit, OnDestroy {
   selectedPaymentWallet: string = '';
   payLoanMode: 'cuota' | 'todo' = 'cuota';
 
+  // Modal: desglose de cuotas
+  showCuotasModal = false;
+  cuotasModalTarget: LoanWithId | null = null;
+
   toastMessage = '';
   showingToast = false;
   private toastTimeout: any;
@@ -655,6 +659,33 @@ export default class LoansComponent implements OnInit, OnDestroy {
         next: () => this.loadLoans(),
         error: (err) => console.error('Error al deshacer cuota del deudor:', err),
       });
+  }
+
+  // ======================
+  // Modal: Desglose de cuotas
+  // ======================
+  openCuotasModal(loan: LoanWithId): void {
+    this.cuotasModalTarget = loan;
+    this.showCuotasModal = true;
+  }
+
+  closeCuotasModal(): void {
+    this.showCuotasModal = false;
+    this.cuotasModalTarget = null;
+  }
+
+  getCuotasArray(loan: LoanWithId): number[] {
+    return Array.from({ length: this.getTotalCuotas(loan) }, (_, i) => i + 1);
+  }
+
+  payCuotaFromModal(loan: LoanWithId): void {
+    this.closeCuotasModal();
+    this.openPaymentModal(loan, 'cuota');
+  }
+
+  undoCuotaFromModal(loan: LoanWithId): void {
+    this.closeCuotasModal();
+    this.undoAndReturnToWallet(loan);
   }
 
   undoAndReturnToWallet(loan: LoanWithId): void {

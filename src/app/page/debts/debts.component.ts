@@ -51,6 +51,10 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   selectedWalletForDebt = '';
   payDebtMode: 'cuota' | 'todo' = 'cuota';
 
+  // Modal: desglose de cuotas
+  showCuotasModal = false;
+  cuotasModalTarget: DebtWithId | null = null;
+
   toastMessage = '';
   showingToast = false;
   private toastTimeout: any;
@@ -704,6 +708,33 @@ export default class DebtsComponent implements OnInit, OnDestroy {
         },
         error: () => this.showToast('Error al actualizar la billetera.'),
       });
+  }
+
+  // ======================
+  // Modal: Desglose de cuotas
+  // ======================
+  openCuotasModal(debt: DebtWithId): void {
+    this.cuotasModalTarget = debt;
+    this.showCuotasModal = true;
+  }
+
+  closeCuotasModal(): void {
+    this.showCuotasModal = false;
+    this.cuotasModalTarget = null;
+  }
+
+  getCuotasArray(debt: DebtWithId): number[] {
+    return Array.from({ length: this.getTotalCuotas(debt) }, (_, i) => i + 1);
+  }
+
+  payCuotaFromModal(debt: DebtWithId): void {
+    this.closeCuotasModal();
+    this.openPayDebtModal(debt.id, 'cuota');
+  }
+
+  undoCuotaFromModal(debt: DebtWithId): void {
+    this.closeCuotasModal();
+    this.undoAndDeleteExpense(debt);
   }
 
   undoAndDeleteExpense(debt: DebtWithId): void {
