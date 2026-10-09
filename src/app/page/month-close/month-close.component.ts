@@ -135,7 +135,7 @@ export default class MonthCloseComponent implements OnInit, OnDestroy {
   }
 
   download(snapshot: MonthlyCloseSnapshot): void {
-    this.closeService.downloadPdf(snapshot);
+    this.closeService.downloadPdf(snapshot, this.userId);
   }
 
   confirmDeleteSnapshot(snapshot: MonthlyCloseSnapshot): void {

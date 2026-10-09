@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin, from, of } from 'rxjs';
+import { Observable, forkJoin, from, of, firstValueFrom } from 'rxjs';
 import { switchMap, map, catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { WalletService } from './wallet.service';
@@ -306,12 +306,13 @@ export class MonthlyCloseService {
     localStorage.setItem(this.storageKey(uid), JSON.stringify(all));
   }
 
-  async downloadPdf(snapshot: MonthlyCloseSnapshot): Promise<void> {
+  async downloadPdf(snapshot: MonthlyCloseSnapshot, userId: string): Promise<void> {
     // Import dinámico: jsPDF (y sus dependencias pesadas: html2canvas, canvg, dompurify) solo
     // se cargan cuando el usuario realmente pide el PDF. Este service lo inyectan LayoutComponent
     // y PendingCloseGuard en TODAS las pantallas de /app — un import estático arriba del archivo
     // metía jsPDF entero en el bundle inicial y hacía fallar el budget de producción.
     const { jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
     const safePeriod = this.sanitizeFilePart(snapshot?.period || 'periodo');
     const t = snapshot?.totals ?? { income: 0, expense: 0, net: 0, debtPending: 0 };
 
@@ -387,7 +388,128 @@ export class MonthlyCloseService {
     doc.setTextColor(148, 163, 184);
     doc.text('Generado automáticamente por Kontrol Cash', marginX, y + 12);
 
+    // Detalle completo: una página por categoría con TODOS los registros que existían
+    // en ese período (no solo lo que el cierre transfiere al mes siguiente), para que el
+    // PDF sea un respaldo íntegro del mes, no un resumen parcial.
+    const [year, month] = (snapshot?.period || '').split('-');
+    const periodLabel = this.formatPeriodLabel(snapshot?.period);
+
+    if (year && month) {
+      const data = await firstValueFrom(forkJoin({
+        wallets: this.walletService.getWallet(userId, year, month),
+        expenses: this.expenseService.getExpenses(userId, year, month),
+        incomes: this.incomeService.getIncomes(userId, year, month),
+        debts: this.debtService.getDebts(userId, year, month),
+        loans: this.loanService.getLoans(userId, year, month),
+        invoices: this.invoiceService.getInvoices(userId, year, month),
+        savings: this.savingsService.getSavings(userId, year, month),
+        vehicleEntries: this.vehicleService.getFuelEntries(userId, year, month),
+      }));
+
+      const money = (v: number | undefined) => `$${this.formatAmount(v ?? 0)}`;
+      const cuotas = (pagadas?: number, total?: number) =>
+        total ? `${pagadas ?? 0}/${total}` : '-';
+
+      this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Ingresos', periodLabel,
+        ['Nombre', 'Categoría', 'Valor'],
+        (Object.values(data.incomes || {}) as Income[]).map(i => [i.nombre, i.categoria, money(i.valor)]),
+        'Sin ingresos registrados en este período.');
+
+      this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Gastos', periodLabel,
+        ['Descripción', 'Categoría', 'Valor', 'Estimación'],
+        (Object.values(data.expenses || {}) as Expense[]).map(e => [e.descripcion, e.categoria, money(e.valor), money(e.estimacion)]),
+        'Sin gastos registrados en este período.');
+
+      this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Facturas', periodLabel,
+        ['Nombre', 'Fecha de pago', 'Valor', 'Estado'],
+        (Object.values(data.invoices || {}) as Invoice[]).map(i => [i.nombre, this.formatDate(i.fechaPago), money(i.valor), i.estado]),
+        'Sin facturas registradas en este período.');
+
+      this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Mi Billetera', periodLabel,
+        ['Cuenta', 'Valor'],
+        Object.values(data.wallets || {}).map(w => [w.tipo, money(w.valor)]),
+        'Sin cuentas de billetera registradas en este período.');
+
+      this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Alcancías', periodLabel,
+        ['Nombre', 'Tipo', 'Valor', 'Meta de ahorro'],
+        Object.values(data.savings || {}).map(s => [s.nombre || '-', s.tipo, money(s.valor), s.metaAhorro ? money(s.metaAhorro) : '-']),
+        'Sin alcancías registradas en este período.');
+
+      this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Deudas', periodLabel,
+        ['Acreedor', 'Fecha deuda', 'Fecha pago', 'Valor', 'Estado', 'Cuotas'],
+        (Object.values(data.debts || {}) as Debt[]).map(d =>
+          [d.acreedor, this.formatDate(d.fecha_deuda), this.formatDate(d.fecha_pago), money(d.valor), d.estado, cuotas(d.cuotasPagadas, d.totalCuotas)]),
+        'Sin deudas registradas en este período.');
+
+      this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Deudores', periodLabel,
+        ['Deudor', 'Fecha préstamo', 'Fecha pago', 'Valor', 'Estado', 'Cuotas'],
+        (Object.values(data.loans || {}) as Loan[]).map(l =>
+          [l.deudor, this.formatDate(l.fecha_prestamo), this.formatDate(l.fecha_pago), money(l.valor), l.estado, cuotas(l.cuotasPagadas, l.totalCuotas)]),
+        'Sin deudores registrados en este período.');
+
+      this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Mi Vehículo', periodLabel,
+        ['Fecha', 'Bomba', 'Precio/Galón', 'Monto', 'Galones', 'Kilometraje', 'Referencia'],
+        (Object.values(data.vehicleEntries || {}) as FuelEntry[]).map(v =>
+          [this.formatDate(v.fecha), v.nombreBomba, v.precioGalon ? money(v.precioGalon) : '-', money(v.monto), String(v.galones ?? '-'), String(v.kilometraje ?? '-'), v.esReferencia ? 'Sí' : 'No']),
+        'Sin tanqueos registrados en este período.');
+    }
+
     doc.save(`${safePeriod}-cierre.pdf`);
+  }
+
+  /**
+   * Dibuja una página completa de detalle (banner + tabla) para una categoría. El banner se
+   * redibuja en cada página que la tabla llegue a ocupar (via didDrawPage) para que una
+   * categoría con muchos registros nunca pierda filas por falta de salto de página manual.
+   */
+  private addSectionPage(
+    doc: any,
+    autoTable: (doc: any, options: any) => void,
+    pageWidth: number,
+    marginX: number,
+    sectionTitle: string,
+    periodLabel: string,
+    head: string[],
+    body: (string | number)[][],
+    emptyMessage: string
+  ): void {
+    doc.addPage();
+
+    const drawHeader = () => {
+      doc.setFillColor(15, 23, 42); // slate-900
+      doc.rect(0, 0, pageWidth, 26, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text('Kontrol Cash', marginX, 11);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(periodLabel, marginX, 18);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text(sectionTitle, pageWidth - marginX, 15, { align: 'right' });
+    };
+
+    if (!body.length) {
+      drawHeader();
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(100, 116, 139); // slate-500
+      doc.text(emptyMessage, marginX, 40);
+      return;
+    }
+
+    autoTable(doc, {
+      head: [head],
+      body,
+      startY: 34,
+      margin: { left: marginX, right: marginX, top: 32 },
+      theme: 'striped',
+      styles: { fontSize: 9, cellPadding: 3, textColor: [51, 65, 85] },
+      headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      didDrawPage: drawHeader,
+    });
   }
 
   formatPeriodLabel(period: string | undefined): string {
@@ -399,6 +521,13 @@ export class MonthlyCloseService {
 
   private formatAmount(value: number): string {
     return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(value ?? 0);
+  }
+
+  private formatDate(value: string | undefined): string {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   private async loadImageAsDataUrl(path: string): Promise<string> {
