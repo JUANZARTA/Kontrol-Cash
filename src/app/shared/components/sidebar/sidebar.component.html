@@ -15,7 +15,8 @@
 
 <!-- SIDEBAR -->
 <aside [class.translate-x-[-100%]]="!isSidebarOpen && isMobile()"
-  class="fixed left-0 top-0 z-50 h-full w-72 overflow-hidden rounded-r-[2rem] border-r border-white/10 bg-gradient-to-b from-slate-950 via-slate-900 to-sky-950 shadow-2xl transform transition-transform duration-300 ease-in-out">
+  [ngClass]="{'md:w-20': isSidebarCollapsed(), 'md:w-72': !isSidebarCollapsed()}"
+  class="fixed left-0 top-0 z-50 h-full w-72 overflow-hidden rounded-r-[2rem] border-r border-white/10 bg-gradient-to-b from-slate-950 via-slate-900 to-sky-950 shadow-2xl transform transition-all duration-300 ease-in-out">
   <!-- CONTENEDOR SCROLLABLE -->
   <div class="h-full overflow-y-auto scrollbar-hide">
     <!-- aquí va TODO el contenido actual del sidebar:
@@ -33,29 +34,41 @@
 
     <!-- HEADER -->
     <div class="relative z-10 border-b border-white/10 px-6 py-6 text-white">
-      <div class="flex items-center justify-between gap-3">
-        <div>
+      <div class="flex items-center gap-3" [class.justify-center]="!showLabels">
+        <div *ngIf="showLabels" class="min-w-0">
           <p class="text-xs uppercase tracking-[0.25em] text-sky-200/70">Kontrol Cash</p>
           <h6 class="mt-2 text-xl font-semibold tracking-tight">Panel financiero</h6>
         </div>
-      <button *ngIf="isMobile()" (click)="toggleSidebar()"
-        class="rounded-full bg-white/10 p-2 transition hover:bg-white/20">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"
-          class="w-5 h-5 text-white">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+
+        <button *ngIf="isMobile()" (click)="toggleSidebar()"
+          class="ml-auto rounded-full bg-white/10 p-2 transition hover:bg-white/20">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"
+            class="w-5 h-5 text-white">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
+
+      <!-- Toggle colapso: solo desktop. Posicionado contra el header completo (no el flex
+           interno) para que right-2 se mida sobre el ancho real del aside, no el angosto
+           espacio de contenido cuando está colapsado — si no, el botón quedaba fuera de vista. -->
+      <button (click)="toggleCollapse()" title="{{ isSidebarCollapsed() ? 'Expandir menú' : 'Colapsar menú' }}"
+        class="absolute right-2 top-2 hidden rounded-full bg-white/10 p-1.5 transition hover:bg-white/20 md:inline-flex">
+        <span class="material-icons text-[18px] text-white">
+          {{ isSidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}
+        </span>
+      </button>
     </div>
 
     <!-- MENÚ PRINCIPAL -->
     <nav class="relative z-10 mt-5 flex flex-col gap-2 px-4">
       <a routerLink="/app/home" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active" [routerLinkActiveOptions]="{ exact: true }"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Inicio' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.1s">
         <span class="material-icons text-[20px] text-sky-300">home</span>
-        Inicio
+        <span *ngIf="showLabels">Inicio</span>
       </a>
 
       <hr class="border-white/10 mx-2 opacity-0 animate-fadeSlideLeft" style="animation-delay:0.12s" />
@@ -63,28 +76,31 @@
       <!-- Tabla de Ingresos -->
       <a routerLink="/app/income" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Tabla de Ingresos' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.15s">
         <span class="material-icons text-[20px] text-teal-400">add_circle</span>
-        Tabla de Ingresos
+        <span *ngIf="showLabels">Tabla de Ingresos</span>
       </a>
 
       <!-- Tabla de Gastos -->
       <a routerLink="/app/expense" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Tabla de Gastos' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.2s">
         <span class="material-icons text-[20px] text-orange-400">remove_circle</span>
-        Tabla de Gastos
+        <span *ngIf="showLabels">Tabla de Gastos</span>
       </a>
 
       <!-- Tabla Facturas -->
       <a routerLink="/app/invoice" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Facturas' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.25s">
         <span class="material-icons text-[20px] text-sky-400">receipt_long</span>
-        Facturas
+        <span *ngIf="showLabels">Facturas</span>
       </a>
 
       <hr class="border-white/10 mx-2 opacity-0 animate-fadeSlideLeft" style="animation-delay:0.27s" />
@@ -92,19 +108,21 @@
       <!-- Mi Billetera -->
       <a routerLink="/app/wallet" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Mi Billetera' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.3s">
         <span class="material-icons text-[20px] text-indigo-400">account_balance_wallet</span>
-        Mi Billetera
+        <span *ngIf="showLabels">Mi Billetera</span>
       </a>
 
       <!-- Alcancías -->
       <a routerLink="/app/saving" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Alcancías' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.35s">
         <span class="material-icons text-[20px] text-emerald-400">savings</span>
-        Alcancías
+        <span *ngIf="showLabels">Alcancías</span>
       </a>
 
       <hr class="border-white/10 mx-2 opacity-0 animate-fadeSlideLeft" style="animation-delay:0.37s" />
@@ -112,19 +130,21 @@
       <!-- Deudas -->
       <a routerLink="/app/debt" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Deudas' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.4s" *ngIf="showDebts">
         <span class="material-icons text-[20px] text-rose-400">credit_score</span>
-        Deudas
+        <span *ngIf="showLabels">Deudas</span>
       </a>
 
       <!-- Deudores -->
       <a routerLink="/app/loan" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Deudores' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.45s" *ngIf="showLoans">
         <span class="material-icons text-[20px] text-purple-400">people</span>
-        Deudores
+        <span *ngIf="showLabels">Deudores</span>
       </a>
 
       <hr class="border-white/10 mx-2 opacity-0 animate-fadeSlideLeft" style="animation-delay:0.47s" />
@@ -132,29 +152,32 @@
       <!-- Mi Vehículo -->
       <a routerLink="/app/vehicle" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Mi Vehículo' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.48s" *ngIf="showVehicle">
         <span class="material-icons text-[20px] text-slate-400">directions_car</span>
-        Mi Vehículo
+        <span *ngIf="showLabels">Mi Vehículo</span>
       </a>
 
       <!-- Estadísticas -->
       <a routerLink="/app/statistics" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Estadísticas' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.49s" *ngIf="showStatistics">
         <span class="material-icons text-[20px] text-cyan-400">bar_chart</span>
-        Estadísticas
+        <span *ngIf="showLabels">Estadísticas</span>
       </a>
 
       <hr class="border-white/10 mx-2 opacity-0 animate-fadeSlideLeft" style="animation-delay:0.495s" />
 
       <a routerLink="/app/settings" (click)="closeSidebar()"
         routerLinkActive="app-sidebar-link-active"
+        [class.justify-center]="!showLabels" [title]="!showLabels ? 'Configuración' : ''"
         class="app-sidebar-link opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.5s">
         <span class="material-icons text-[20px] text-gray-400">settings</span>
-        Configuración
+        <span *ngIf="showLabels">Configuración</span>
       </a>
 
     </nav>
@@ -162,12 +185,12 @@
     <!-- CUENTA -->
     <div class="relative z-10 mt-8 px-4 pb-6">
       <div class="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-      <p class="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-sky-100/70">Cuenta</p>
-      <button (click)="logout()"
+      <p *ngIf="showLabels" class="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-sky-100/70">Cuenta</p>
+      <button (click)="logout()" [title]="!showLabels ? 'Salir' : ''"
         class="flex w-full items-center justify-center gap-2 rounded-2xl bg-white/8 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-500/30 opacity-0 animate-fadeSlideLeft"
         style="animation-delay:0.5s">
         <span class="material-icons text-[18px]">logout</span>
-        Salir
+        <span *ngIf="showLabels">Salir</span>
       </button>
       </div>
     </div>

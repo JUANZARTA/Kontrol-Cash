@@ -1,4 +1,4 @@
-import { Component, HostListener, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, HostListener, Inject, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -22,6 +22,11 @@ export class SidebarComponent {
   isMobileScreen = false;
   private settingsSub?: Subscription;
 
+  private static readonly COLLAPSE_KEY = 'sidebar-collapsed';
+
+  // Colapsado solo aplica en desktop (md+); en mobile el drawer siempre va completo.
+  isSidebarCollapsed = signal(false);
+
   showVehicle = true;
   showLoans = true;
   showDebts = true;
@@ -35,6 +40,7 @@ export class SidebarComponent {
   ) {
     if (isPlatformBrowser(this.platformId)) {
       this.checkScreenSize();
+      this.isSidebarCollapsed.set(localStorage.getItem(SidebarComponent.COLLAPSE_KEY) === 'true');
     }
 
     const userId = JSON.parse(localStorage.getItem('user') || '{}')?.localId;
@@ -68,6 +74,24 @@ export class SidebarComponent {
    */
   isMobile(): boolean {
     return this.isMobileScreen;
+  }
+
+  /**
+   * Alterna el colapso del sidebar (solo tiene efecto visual en desktop) y lo persiste.
+   */
+  toggleCollapse(): void {
+    this.isSidebarCollapsed.update(v => !v);
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(SidebarComponent.COLLAPSE_KEY, String(this.isSidebarCollapsed()));
+    }
+  }
+
+  /**
+   * Si hay que mostrar los textos de navegación: siempre en mobile (el drawer va completo),
+   * y en desktop solo cuando el sidebar no está colapsado.
+   */
+  get showLabels(): boolean {
+    return this.isMobile() || !this.isSidebarCollapsed();
   }
 
   /**
