@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ExpenseService } from '../../services/expense.service';
 import { CategoriaGasto, Expense } from '../../models/expense.model';
+import { SubExpenseService } from '../../services/sub-expense.service';
+import { SubExpense, SubExpenseWithId } from '../../models/sub-expense.model';
 import { DateService } from '../../services/date.service';
 import { Subscription, of, forkJoin } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
@@ -30,6 +32,10 @@ import {
 
 export interface ExpenseWithId extends Expense {
   id: string;
+  // Viene embebido "gratis" en la respuesta de getExpenses() cuando el gasto tiene
+  // subgastos (Firebase devuelve el subárbol completo bajo gastos/{id}), no hace falta
+  // un fetch aparte para saber si una fila tiene subgastos.
+  subgastos?: Record<string, SubExpense>;
 }
 
 @Component({
@@ -57,6 +63,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   private plannerService = inject(PlannerService);
   private attachmentsService = inject(AttachmentsService);
   private scanReceiptService = inject(ScanReceiptService);
+  private subExpenseService = inject(SubExpenseService);
 
   // Propiedades
   incomes: any[] = [];
@@ -540,10 +547,15 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   // ======================
   // Modal: Editar Gasto
   // ======================
+  // true cuando el gasto que se está editando tiene subgastos: en ese caso el valor es
+  // calculado (suma de los subgastos) y el campo "Valor" del modal de edición se bloquea.
+  editedExpenseHasSubExpenses = false;
+
   openEditModal(id: string) {
     const original = this.expenses.find((e) => e.id === id);
     if (!original) return;
 
+    this.editedExpenseHasSubExpenses = this.hasSubExpenses(original);
     this.editedExpense = new Expense(
       original.descripcion,
       original.categoria,
@@ -558,10 +570,19 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     this.isEditModalOpen = false;
     this.editedExpense = new Expense('', CategoriaGasto.Variable, 0, 0);
     this.editedId = null;
+    this.editedExpenseHasSubExpenses = false;
   }
 
   saveEditedExpense() {
     if (!this.editedId) return;
+
+    // Si el gasto tiene subgastos, el valor no se toca desde acá: lo maneja
+    // syncParentValorFromSubExpenses() cuando se agrega/edita/elimina un subgasto.
+    const original = this.expenses.find((e) => e.id === this.editedId);
+    const payload: Expense = {
+      ...this.editedExpense,
+      valor: this.editedExpenseHasSubExpenses ? (original?.valor ?? this.editedExpense.valor) : this.editedExpense.valor,
+    };
 
     this.expenseService
       .updateExpense(
@@ -569,7 +590,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
         this.currentYear,
         this.currentMonth,
         this.editedId,
-        this.editedExpense
+        payload
       )
       .subscribe({
         next: () => {
@@ -966,6 +987,225 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       this.selectedIds.clear();
       this.showBulkDeleteConfirm = false;
       this.loadExpenses();
+    });
+  }
+
+  // ======================
+  // Subgastos (no aplica a Fijo)
+  // ======================
+  hasSubExpenses(expense: ExpenseWithId): boolean {
+    return !!expense.subgastos && Object.keys(expense.subgastos).length > 0;
+  }
+
+  showSubExpensesModal = false;
+  subExpensesParent: ExpenseWithId | null = null;
+  subExpenses: SubExpenseWithId[] = [];
+  subExpenseLoading = false;
+
+  newSubExpense: { nombre: string; valor: number; walletId: string } = { nombre: '', valor: 0, walletId: '' };
+  editingSubExpenseId: string | null = null;
+  editSubExpenseDraft: { nombre: string; valor: number } = { nombre: '', valor: 0 };
+
+  get subExpensesTotal(): number {
+    return this.subExpenses.reduce((sum, s) => sum + Number(s.valor), 0);
+  }
+
+  openSubExpensesModal(id: string): void {
+    const expense = this.expenses.find((e) => e.id === id);
+    if (!expense) return;
+
+    this.subExpensesParent = expense;
+    this.showSubExpensesModal = true;
+    this.newSubExpense = { nombre: '', valor: 0, walletId: '' };
+    this.editingSubExpenseId = null;
+    this.loadWallets();
+    this.loadSubExpenses();
+  }
+
+  closeSubExpensesModal(): void {
+    this.showSubExpensesModal = false;
+    this.subExpensesParent = null;
+    this.subExpenses = [];
+    this.editingSubExpenseId = null;
+  }
+
+  private loadSubExpenses(onLoaded?: () => void): void {
+    if (!this.subExpensesParent) return;
+    const parentId = this.subExpensesParent.id;
+
+    this.subExpenseLoading = true;
+    this.subExpenseService
+      .getSubExpenses(this.userId, this.currentYear, this.currentMonth, parentId)
+      .subscribe((data) => {
+        this.subExpenses = Object.entries(data || {}).map(([id, s]) => ({ id, ...(s as SubExpense) }));
+        this.subExpenseLoading = false;
+
+        // Primera vez que se abren subgastos en una fila que ya tenía valor cargado a mano:
+        // se crea un renglón "saldo inicial" con ese valor para no perderlo. A partir de acá
+        // el valor del gasto padre pasa a ser siempre la suma de sus subgastos.
+        if (this.subExpenses.length === 0 && Number(this.subExpensesParent?.valor) > 0) {
+          const seed = new SubExpense(`${this.subExpensesParent!.descripcion} (saldo inicial)`, Number(this.subExpensesParent!.valor));
+          this.subExpenseService
+            .addSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, seed)
+            .subscribe(() => this.loadSubExpenses(onLoaded));
+          return;
+        }
+
+        onLoaded?.();
+      });
+  }
+
+  // Recalcula el valor del gasto padre como la suma de sus subgastos y lo persiste
+  // (PATCH, no pisa el nodo "subgastos"). Se llama después de cada add/editar/eliminar.
+  private syncParentValorFromSubExpenses(): void {
+    if (!this.subExpensesParent) return;
+    const parent = this.subExpensesParent;
+    const total = this.subExpensesTotal;
+
+    this.expenseService
+      .updateExpense(this.userId, this.currentYear, this.currentMonth, parent.id, {
+        descripcion: parent.descripcion,
+        categoria: parent.categoria,
+        valor: total,
+        estimacion: parent.estimacion,
+      })
+      .subscribe(() => {
+        parent.valor = total;
+        this.loadExpenses();
+      });
+  }
+
+  onNewSubExpenseValueInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const rawValue = input.value.replace(/[^\d]/g, '');
+    const numericValue = Number(rawValue) || 0;
+    this.newSubExpense.valor = numericValue;
+    input.value = this.formatCurrency(numericValue);
+  }
+
+  onEditSubExpenseValueInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const rawValue = input.value.replace(/[^\d]/g, '');
+    const numericValue = Number(rawValue) || 0;
+    this.editSubExpenseDraft.valor = numericValue;
+    input.value = this.formatCurrency(numericValue);
+  }
+
+  addSubExpense(): void {
+    if (!this.subExpensesParent) return;
+
+    const nombre = this.newSubExpense.nombre.trim();
+    const valor = Number(this.newSubExpense.valor);
+    if (!nombre || valor <= 0) {
+      this.showToast('Completa nombre y valor del subgasto.');
+      return;
+    }
+    if (!this.newSubExpense.walletId) {
+      this.showToast('Selecciona una billetera para el subgasto.');
+      return;
+    }
+
+    const isDescuadre = this.newSubExpense.walletId === this.DESCUADRE;
+    const wallet = isDescuadre ? null : this.wallet.find((w) => w.id === this.newSubExpense.walletId);
+    if (!isDescuadre && !wallet) return;
+
+    if (wallet && valor > wallet.valor) {
+      this.showToast('No puedes gastar más que el saldo de la billetera.');
+      return;
+    }
+
+    const parentId = this.subExpensesParent.id;
+    const sub = new SubExpense(nombre, valor, isDescuadre ? undefined : wallet!.id);
+
+    const afterWallet = () => {
+      this.subExpenseService
+        .addSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, sub)
+        .subscribe(() => {
+          this.newSubExpense = { nombre: '', valor: 0, walletId: '' };
+          this.loadWallets();
+          this.loadSubExpenses(() => this.syncParentValorFromSubExpenses());
+        });
+    };
+
+    if (wallet) {
+      wallet.valor -= valor;
+      this.walletService
+        .updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, { tipo: wallet.tipo, valor: wallet.valor })
+        .subscribe(afterWallet);
+    } else {
+      afterWallet();
+    }
+  }
+
+  startEditSubExpense(sub: SubExpenseWithId): void {
+    this.editingSubExpenseId = sub.id;
+    this.editSubExpenseDraft = { nombre: sub.nombre, valor: sub.valor };
+  }
+
+  cancelEditSubExpense(): void {
+    this.editingSubExpenseId = null;
+  }
+
+  saveEditedSubExpense(): void {
+    if (!this.subExpensesParent || !this.editingSubExpenseId) return;
+    const original = this.subExpenses.find((s) => s.id === this.editingSubExpenseId);
+    if (!original) return;
+
+    const nombre = this.editSubExpenseDraft.nombre.trim();
+    const valor = Number(this.editSubExpenseDraft.valor);
+    if (!nombre || valor <= 0) {
+      this.showToast('Completa nombre y valor del subgasto.');
+      return;
+    }
+
+    const parentId = this.subExpensesParent.id;
+    const delta = valor - Number(original.valor);
+    const wallet = original.walletId && original.walletId !== this.DESCUADRE
+      ? this.wallet.find((w) => w.id === original.walletId)
+      : null;
+
+    if (wallet && delta > 0 && delta > wallet.valor) {
+      this.showToast('No puedes gastar más que el saldo de la billetera.');
+      return;
+    }
+
+    const applyWalletDelta = () => {
+      if (!wallet || delta === 0) return of(null);
+      wallet.valor -= delta;
+      return this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, { tipo: wallet.tipo, valor: wallet.valor });
+    };
+
+    applyWalletDelta().subscribe(() => {
+      const updated = new SubExpense(nombre, valor, original.walletId);
+      this.subExpenseService
+        .updateSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, original.id, updated)
+        .subscribe(() => {
+          this.editingSubExpenseId = null;
+          this.loadWallets();
+          this.loadSubExpenses(() => this.syncParentValorFromSubExpenses());
+        });
+    });
+  }
+
+  deleteSubExpense(sub: SubExpenseWithId): void {
+    if (!this.subExpensesParent) return;
+    const parentId = this.subExpensesParent.id;
+
+    const refund = () => {
+      if (!sub.walletId || sub.walletId === this.DESCUADRE) return of(null);
+      const wallet = this.wallet.find((w) => w.id === sub.walletId);
+      if (!wallet) return of(null);
+      wallet.valor += Number(sub.valor);
+      return this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, { tipo: wallet.tipo, valor: wallet.valor });
+    };
+
+    refund().subscribe(() => {
+      this.subExpenseService
+        .deleteSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, sub.id)
+        .subscribe(() => {
+          this.loadWallets();
+          this.loadSubExpenses(() => this.syncParentValorFromSubExpenses());
+        });
     });
   }
 }

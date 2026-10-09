@@ -46,13 +46,15 @@ export class ExpenseService {
     );
   }
 
-  // 🔹 PUT: Actualizar un gasto existente
+  // 🔹 PATCH: Actualizar un gasto existente (actualización parcial — un PUT acá borraría
+  // el nodo "subgastos" anidado de cualquier gasto que los tenga, ya que PUT reemplaza
+  // todo el nodo en vez de fusionar solo las claves enviadas).
   updateExpense(userId: string, year: string, month: string, expenseId: string, expense: Expense): Observable<any> {
     const base = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/gastos/${expenseId}.json`;
     return from(this.auth.getIdToken()).pipe(
       switchMap((token) => {
         const url = token ? `${base}?auth=${token}` : base;
-        return this.http.put(url, expense).pipe(
+        return this.http.patch(url, expense).pipe(
           catchError(error => {
             console.error('[PUT] Error al actualizar gasto:', error);
             return of(null);

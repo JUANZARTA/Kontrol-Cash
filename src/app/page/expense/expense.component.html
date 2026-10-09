@@ -92,22 +92,23 @@
         </td>
         <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(expense.estimacion) }}</td>
         <td class="py-2 px-3 sm:px-4 text-center">
-          <button (click)="openAddModal(expense.id)" class="text-lime-600 mr-2">
+          <button (click)="openAddModal(expense.id)" [disabled]="hasSubExpenses(expense)"
+            [title]="hasSubExpenses(expense) ? 'Este gasto tiene subgastos: editalo desde ahí' : ''"
+            class="text-lime-600 mr-2 disabled:opacity-30 disabled:cursor-not-allowed">
             <span class="material-icons">add</span>
           </button>
           <button (click)="openEditModal(expense.id)" class="text-sky-700 mr-2">
             <mat-icon>edit</mat-icon>
           </button>
-          <ng-container *ngIf="expense.categoria === 'Fijo'; else attachBtn">
+          <ng-container *ngIf="expense.categoria === 'Fijo'; else subExpensesBtn">
             <button (click)="openPayFijoModal(expense.id)" class="text-teal-600 mr-2" title="Pagar gasto fijo">
               <mat-icon>check_circle</mat-icon>
             </button>
           </ng-container>
-          <ng-template #attachBtn>
-            <label class="text-indigo-600 mr-2 cursor-pointer" title="Adjuntar comprobante">
-              <mat-icon>attach_file</mat-icon>
-              <input type="file" class="hidden" (change)="onUploadAttachment(expense.id, $event)" />
-            </label>
+          <ng-template #subExpensesBtn>
+            <button (click)="openSubExpensesModal(expense.id)" class="text-indigo-600 mr-2" title="Subgastos">
+              <mat-icon>list_alt</mat-icon>
+            </button>
           </ng-template>
           <button (click)="openDeleteModal(expense.id)" class="text-orange-600">
             <mat-icon>delete</mat-icon>
@@ -282,8 +283,12 @@
     </select>
 
     <label class="app-field-label animate-fadeIn">Valor:</label>
-    <input type="text" [value]="formatCurrency(editedExpense.valor)" (input)="onEditValueInput($event, 'valor')"
-      placeholder="Ej: 50.000" class="app-input mb-3 animate-fadeIn" />
+    <input *ngIf="!editedExpenseHasSubExpenses" type="text" [value]="formatCurrency(editedExpense.valor)"
+      (input)="onEditValueInput($event, 'valor')" placeholder="Ej: 50.000" class="app-input mb-3 animate-fadeIn" />
+    <p *ngIf="editedExpenseHasSubExpenses" class="text-sm text-slate-500 mb-3 animate-fadeIn">
+      Este gasto tiene subgastos: el valor (${{ formatCurrency(editedExpense.valor) }}) se calcula solo con la suma de
+      esos subgastos. Editalo desde la acción "Subgastos" de la tabla.
+    </p>
 
     <label class="app-field-label animate-fadeIn">Estimación:</label>
     <input type="text" [value]="formatCurrency(editedExpense.estimacion)"
@@ -333,6 +338,95 @@
     <button (click)="confirmPayFijo()" [disabled]="!selectedWalletForFijo" class="app-success-button disabled:opacity-50">
       Confirmar
     </button>
+  </div>
+</app-modal-shell>
+
+<!-- Modal: Subgastos -->
+<app-modal-shell *ngIf="showSubExpensesModal" [title]="'Subgastos de ' + (subExpensesParent?.descripcion || '')"
+  description="Desglosa este gasto en varios ítems. El valor del gasto se calcula con la suma de estos subgastos."
+  panelClass="animate-pop-in">
+
+  <div class="max-h-64 overflow-y-auto mb-4 -mx-1 px-1">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase text-slate-400">
+          <th class="py-1 pr-2">Nombre</th>
+          <th class="py-1 pr-2 text-right">Valor</th>
+          <th class="py-1 text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="!subExpenseLoading && subExpenses.length === 0">
+          <td colspan="3" class="py-3 text-center text-slate-400">Todavía no hay subgastos.</td>
+        </tr>
+        <tr *ngFor="let sub of subExpenses" class="border-t border-gray-100">
+          <ng-container *ngIf="editingSubExpenseId !== sub.id; else editRow">
+            <td class="py-2 pr-2">{{ sub.nombre }}</td>
+            <td class="py-2 pr-2 text-right">${{ formatCurrency(sub.valor) }}</td>
+            <td class="py-2 text-center whitespace-nowrap">
+              <button (click)="startEditSubExpense(sub)" class="text-sky-700 mr-2" title="Editar">
+                <mat-icon class="!text-base">edit</mat-icon>
+              </button>
+              <button (click)="deleteSubExpense(sub)" class="text-orange-600" title="Eliminar">
+                <mat-icon class="!text-base">delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+          <ng-template #editRow>
+            <td class="py-2 pr-2">
+              <input type="text" [(ngModel)]="editSubExpenseDraft.nombre" class="app-input !py-1 !text-sm" />
+            </td>
+            <td class="py-2 pr-2 text-right">
+              <input type="text" [value]="formatCurrency(editSubExpenseDraft.valor)"
+                (input)="onEditSubExpenseValueInput($event)" class="app-input !py-1 !text-sm text-right" />
+            </td>
+            <td class="py-2 text-center whitespace-nowrap">
+              <button (click)="saveEditedSubExpense()" class="text-teal-600 mr-2" title="Guardar">
+                <mat-icon class="!text-base">check</mat-icon>
+              </button>
+              <button (click)="cancelEditSubExpense()" class="text-slate-500" title="Cancelar">
+                <mat-icon class="!text-base">close</mat-icon>
+              </button>
+            </td>
+          </ng-template>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="border-t border-gray-200 font-semibold">
+          <td class="py-2">Total</td>
+          <td class="py-2 text-right">${{ formatCurrency(subExpensesTotal) }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="border-t border-gray-100 pt-3">
+    <label class="app-field-label animate-fadeIn">Nombre:</label>
+    <input type="text" [(ngModel)]="newSubExpense.nombre" placeholder="Ej: Tomates"
+      class="app-input mb-3 animate-fadeIn" />
+
+    <label class="app-field-label animate-fadeIn">Valor:</label>
+    <input type="text" [value]="formatCurrency(newSubExpense.valor)" (input)="onNewSubExpenseValueInput($event)"
+      placeholder="Ej: 5.000" class="app-input mb-3 animate-fadeIn" />
+
+    <label class="app-field-label animate-fadeIn">Selecciona billetera:</label>
+    <select [(ngModel)]="newSubExpense.walletId" class="app-input mb-1 animate-fadeIn">
+      <option value="" disabled>Selecciona billetera</option>
+      <option *ngFor="let w of wallet" [value]="w.id">{{ w.tipo }}</option>
+      <option *ngIf="hayDescuadre" [value]="DESCUADRE">Descuadre</option>
+    </select>
+    <p *ngIf="newSubExpense.walletId && newSubExpense.walletId !== DESCUADRE" class="text-gray-500 text-sm mt-1 mb-3">
+      ${{ getWalletBalance(newSubExpense.walletId) }} disponibles
+    </p>
+    <p *ngIf="newSubExpense.walletId === DESCUADRE" class="text-amber-600 text-sm mt-1 mb-3">
+      No se descontará de ninguna billetera.
+    </p>
+
+    <div class="flex justify-end gap-2">
+      <button (click)="closeSubExpensesModal()" class="app-secondary-button animate-fadeIn">Cerrar</button>
+      <button (click)="addSubExpense()" class="app-primary-button animate-fadeIn">Agregar</button>
+    </div>
   </div>
 </app-modal-shell>
 
