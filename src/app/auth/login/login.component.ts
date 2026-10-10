@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import {
@@ -11,6 +11,7 @@ import { AuthService } from '../../services/auth.service';
 import { DateService } from '../../services/date.service';
 import { ThemeService } from '../../services/theme.service';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { BiometricService } from '../../core/biometric.service';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 
@@ -27,6 +28,9 @@ export default class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private dateService = inject(DateService);
   private themeService = inject(ThemeService);
+  biometric = inject(BiometricService);
+  biometricAvailable = signal(false);
+  biometricBusy = signal(false);
 
   get isDarkMode(): boolean { return this.themeService.isDarkMode(); }
   showPassword: boolean = false;
@@ -68,6 +72,17 @@ export default class LoginComponent implements OnInit {
 
   // Método para capturar el resultado del login con Google y redirigir si es nuevo login
   ngOnInit(): void {
+    // Bloqueo por huella: si ya hay sesión viva y la huella está activa, no se muestra el
+    // formulario normal hasta desbloquear (o "Usar otra cuenta"). Si no está bloqueada
+    // (ya se desbloqueó en esta misma sesión de la SPA), se entra directo.
+    if (this.authService.isLoggedIn() && this.biometric.isEnabled()) {
+      if (!this.biometric.locked()) {
+        this.router.navigate(['app/home']);
+        return;
+      }
+      this.biometric.isSupported().then((ok) => this.biometricAvailable.set(ok));
+    }
+
     if (typeof window !== 'undefined') {
       this.appInstalled = window.matchMedia('(display-mode: standalone)').matches;
       this.deferredInstallPrompt = this.getGlobalInstallPrompt();
@@ -99,6 +114,8 @@ export default class LoginComponent implements OnInit {
           // Procesar datos, guardarlos y crear perfil si hace falta
           this.authService.processGoogleSignIn(result);
 
+          // Login real recién hecho: nunca debe quedar "bloqueado" por huella justo después.
+          this.biometric.locked.set(false);
           this.welcomeName = result.user.displayName || 'Usuario';
           this.showSuccessModal = true;
 
@@ -185,6 +202,9 @@ export default class LoginComponent implements OnInit {
   }
 
   showWelcomeModal(nombre: string) {
+    // Login real recién hecho (contraseña, Google o demo): nunca debe quedar "bloqueado"
+    // por huella justo después, o el guard devolvería al login en loop infinito.
+    this.biometric.locked.set(false);
     this.welcomeName = nombre;
     this.showSuccessModal = true;
 
@@ -230,6 +250,24 @@ export default class LoginComponent implements OnInit {
 
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
+  }
+
+  // Reacción directa a un tap del usuario (requisito de iOS/WebAuthn: nunca disparar
+  // navigator.credentials.get() solo). Solo desbloquea la UI, no reemplaza el login real.
+  async loginWithBiometric(): Promise<void> {
+    if (this.biometricBusy()) return;
+    this.biometricBusy.set(true);
+    const ok = await this.biometric.unlock();
+    this.biometricBusy.set(false);
+    if (ok) this.showWelcomeModal(this.authService.getUser()?.name ?? '');
+  }
+
+  // Logout completo de verdad: borra el token/usuario real, a diferencia de "Salir" con
+  // huella activa (que solo bloquea la UI).
+  useOtherAccount(): void {
+    this.biometric.locked.set(false);
+    this.authService.logout();
+    this.biometricAvailable.set(false);
   }
 
   toggleTheme(): void {

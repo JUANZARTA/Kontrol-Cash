@@ -6,6 +6,7 @@ import { AuthService } from '../../../services/auth.service';
 import { Router } from '@angular/router';
 import { UserSettingsService } from '../../../services/user-settings.service';
 import { Subscription } from 'rxjs';
+import { BiometricService } from '../../../core/biometric.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -36,7 +37,8 @@ export class SidebarComponent {
     @Inject(PLATFORM_ID) private platformId: Object,
     private authService: AuthService,
     private router: Router,
-    private userSettingsService: UserSettingsService
+    private userSettingsService: UserSettingsService,
+    private biometric: BiometricService
   ) {
     if (isPlatformBrowser(this.platformId)) {
       this.checkScreenSize();
@@ -132,7 +134,13 @@ export class SidebarComponent {
    * Cierra sesión y redirige a login
    */
   logout() {
-    this.authService.logout();
+    // Con huella activa, "Salir" bloquea en vez de cerrar la sesión de Firebase: sin
+    // backend, la huella no puede reabrir una sesión realmente cerrada.
+    if (this.biometric.isEnabled()) {
+      this.biometric.locked.set(true);
+    } else {
+      this.authService.logout();
+    }
     this.router.navigate(['/login']);
   }
 

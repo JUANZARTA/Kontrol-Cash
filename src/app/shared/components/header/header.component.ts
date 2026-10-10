@@ -12,6 +12,7 @@ import { ThemeService } from '../../../services/theme.service';
 import { UserSettingsService } from '../../../services/user-settings.service';
 import { ModalShellComponent } from '../modal-shell/modal-shell.component';
 import { RouterLink } from '@angular/router';
+import { BiometricService } from '../../../core/biometric.service';
 
 @Component({
   selector: 'app-header',
@@ -57,7 +58,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private router: Router,
     private authService: AuthService,
     private themeService: ThemeService,
-    private userSettingsService: UserSettingsService
+    private userSettingsService: UserSettingsService,
+    private biometric: BiometricService
   ) {}
 
   ngOnInit(): void {
@@ -196,7 +198,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    this.authService.logout();
+    // Con huella activa, "Salir" bloquea en vez de cerrar la sesión de Firebase: sin
+    // backend, la huella no puede reabrir una sesión realmente cerrada.
+    if (this.biometric.isEnabled()) {
+      this.biometric.locked.set(true);
+    } else {
+      this.authService.logout();
+    }
     this.router.navigate(['/login']);
   }
 }

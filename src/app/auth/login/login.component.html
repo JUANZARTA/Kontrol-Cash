@@ -165,6 +165,23 @@
           <span>Iniciar sesión con Google</span>
         </button>
 
+        <!-- Ingreso con huella (bloqueo de la app, solo celular) -->
+        <div *ngIf="biometricAvailable()" class="lg:hidden flex flex-col items-center mt-6">
+          <button
+            type="button"
+            (click)="loginWithBiometric()"
+            [disabled]="biometricBusy()"
+            class="w-24 h-24 rounded-full border border-gray-300 bg-white shadow-sm flex flex-col items-center justify-center gap-1 text-slate-700 hover:bg-gray-50 transition disabled:opacity-50"
+          >
+            <span class="material-icons text-sky-600" style="font-size: 32px">fingerprint</span>
+            <span class="text-xs leading-tight text-center">Ingresá con<br />huella</span>
+          </button>
+          <p *ngIf="biometric.error()" class="text-red-500 text-xs mt-2 text-center">{{ biometric.error() }}</p>
+          <button type="button" (click)="useOtherAccount()" class="text-xs text-slate-400 underline mt-3">
+            Usar otra cuenta
+          </button>
+        </div>
+
         <!-- Enlace a registro -->
         <p class="text-center text-sm text-gray-500 mt-4">
           ¿No tienes cuenta?

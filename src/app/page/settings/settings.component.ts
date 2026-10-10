@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -9,11 +9,15 @@ import { DateService } from '../../services/date.service';
 import { MonthlyCloseService } from '../../services/monthly-close.service';
 import { UserSystemSettings, defaultUserSystemSettings } from '../../models/user-settings.model';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
+import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
+import { BiometricService } from '../../core/biometric.service';
+import { CHANGELOG, ChangelogEntry } from '../../core/changelog';
+import { APP_VERSION } from '../../core/version';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmModalComponent],
+  imports: [CommonModule, FormsModule, ConfirmModalComponent, ModalShellComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css'],
 })
@@ -23,10 +27,17 @@ export default class SettingsComponent implements OnInit, OnDestroy {
   private dateService = inject(DateService);
   private closeService = inject(MonthlyCloseService);
   private router = inject(Router);
+  biometric = inject(BiometricService);
 
   readonly user = JSON.parse(localStorage.getItem('user') || '{}');
   readonly userId = this.user?.localId || '';
   settings: UserSystemSettings = { ...defaultUserSystemSettings };
+  biometricSupported = signal(false);
+  biometricBusy = signal(false);
+
+  readonly changelog = CHANGELOG;
+  readonly appVersion = APP_VERSION;
+  selectedChangelogEntry: ChangelogEntry | null = null;
   selectedPhotoFile: File | null = null;
   profilePhotoPreview = 'assets/img/logoIcono.png';
   selectedPhotoName = '';
@@ -41,6 +52,8 @@ export default class SettingsComponent implements OnInit, OnDestroy {
   private dateSub?: Subscription;
 
   ngOnInit(): void {
+    this.biometric.isSupported().then((ok) => this.biometricSupported.set(ok));
+
     this.dateSub = this.dateService.selectedDate$.subscribe((date) => {
       if (date.year && date.month) {
         this.currentYear = date.year;
@@ -175,5 +188,47 @@ export default class SettingsComponent implements OnInit, OnDestroy {
     this.settings[key] = !this.settings[key];
     if (key === 'darkMode') this.onDarkModeToggle();
     if (key === 'useCustomColor') this.onCustomColorToggle();
+  }
+
+  // Activa/desactiva el bloqueo por huella. No es seguridad real: solo crea/borra una
+  // credencial WebAuthn de plataforma que desbloquea la UI con la sesión real ya viva.
+  async toggleBiometric(): Promise<void> {
+    if (this.biometricBusy()) return;
+    if (this.biometric.enabled()) {
+      this.biometric.disable();
+      return;
+    }
+    const uid = this.user?.localId;
+    if (!uid) return;
+    this.biometricBusy.set(true);
+    try {
+      await this.biometric.enable(uid);
+    } catch {
+      // el mensaje queda en biometric.error()
+    } finally {
+      this.biometricBusy.set(false);
+    }
+  }
+
+  openChangelogEntry(entry: ChangelogEntry): void {
+    this.selectedChangelogEntry = entry;
+  }
+
+  closeChangelogEntry(): void {
+    this.selectedChangelogEntry = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    this.closeChangelogEntry();
+  }
+
+  // Cierra el modal de notas de versión si el click fue fuera de él
+  @HostListener('document:click', ['$event'])
+  onDocumentClickForChangelog(event: MouseEvent): void {
+    if (!this.selectedChangelogEntry) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('.changelog-card') || target.closest('[data-modal="changelog"]')) return;
+    this.closeChangelogEntry();
   }
 }

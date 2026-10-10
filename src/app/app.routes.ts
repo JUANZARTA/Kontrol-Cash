@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard'; // 👈 Importa tu guard
 import { PendingCloseGuard } from './guards/pending-close.guard';
+import { BiometricLockGuard } from './guards/biometric-lock.guard';
 export const routes: Routes = [
   {
     path: '',
@@ -17,7 +18,7 @@ export const routes: Routes = [
   },
   {
     path: 'app',
-    canActivate: [AuthGuard, PendingCloseGuard], // ✅ Auth + bloqueo por mes sin cerrar
+    canActivate: [AuthGuard, BiometricLockGuard, PendingCloseGuard], // ✅ Auth + bloqueo por huella + bloqueo por mes sin cerrar
     canActivateChild: [PendingCloseGuard], // re-chequea al navegar entre pantallas ya dentro de /app
     loadComponent: () => import('./shared/components/layout/layout.component'),
     children: [
