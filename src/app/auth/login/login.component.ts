@@ -12,6 +12,7 @@ import { DateService } from '../../services/date.service';
 import { ThemeService } from '../../services/theme.service';
 import { ModalShellComponent } from '../../shared/components/modal-shell/modal-shell.component';
 import { BiometricService } from '../../core/biometric.service';
+import { APP_VERSION } from '../../core/version';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 
@@ -46,6 +47,7 @@ export default class LoginComponent implements OnInit {
   showLoginOverlay = false;
   canInstallApp = false;
   appInstalled = false;
+  readonly appVersion = APP_VERSION;
   installHelpVisible = false;
   private deferredInstallPrompt: any = null;
 

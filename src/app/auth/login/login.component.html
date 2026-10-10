@@ -15,6 +15,7 @@
     <div class="flex flex-col items-center mb-6">
       <img src="assets/img/logoIcono.png" alt="Logo" [ngClass]="onBlue ? 'h-36' : 'h-20'" class="w-auto" />
       <p class="-mt-2 font-semibold tracking-tight" [ngClass]="onBlue ? 'text-2xl text-white' : 'text-lg text-slate-900'">Kontrol Cash</p>
+      <p class="text-xs" [ngClass]="onBlue ? 'text-sky-100/80' : 'text-slate-400'">versión {{ appVersion }}</p>
     </div>
   </ng-template>
 
