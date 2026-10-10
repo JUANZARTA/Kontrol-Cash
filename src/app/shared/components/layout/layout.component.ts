@@ -9,6 +9,7 @@ import { UserSettingsService } from '../../../services/user-settings.service';
 import { ThemeService } from '../../../services/theme.service';
 import { MonthlyCloseService } from '../../../services/monthly-close.service';
 import { DateService } from '../../../services/date.service';
+import { ConnectionService } from '../../../services/connection.service';
 
 @Component({
   selector: 'app-layout',
@@ -23,6 +24,7 @@ export default class LayoutComponent implements OnInit, OnDestroy {
   private closeService = inject(MonthlyCloseService);
   private router = inject(Router);
   private dateService = inject(DateService);
+  connection = inject(ConnectionService);
 
   pendingClose: { year: string; month: string } | null = null;
   private navSub?: Subscription;

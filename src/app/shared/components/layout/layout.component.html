@@ -25,3 +25,13 @@
     </div>
   </div>
 </div>
+
+<div
+  *ngIf="connection.offline()"
+  class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full text-xs whitespace-nowrap"
+  style="background-color: var(--app-surface); border: 1px solid var(--app-border); color: var(--app-muted); box-shadow: var(--app-shadow);"
+  role="status"
+>
+  <span class="material-icons text-base text-red-500">cloud_off</span>
+  Sin conexión · tus cambios se guardan al volver
+</div>

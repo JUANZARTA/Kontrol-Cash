@@ -7,6 +7,13 @@ export interface ChangelogEntry {
 /** Notas de versión de Kontrol Cash, de la más nueva a la más vieja. Solo cambios notorios para el usuario. */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.5',
+    fecha: '10/10/2026',
+    cambios: [
+      'Aviso de "Sin conexión" cuando se corta internet, que desaparece solo al volver.',
+    ],
+  },
+  {
     version: '2.2.4',
     fecha: '10/10/2026',
     cambios: [
