@@ -365,13 +365,17 @@ export class MonthlyCloseService {
     doc.text('Kontrol Cash', marginX + 24, 16);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
-    doc.text('Cierre de mes', marginX + 24, 23);
+    doc.text('Extracto financiero', marginX + 24, 23);
 
-    // Periodo y fecha de cierre
+    // Franja de acento debajo del header, misma firma visual que usan las páginas de detalle.
+    doc.setFillColor(13, 148, 136); // teal-600
+    doc.rect(0, 32, pageWidth, 2, 'F');
+
+    // Periodo y fecha de generación
     doc.setTextColor(15, 23, 42);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
-    doc.text(this.formatPeriodLabel(snapshot?.period), marginX, 45);
+    doc.setFontSize(16);
+    doc.text(this.formatPeriodLabel(snapshot?.period), marginX, 46);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
@@ -379,42 +383,53 @@ export class MonthlyCloseService {
     const closedAtLabel = snapshot?.closedAt
       ? new Date(snapshot.closedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })
       : 'N/A';
-    doc.text(`Generado el ${closedAtLabel}`, marginX, 51);
+    doc.text(`Generado el ${closedAtLabel}`, marginX, 52);
 
-    // Tabla de totales
-    const rows: Array<{ label: string; value: number; color: [number, number, number] }> = [
+    // Totales como tarjetas en grilla 2x2, con barra de acento y número grande por tarjeta.
+    const cards: Array<{ label: string; value: number; color: [number, number, number] }> = [
       { label: 'Ingresos', value: t.income, color: [13, 148, 136] },
       { label: 'Gastos', value: t.expense, color: [234, 88, 12] },
       { label: 'Neto', value: t.net, color: t.net >= 0 ? [13, 148, 136] : [220, 38, 38] },
       { label: 'Deuda pendiente', value: t.debtPending, color: [225, 29, 72] },
     ];
 
-    const rowHeight = 14;
-    let y = 65;
-    rows.forEach((row, i) => {
-      if (i % 2 === 0) {
-        doc.setFillColor(248, 250, 252); // slate-50
-        doc.rect(marginX, y - 8, pageWidth - marginX * 2, rowHeight, 'F');
-      }
+    const gap = 6;
+    const cardWidth = (pageWidth - marginX * 2 - gap) / 2;
+    const cardHeight = 26;
+    const gridTop = 62;
+
+    cards.forEach((card, i) => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const x = marginX + col * (cardWidth + gap);
+      const y = gridTop + row * (cardHeight + gap);
+
+      doc.setFillColor(248, 250, 252); // slate-50
+      doc.setDrawColor(226, 232, 240); // slate-200
+      doc.roundedRect(x, y, cardWidth, cardHeight, 2.5, 2.5, 'FD');
+
+      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
+      doc.rect(x, y, 2.5, cardHeight, 'F');
+
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.setTextColor(51, 65, 85); // slate-700
-      doc.text(row.label, marginX + 4, y);
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139); // slate-500
+      doc.text(card.label, x + 8, y + 10);
 
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(row.color[0], row.color[1], row.color[2]);
-      doc.text(`$${this.formatAmount(row.value)}`, pageWidth - marginX - 4, y, { align: 'right' });
-
-      y += rowHeight;
+      doc.setFontSize(14);
+      doc.setTextColor(card.color[0], card.color[1], card.color[2]);
+      doc.text(`$${this.formatAmount(card.value)}`, x + 8, y + 20);
     });
 
+    const gridBottom = gridTop + 2 * cardHeight + gap;
     doc.setDrawColor(226, 232, 240);
-    doc.line(marginX, y + 4, pageWidth - marginX, y + 4);
+    doc.line(marginX, gridBottom + 6, pageWidth - marginX, gridBottom + 6);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
-    doc.text('Generado automáticamente por Kontrol Cash', marginX, y + 12);
+    doc.text('Generado automáticamente por Kontrol Cash', marginX, gridBottom + 14);
 
     // Detalle completo: una página por categoría con TODOS los registros que existían
     // en ese período (no solo lo que el cierre transfiere al mes siguiente), para que el
@@ -441,7 +456,7 @@ export class MonthlyCloseService {
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Ingresos', periodLabel,
         ['Nombre', 'Categoría', 'Valor'],
         (Object.values(data.incomes || {}) as Income[]).map(i => [i.nombre, i.categoria, money(i.valor)]),
-        'Sin ingresos registrados en este período.');
+        'Sin ingresos registrados en este período.', [13, 148, 136]);
 
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Gastos', periodLabel,
         ['Descripción', 'Categoría', 'Valor', 'Estimación'],
@@ -454,43 +469,54 @@ export class MonthlyCloseService {
             '',
           ]),
         ]),
-        'Sin gastos registrados en este período.');
+        'Sin gastos registrados en este período.', [234, 88, 12]);
 
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Facturas', periodLabel,
         ['Nombre', 'Fecha de pago', 'Valor', 'Estado'],
         (Object.values(data.invoices || {}) as Invoice[]).map(i => [i.nombre, this.formatDate(i.fechaPago), money(i.valor), i.estado]),
-        'Sin facturas registradas en este período.');
+        'Sin facturas registradas en este período.', [217, 119, 6]);
 
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Mi Billetera', periodLabel,
         ['Cuenta', 'Valor'],
         Object.values(data.wallets || {}).map(w => [w.tipo, money(w.valor)]),
-        'Sin cuentas de billetera registradas en este período.');
+        'Sin cuentas de billetera registradas en este período.', [2, 132, 199]);
 
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Alcancías', periodLabel,
         ['Nombre', 'Tipo', 'Valor', 'Meta de ahorro'],
         Object.values(data.savings || {}).map(s => [s.nombre || '-', s.tipo, money(s.valor), s.metaAhorro ? money(s.metaAhorro) : '-']),
-        'Sin alcancías registradas en este período.');
+        'Sin alcancías registradas en este período.', [124, 58, 237]);
 
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Deudas', periodLabel,
         ['Acreedor', 'Fecha deuda', 'Fecha pago', 'Valor', 'Estado', 'Cuotas'],
         (Object.values(data.debts || {}) as Debt[]).map(d =>
           [d.acreedor, this.formatDate(d.fecha_deuda), this.formatDate(d.fecha_pago), money(d.valor), d.estado, cuotas(d.cuotasPagadas, d.totalCuotas)]),
-        'Sin deudas registradas en este período.');
+        'Sin deudas registradas en este período.', [225, 29, 72]);
 
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Deudores', periodLabel,
         ['Deudor', 'Fecha préstamo', 'Fecha pago', 'Valor', 'Estado', 'Cuotas'],
         (Object.values(data.loans || {}) as Loan[]).map(l =>
           [l.deudor, this.formatDate(l.fecha_prestamo), this.formatDate(l.fecha_pago), money(l.valor), l.estado, cuotas(l.cuotasPagadas, l.totalCuotas)]),
-        'Sin deudores registrados en este período.');
+        'Sin deudores registrados en este período.', [219, 39, 119]);
 
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Mi Vehículo', periodLabel,
         ['Fecha', 'Bomba', 'Precio/Galón', 'Monto', 'Galones', 'Kilometraje', 'Referencia'],
         (Object.values(data.vehicleEntries || {}) as FuelEntry[]).map(v =>
           [this.formatDate(v.fecha), v.nombreBomba, v.precioGalon ? money(v.precioGalon) : '-', money(v.monto), String(v.galones ?? '-'), String(v.kilometraje ?? '-'), v.esReferencia ? 'Sí' : 'No']),
-        'Sin tanqueos registrados en este período.');
+        'Sin tanqueos registrados en este período.', [8, 145, 178]);
     }
 
-    doc.save(`${safePeriod}-cierre.pdf`);
+    // Pie de página con numeración, el mismo en todas las páginas del extracto.
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const totalPages = (doc.internal as any).getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Kontrol Cash · Página ${i} de ${totalPages}`, pageWidth - marginX, pageHeight - 8, { align: 'right' });
+    }
+
+    doc.save(`${safePeriod}-extracto.pdf`);
   }
 
   /**
@@ -507,7 +533,8 @@ export class MonthlyCloseService {
     periodLabel: string,
     head: string[],
     body: any[][],
-    emptyMessage: string
+    emptyMessage: string,
+    accentColor: [number, number, number] = [13, 148, 136]
   ): void {
     doc.addPage();
 
@@ -524,6 +551,11 @@ export class MonthlyCloseService {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
       doc.text(sectionTitle, pageWidth - marginX, 15, { align: 'right' });
+
+      // Franja de acento: identifica de un vistazo a qué sección pertenece la página,
+      // sobre todo cuando una sección ocupa varias hojas seguidas.
+      doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+      doc.rect(0, 26, pageWidth, 2, 'F');
     };
 
     if (!body.length) {
@@ -542,7 +574,7 @@ export class MonthlyCloseService {
       margin: { left: marginX, right: marginX, top: 32 },
       theme: 'striped',
       styles: { fontSize: 9, cellPadding: 3, textColor: [51, 65, 85] },
-      headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: 'bold' },
+      headStyles: { fillColor: accentColor, textColor: 255, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       didDrawPage: drawHeader,
     });
