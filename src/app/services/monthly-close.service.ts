@@ -14,6 +14,7 @@ import { VehicleService } from './vehicle.service';
 import { MonthlyCloseSnapshot } from '../models/monthly-close.model';
 import { Income } from '../models/income.model';
 import { CategoriaGasto, Expense } from '../models/expense.model';
+import { SubExpense } from '../models/sub-expense.model';
 import { Debt } from '../models/debt.model';
 import { Loan } from '../models/loans.model';
 import { Saving } from '../models/savings.model';
@@ -306,6 +307,33 @@ export class MonthlyCloseService {
     localStorage.setItem(this.storageKey(uid), JSON.stringify(all));
   }
 
+  /**
+   * Snapshot de solo lectura del mes activo (sin cerrarlo ni transferir nada), para que
+   * desde Configuración se pueda descargar el PDF de respaldo en cualquier momento.
+   */
+  buildCurrentSnapshot(userId: string, year: string, month: string): Observable<MonthlyCloseSnapshot> {
+    return forkJoin({
+      expenses: this.expenseService.getExpenses(userId, year, month),
+      incomes: this.incomeService.getIncomes(userId, year, month),
+      debts: this.debtService.getDebts(userId, year, month),
+    }).pipe(
+      map(data => {
+        const expenseTotal = Object.values(data.expenses || {}).reduce((s, e) => s + (e.valor || 0), 0);
+        const incomeTotal = Object.values(data.incomes || {}).reduce((s, i) => s + (i.valor || 0), 0);
+        const debtPending = Object.values(data.debts || {})
+          .filter(d => d.estado === 'Pendiente')
+          .reduce((s, d) => s + (d.valor || 0), 0);
+        return {
+          period: `${year}-${month}`,
+          closedAt: new Date().toISOString(),
+          totals: { income: incomeTotal, expense: expenseTotal, net: incomeTotal - expenseTotal, debtPending },
+          categories: {},
+          pdf: { path: '', size: 0, sha256: '' },
+        };
+      })
+    );
+  }
+
   async downloadPdf(snapshot: MonthlyCloseSnapshot, userId: string): Promise<void> {
     // Import dinámico: jsPDF (y sus dependencias pesadas: html2canvas, canvg, dompurify) solo
     // se cargan cuando el usuario realmente pide el PDF. Este service lo inyectan LayoutComponent
@@ -351,7 +379,7 @@ export class MonthlyCloseService {
     const closedAtLabel = snapshot?.closedAt
       ? new Date(snapshot.closedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })
       : 'N/A';
-    doc.text(`Cerrado el ${closedAtLabel}`, marginX, 51);
+    doc.text(`Generado el ${closedAtLabel}`, marginX, 51);
 
     // Tabla de totales
     const rows: Array<{ label: string; value: number; color: [number, number, number] }> = [
@@ -417,7 +445,15 @@ export class MonthlyCloseService {
 
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Gastos', periodLabel,
         ['Descripción', 'Categoría', 'Valor', 'Estimación'],
-        (Object.values(data.expenses || {}) as Expense[]).map(e => [e.descripcion, e.categoria, money(e.valor), money(e.estimacion)]),
+        (Object.values(data.expenses || {}) as (Expense & { subgastos?: Record<string, SubExpense> })[]).flatMap(e => [
+          [e.descripcion, e.categoria, money(e.valor), money(e.estimacion)],
+          ...Object.values(e.subgastos || {}).map(s => [
+            `   • ${s.nombre}`,
+            '',
+            { content: money(s.valor), styles: { textColor: [37, 99, 235] } },
+            '',
+          ]),
+        ]),
         'Sin gastos registrados en este período.');
 
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Facturas', periodLabel,
@@ -470,7 +506,7 @@ export class MonthlyCloseService {
     sectionTitle: string,
     periodLabel: string,
     head: string[],
-    body: (string | number)[][],
+    body: any[][],
     emptyMessage: string
   ): void {
     doc.addPage();

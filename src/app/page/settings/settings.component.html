@@ -33,9 +33,12 @@
       Mes activo: <span class="capitalize">{{ currentPeriodLabel }}</span>
     </h3>
 
-    <div class="mt-3">
+    <div class="mt-3 flex flex-wrap gap-2">
       <button (click)="goToMonthClose()" class="app-primary-button w-full sm:w-auto self-start">
         <span class="material-icons text-sm align-middle mr-1">event_repeat</span>Cierre de Mes
+      </button>
+      <button (click)="downloadCurrentPdf()" [disabled]="isDownloadingPdf" class="app-secondary-button w-full sm:w-auto self-start">
+        <span class="material-icons text-sm align-middle mr-1">picture_as_pdf</span>{{ isDownloadingPdf ? 'Generando...' : 'Descargar PDF' }}
       </button>
     </div>
   </div>

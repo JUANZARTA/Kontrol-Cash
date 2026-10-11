@@ -49,6 +49,7 @@ export default class SettingsComponent implements OnInit, OnDestroy {
   showClearMonthConfirm = false;
   isClearingMonth = false;
   clearMonthMessage = '';
+  isDownloadingPdf = false;
   private dateSub?: Subscription;
 
   ngOnInit(): void {
@@ -89,6 +90,21 @@ export default class SettingsComponent implements OnInit, OnDestroy {
 
   goToMonthClose(): void {
     this.router.navigate(['/app/month-close']);
+  }
+
+  downloadCurrentPdf(): void {
+    if (this.isDownloadingPdf || !this.userId || !this.currentYear || !this.currentMonth) return;
+    this.isDownloadingPdf = true;
+    this.closeService.buildCurrentSnapshot(this.userId, this.currentYear, this.currentMonth).subscribe({
+      next: (snapshot) => {
+        this.closeService.downloadPdf(snapshot, this.userId).finally(() => {
+          this.isDownloadingPdf = false;
+        });
+      },
+      error: () => {
+        this.isDownloadingPdf = false;
+      },
+    });
   }
 
   clearMonth(): void {
