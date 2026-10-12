@@ -61,10 +61,16 @@
 
     <!-- Pie de tarjeta -->
     <div class="app-card-footer">
-      <button (click)="openTransactionModal(account.id)"
-        class="app-accent-button disabled:opacity-50 disabled:cursor-not-allowed">
-        Mover
-      </button>
+      <div class="flex items-center justify-center gap-2">
+        <button (click)="openTransactionModal(account.id)"
+          class="app-accent-button disabled:opacity-50 disabled:cursor-not-allowed">
+          Mover
+        </button>
+        <button (click)="openMovementsModal(account.id)" title="Ver movimientos"
+          class="app-secondary-button">
+          <span class="material-icons text-base">history</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -182,5 +188,42 @@
       <button (click)="confirmTransaction()" class="app-primary-button hover:bg-sky-800">
         Aceptar
       </button>
+    </div>
+</app-modal-shell>
+
+<!-- Modal de Historial de Movimientos -->
+<app-modal-shell *ngIf="isMovementsModalOpen" [title]="'Movimientos — ' + movementsWalletLabel"
+  panelClass="animate-pop-in">
+    <p *ngIf="isLoadingMovimientos" class="text-sm text-gray-500 text-center py-4">Cargando...</p>
+
+    <p *ngIf="!isLoadingMovimientos && movimientos.length === 0" class="text-sm text-gray-500 text-center py-4">
+      Todavía no hay movimientos registrados en esta billetera.
+    </p>
+
+    <div *ngIf="!isLoadingMovimientos && movimientos.length > 0" class="max-h-96 overflow-y-auto space-y-4">
+      <div *ngFor="let group of getMovementGroups()">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{{ group.label }}</p>
+        <div class="space-y-1">
+          <div *ngFor="let mov of group.items"
+            class="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2.5">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="material-icons text-base" [ngClass]="mov.monto >= 0 ? 'text-emerald-600' : 'text-red-600'">
+                {{ mov.monto >= 0 ? 'call_received' : 'call_made' }}
+              </span>
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-gray-800 truncate">{{ mov.descripcion }}</p>
+                <p class="text-xs text-gray-400">{{ formatMovementTime(mov.fecha) }}</p>
+              </div>
+            </div>
+            <p class="text-sm font-semibold whitespace-nowrap" [ngClass]="mov.monto >= 0 ? 'text-emerald-600' : 'text-red-600'">
+              {{ mov.monto >= 0 ? '+' : '-' }}$ {{ formatCurrency(Math.abs(mov.monto)) }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end mt-4">
+      <button (click)="closeMovementsModal()" class="app-secondary-button">Cerrar</button>
     </div>
 </app-modal-shell>

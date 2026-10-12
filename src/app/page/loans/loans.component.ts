@@ -203,20 +203,19 @@ export default class LoansComponent implements OnInit, OnDestroy {
     this.loanService
       .addLoan(this.userId, this.currentYear, this.currentMonth, loanToSave)
       .subscribe({
-        next: () => {
+        next: (res: any) => {
           // 2️⃣ Actualizar billetera de origen descontando valor
-          const updatedWallet = {
-            tipo: sourceWallet.tipo,
-            valor: sourceWallet.valor - this.newLoan.valor,
-          };
-
           this.walletService
-            .updateAccount(
+            .registrarMovimiento(
               this.userId,
               this.currentYear,
               this.currentMonth,
               sourceWallet.id,
-              updatedWallet
+              sourceWallet,
+              -this.newLoan.valor,
+              'deudor',
+              `Préstamo a ${this.newLoan.deudor}`,
+              res?.name || res?.id
             )
             .subscribe({
               next: () => {
@@ -345,9 +344,13 @@ export default class LoansComponent implements OnInit, OnDestroy {
     const cuotasPagadas = this.getCuotasPagadas(loan);
     const nuevasCuotasPagadas = this.payLoanMode === 'todo' ? totalCuotas : cuotasPagadas + 1;
 
-    this.walletService.updateAccount(
+    const descripcionPago = this.payLoanMode === 'todo'
+      ? `Cobro total: ${loan.deudor}`
+      : `Cobro de cuota: ${loan.deudor}`;
+
+    this.walletService.registrarMovimiento(
       this.userId, this.currentYear, this.currentMonth, account.id,
-      { tipo: account.tipo, valor: account.valor + monto }
+      account, monto, 'deudor', descripcionPago, loan.id
     ).subscribe({
       next: () => {
         const updatedLoan: Loan = {
@@ -476,9 +479,9 @@ export default class LoansComponent implements OnInit, OnDestroy {
     if (this.selectedReturnWallet && monto > 0) {
       const account = this.wallet.find(w => w.id === this.selectedReturnWallet);
       if (account) {
-        this.walletService.updateAccount(
+        this.walletService.registrarMovimiento(
           this.userId, this.currentYear, this.currentMonth, account.id,
-          { tipo: account.tipo, valor: account.valor + monto }
+          account, monto, 'deudor', `Saldo pendiente devuelto al eliminar préstamo a ${loan?.deudor}`, this.loanToDeleteId
         ).subscribe({
           next: () => {
             this.loadWallets();
@@ -713,8 +716,8 @@ export default class LoansComponent implements OnInit, OnDestroy {
             const [id, w] = entry;
             forkJoin([
               update$,
-              this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, id,
-                { tipo: w.tipo, valor: w.valor - monto }),
+              this.walletService.registrarMovimiento(this.userId, this.currentYear, this.currentMonth, id,
+                w, -monto, 'deudor', `Deshacer cuota pagada: ${loan.deudor}`, loan.id),
             ]).subscribe({
               next: () => {
                 this.loadLoans();

@@ -264,10 +264,13 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       return;
     }
     const expense = new Expense(this.newVehicleExp.descripcion, 'Vehículo', this.newVehicleExp.valor, this.newVehicleExp.estimacion);
-    this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe(() => {
+    this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe((res: any) => {
       if (wallet) {
-        const updated = { tipo: wallet.tipo, valor: wallet.valor - this.newVehicleExp.valor };
-        this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, updated).subscribe(() => this.loadWallets());
+        this.walletService.registrarMovimiento(
+          this.userId, this.currentYear, this.currentMonth, wallet.id,
+          wallet, -this.newVehicleExp.valor, 'vehiculo', `Gasto de vehículo: ${this.newVehicleExp.descripcion}`,
+          res?.name || res?.id
+        ).subscribe(() => this.loadWallets());
       }
       this.closeVehicleExpModal();
       this.loadGasolinaAndVehicleExpenses();
@@ -314,8 +317,12 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, exp.id, updated).subscribe(() => {
       if (wallet) {
         const delta = action === 'add' ? -this.vehicleExpAddVal : this.vehicleExpAddVal;
-        const updatedWallet = { tipo: wallet.tipo, valor: wallet.valor + delta };
-        this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, updatedWallet).subscribe(() => this.loadWallets());
+        this.walletService.registrarMovimiento(
+          this.userId, this.currentYear, this.currentMonth, wallet.id,
+          wallet, delta, 'vehiculo',
+          action === 'add' ? `Gasto adicional de vehículo: ${exp.descripcion}` : `Ajuste de vehículo: ${exp.descripcion}`,
+          exp.id
+        ).subscribe(() => this.loadWallets());
       }
       this.closeVehicleExpAddValModal();
       this.loadGasolinaAndVehicleExpenses();
@@ -427,19 +434,17 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       walletId: this.selectedWalletId,
     };
 
-    this.vehicleService.addFuelEntry(this.userId, this.currentYear, this.currentMonth, payload).subscribe(() => {
+    this.vehicleService.addFuelEntry(this.userId, this.currentYear, this.currentMonth, payload).subscribe((res: any) => {
       if (!selectedWallet) {
         this.closeAddModal();
         this.reloadAndSync();
         this.loadWallets();
         return;
       }
-      const updatedWallet = {
-        tipo: selectedWallet.tipo,
-        valor: selectedWallet.valor - this.newEntry.monto,
-      };
-      this.walletService.updateAccount(
-        this.userId, this.currentYear, this.currentMonth, selectedWallet.id, updatedWallet
+      this.walletService.registrarMovimiento(
+        this.userId, this.currentYear, this.currentMonth, selectedWallet.id,
+        selectedWallet, -this.newEntry.monto, 'vehiculo', `Tanqueo: ${selectedPump.nombre}`,
+        res?.name || res?.id
       ).subscribe(() => {
         this.closeAddModal();
         this.reloadAndSync();

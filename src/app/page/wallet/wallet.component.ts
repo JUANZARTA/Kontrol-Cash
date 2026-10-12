@@ -2,7 +2,7 @@ import { Component, OnInit, inject, OnDestroy, HostListener } from '@angular/cor
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WalletService } from '../../services/wallet.service';
-import { WalletAccount } from '../../models/wallet.model';
+import { WalletAccount, WalletMovementWithId } from '../../models/wallet.model';
 import { DateService } from '../../services/date.service';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
@@ -63,6 +63,12 @@ export default class WalletComponent implements OnInit, OnDestroy {
   // Variables para transacción
   sourceWalletId: string = '';
   sourceWallet: WalletAccountWithId | undefined;
+
+  // Modal de historial de movimientos
+  isMovementsModalOpen = false;
+  movementsWalletLabel = '';
+  movimientos: WalletMovementWithId[] = [];
+  isLoadingMovimientos = false;
 
   // Modal de transaccion
   isTransactionModalOpen = false;
@@ -268,29 +274,18 @@ export default class WalletComponent implements OnInit, OnDestroy {
     const account = this.wallet.find((a) => a.id === this.selectedAccountId);
     if (!account) return;
 
-    let finalValue = this.newValue;
-
-    if (action === 'subtract') {
-      finalValue = -Math.abs(this.newValue);
-    } else {
-      finalValue = Math.abs(this.newValue);
-    }
-
-    const updatedValue = account.valor + finalValue;
-
-    const updatedAccount: WalletAccount = {
-      tipo: account.tipo,
-      valor: updatedValue,
-      fijo: account.fijo,
-    };
+    const finalValue = action === 'subtract' ? -Math.abs(this.newValue) : Math.abs(this.newValue);
 
     this.walletService
-      .updateAccount(
+      .registrarMovimiento(
         this.userId,
         this.currentYear,
         this.currentMonth,
         account.id,
-        updatedAccount
+        account,
+        finalValue,
+        'ajuste_manual',
+        action === 'subtract' ? 'Ajuste manual (resta)' : 'Ajuste manual (suma)'
       )
       .subscribe({
         next: () => {
@@ -324,23 +319,32 @@ export default class WalletComponent implements OnInit, OnDestroy {
   saveEditedAccount() {
     if (!this.editedId) return;
 
-    this.walletService
-      .updateAccount(
-        this.userId,
-        this.currentYear,
-        this.currentMonth,
-        this.editedId,
-        this.editedAccount
-      )
-      .subscribe({
-        next: () => {
-          this.loadAllData();
-          this.closeEditModal();
-        },
-        error: (err) => {
-          console.error('Error al actualizar cuenta:', err);
-        },
-      });
+    const original = this.wallet.find((a) => a.id === this.editedId);
+    const delta = this.editedAccount.valor - (original?.valor ?? this.editedAccount.valor);
+    // Usa el tipo YA editado (por si también renombró la cuenta) junto al valor viejo,
+    // así registrarMovimiento calcula el nuevo saldo sin perder el rename.
+    const walletParaDelta = original
+      ? { tipo: this.editedAccount.tipo, valor: original.valor, fijo: original.fijo }
+      : null;
+
+    const request$ = delta !== 0 && walletParaDelta
+      ? this.walletService.registrarMovimiento(
+          this.userId, this.currentYear, this.currentMonth, this.editedId,
+          walletParaDelta, delta, 'ajuste_manual', 'Edición manual de saldo'
+        )
+      : this.walletService.updateAccount(
+          this.userId, this.currentYear, this.currentMonth, this.editedId, this.editedAccount
+        );
+
+    request$.subscribe({
+      next: () => {
+        this.loadAllData();
+        this.closeEditModal();
+      },
+      error: (err) => {
+        console.error('Error al actualizar cuenta:', err);
+      },
+    });
   }
 
   // Metodo para editar valor en modal edicion
@@ -373,17 +377,17 @@ export default class WalletComponent implements OnInit, OnDestroy {
     const account = this.wallet.find((a) => a.id === this.accountToEmptyId);
     if (!account) return;
 
-    // Crear objeto actualizado con valor = 0
-    const updatedAccount = { ...account, valor: 0 };
-
     // Actualizar mediante el servicio
     this.walletService
-      .updateAccount(
+      .registrarMovimiento(
         this.userId,
         this.currentYear,
         this.currentMonth,
         this.accountToEmptyId,
-        updatedAccount
+        account,
+        -account.valor,
+        'ajuste_manual',
+        'Vaciar billetera'
       )
       .subscribe({
         next: () => {
@@ -472,27 +476,18 @@ export default class WalletComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Actualizar valores localmente
-    source.valor -= amount;
-    destination.valor += amount;
-
-    // Actualizar en backend
     this.walletService
-      .updateAccount(
-        this.userId,
-        this.currentYear,
-        this.currentMonth,
-        source.id,
-        { tipo: source.tipo, valor: source.valor, fijo: source.fijo }
+      .registrarMovimiento(
+        this.userId, this.currentYear, this.currentMonth, source.id,
+        source, -amount, 'transferencia', `Transferencia a ${destination.tipo}`,
+        undefined, destination.id
       )
       .subscribe();
     this.walletService
-      .updateAccount(
-        this.userId,
-        this.currentYear,
-        this.currentMonth,
-        destination.id,
-        { tipo: destination.tipo, valor: destination.valor, fijo: destination.fijo }
+      .registrarMovimiento(
+        this.userId, this.currentYear, this.currentMonth, destination.id,
+        destination, amount, 'transferencia', `Transferencia desde ${source.tipo}`,
+        undefined, source.id
       )
       .subscribe({
         next: () => {
@@ -561,5 +556,67 @@ export default class WalletComponent implements OnInit, OnDestroy {
 
     this.assignedValue = value; // ASIGNAMOS CORRECTAMENTE
     input.value = this.formatCurrency(value); // opcional: mostrar con coma
+  }
+
+  // ======================
+  // Modal: Historial de Movimientos
+  // ======================
+  openMovementsModal(accountId: string) {
+    const account = this.wallet.find((a) => a.id === accountId);
+    this.movementsWalletLabel = account?.tipo ?? '';
+    this.isMovementsModalOpen = true;
+    this.isLoadingMovimientos = true;
+    this.movimientos = [];
+
+    this.walletService
+      .getMovimientos(this.userId, this.currentYear, this.currentMonth, accountId)
+      .subscribe({
+        next: (data) => {
+          this.movimientos = data;
+          this.isLoadingMovimientos = false;
+        },
+        error: () => {
+          this.isLoadingMovimientos = false;
+        },
+      });
+  }
+
+  closeMovementsModal() {
+    this.isMovementsModalOpen = false;
+    this.movimientos = [];
+  }
+
+  // Agrupa los movimientos por fecha (Hoy / Ayer / fecha completa) para el modal de historial
+  getMovementGroups(): { label: string; items: WalletMovementWithId[] }[] {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const ayer = new Date(hoy);
+    ayer.setDate(ayer.getDate() - 1);
+
+    const groups = new Map<string, WalletMovementWithId[]>();
+
+    for (const mov of this.movimientos) {
+      const fecha = new Date(mov.fecha);
+      const fechaSinHora = new Date(fecha);
+      fechaSinHora.setHours(0, 0, 0, 0);
+
+      let label: string;
+      if (fechaSinHora.getTime() === hoy.getTime()) {
+        label = 'Hoy';
+      } else if (fechaSinHora.getTime() === ayer.getTime()) {
+        label = 'Ayer';
+      } else {
+        label = fecha.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label)!.push(mov);
+    }
+
+    return Array.from(groups.entries()).map(([label, items]) => ({ label, items }));
+  }
+
+  formatMovementTime(fecha: number): string {
+    return new Date(fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
   }
 }

@@ -761,14 +761,17 @@ export default class HomeComponent implements OnInit, OnDestroy {
     }
 
     // 1️⃣ Restar de la cartera
-    account.valor -= this.payInvoice.valor;
     this.walletService
-      .updateAccount(
+      .registrarMovimiento(
         this.currentUser,
         this.currentYear,
         this.currentMonth,
         account.id,
-        account
+        account,
+        -this.payInvoice.valor,
+        'gasto',
+        `Pago de factura: ${this.payInvoice.nombre}`,
+        this.payInvoice.id
       )
       .subscribe();
 

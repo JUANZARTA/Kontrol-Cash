@@ -681,9 +681,11 @@ export default class DebtsComponent implements OnInit, OnDestroy {
     }
 
     const nuevoGasto = new Expense(descripcion, CategoriaGasto.Deuda, monto, monto);
-    account.valor -= monto;
 
-    this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, account.id, { tipo: account.tipo, valor: account.valor })
+    this.walletService.registrarMovimiento(
+      this.userId, this.currentYear, this.currentMonth, account.id,
+      account, -monto, 'deuda', descripcion, debt.id
+    )
       .subscribe({
         next: () => {
           this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, nuevoGasto)
@@ -777,9 +779,9 @@ export default class DebtsComponent implements OnInit, OnDestroy {
               const walletEntry = entries.find(([id]) => id === walletId);
               if (walletEntry) {
                 const [id, w] = walletEntry;
-                ops.push(this.walletService.updateAccount(
+                ops.push(this.walletService.registrarMovimiento(
                   this.userId, this.currentYear, this.currentMonth, id,
-                  { tipo: w.tipo, valor: w.valor + montoDevolver }
+                  w, montoDevolver, 'deuda', `Devolución al deshacer cuota: ${debt.acreedor}`, debt.id
                 ));
               }
               forkJoin(ops).subscribe({ next: () => { this.loadDebts(); this.showToast(`$${this.formatCurrency(montoDevolver)} devueltos a la billetera.`); } });

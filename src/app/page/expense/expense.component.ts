@@ -7,7 +7,7 @@ import { CategoriaGasto, Expense } from '../../models/expense.model';
 import { SubExpenseService } from '../../services/sub-expense.service';
 import { SubExpense, SubExpenseWithId } from '../../models/sub-expense.model';
 import { DateService } from '../../services/date.service';
-import { Subscription, of, forkJoin } from 'rxjs';
+import { Subscription, of, forkJoin, Observable } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FinanzasService } from '../../services/finanzas.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -375,7 +375,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
         expenseToAdd
       )
       .subscribe({
-        next: () => {
+        next: (res: any) => {
           const isDescuadre = this.selectedWalletExpense === this.DESCUADRE;
 
           // Descontar de la billetera solo si hay valor > 0 y no es un descuadre
@@ -384,16 +384,18 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
               (w) => w.id === this.selectedWalletExpense
             );
             if (wallet) {
-              wallet.valor -= this.assignedWalletValue;
-
               // Guardar cambios de la billetera en DB
               this.walletService
-                .updateAccount(
+                .registrarMovimiento(
                   this.userId,
                   this.currentYear,
                   this.currentMonth,
                   wallet.id,
-                  { tipo: wallet.tipo, valor: wallet.valor }
+                  wallet,
+                  -this.assignedWalletValue,
+                  'gasto',
+                  `Gasto: ${expenseToAdd.descripcion}`,
+                  res?.name || res?.id
                 )
                 .subscribe({
                   next: () => {
@@ -487,7 +489,6 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
         return;
       }
       // Aplicar suma
-      if (wallet) wallet.valor -= valueToApply;
       expense.valor += valueToApply;
     } else if (action === 'subtract') {
       // No permitir restar más que el valor actual del gasto
@@ -496,7 +497,6 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
         return;
       }
       // Aplicar resta (devuelve dinero a la billetera, salvo si es descuadre)
-      if (wallet) wallet.valor += valueToApply;
       expense.valor -= valueToApply;
     }
 
@@ -527,13 +527,18 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
 
     // 🔹 Actualizar billetera (si aplica) y gasto en la base de datos
     if (wallet) {
+      const delta = action === 'add' ? -valueToApply : valueToApply;
       this.walletService
-        .updateAccount(
+        .registrarMovimiento(
           this.userId,
           this.currentYear,
           this.currentMonth,
           wallet.id,
-          { tipo: wallet.tipo, valor: wallet.valor }
+          wallet,
+          delta,
+          action === 'add' ? 'gasto' : 'devolucion_gasto',
+          action === 'add' ? `Aumento de gasto: ${expense.descripcion}` : `Reducción de gasto: ${expense.descripcion}`,
+          expense.id
         )
         .subscribe({
           next: finishExpenseUpdate,
@@ -864,9 +869,10 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       return;
     }
 
-    account.valor -= monto;
-
-    this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, account.id, { tipo: account.tipo, valor: account.valor })
+    this.walletService.registrarMovimiento(
+      this.userId, this.currentYear, this.currentMonth, account.id,
+      account, -monto, 'gasto', `Pago de gasto fijo: ${expense.descripcion}`, expense.id
+    )
       .subscribe({
         next: () => {
           this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, expense.id, {
@@ -1128,9 +1134,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     };
 
     if (wallet) {
-      wallet.valor -= valor;
       this.walletService
-        .updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, { tipo: wallet.tipo, valor: wallet.valor })
+        .registrarMovimiento(this.userId, this.currentYear, this.currentMonth, wallet.id, wallet, -valor, 'gasto', `Subgasto: ${nombre} (${this.subExpensesParent.descripcion})`, parentId)
         .subscribe(afterWallet);
     } else {
       afterWallet();
@@ -1169,10 +1174,12 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const applyWalletDelta = () => {
+    const applyWalletDelta = (): Observable<number | null> => {
       if (!wallet || delta === 0) return of(null);
-      wallet.valor -= delta;
-      return this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, { tipo: wallet.tipo, valor: wallet.valor });
+      return this.walletService.registrarMovimiento(
+        this.userId, this.currentYear, this.currentMonth, wallet.id,
+        wallet, -delta, delta > 0 ? 'gasto' : 'devolucion_gasto', `Edición de subgasto: ${nombre}`, original.id
+      );
     };
 
     applyWalletDelta().subscribe(() => {
@@ -1191,12 +1198,14 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
     if (!this.subExpensesParent) return;
     const parentId = this.subExpensesParent.id;
 
-    const refund = () => {
+    const refund = (): Observable<number | null> => {
       if (!sub.walletId || sub.walletId === this.DESCUADRE) return of(null);
       const wallet = this.wallet.find((w) => w.id === sub.walletId);
       if (!wallet) return of(null);
-      wallet.valor += Number(sub.valor);
-      return this.walletService.updateAccount(this.userId, this.currentYear, this.currentMonth, wallet.id, { tipo: wallet.tipo, valor: wallet.valor });
+      return this.walletService.registrarMovimiento(
+        this.userId, this.currentYear, this.currentMonth, wallet.id,
+        wallet, Number(sub.valor), 'devolucion_gasto', `Devolución por eliminar subgasto: ${sub.nombre}`, sub.id
+      );
     };
 
     refund().subscribe(() => {

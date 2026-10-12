@@ -603,17 +603,17 @@ export default class IncomeComponent implements OnInit, OnDestroy {
     const toAccount = this.wallet.find((w) => w.id === this.selectedWallet);
     if (!toAccount) return;
 
-    // Sumar al destino
-    toAccount.valor += this.assignedValue;
-
     // Guardar en DB usando WalletService
     this.walletService
-      .updateAccount(
+      .registrarMovimiento(
         this.userId,
         this.currentYear,
         this.currentMonth,
         toAccount.id,
-        { tipo: toAccount.tipo, valor: toAccount.valor }
+        toAccount,
+        this.assignedValue,
+        'ingreso',
+        'Ingreso asignado a billetera (cuadre)'
       )
       .subscribe(() => {
         // Mostrar mensaje de éxito

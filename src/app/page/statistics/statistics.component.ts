@@ -553,8 +553,10 @@ export default class StatisticsComponent implements OnInit, OnDestroy {
     const account = this.wallet.find((w) => w.id === this.selectedWalletForPayment);
     if (!account) return;
     if (account.valor < this.payInvoice.valor) { alert('Saldo insuficiente'); return; }
-    account.valor -= this.payInvoice.valor;
-    this.walletService.updateAccount(this.currentUser, this.currentYear, this.currentMonth, account.id, account).subscribe();
+    this.walletService.registrarMovimiento(
+      this.currentUser, this.currentYear, this.currentMonth, account.id,
+      account, -this.payInvoice.valor, 'gasto', `Pago de factura: ${this.payInvoice.nombre}`, this.payInvoice.id
+    ).subscribe();
     const facturaGasto: Expense = new Expense(this.payInvoice.nombre, CategoriaGasto.Facturas, this.payInvoice.valor, this.payInvoice.valor);
     this.expenseService.addExpense(this.currentUser, this.currentYear, this.currentMonth, facturaGasto).subscribe({
       next: (res: any) => {
