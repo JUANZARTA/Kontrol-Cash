@@ -22,6 +22,7 @@ import { PlannerService } from '../../services/planner.service';
 import { AttachmentsService } from '../../services/attachments.service';
 import { MovementAttachment } from '../../models/attachment.model';
 import { LongPressDirective } from '../../shared/directives/long-press.directive';
+import { PandaLeadService } from '../../services/panda-lead.service';
 
 // Extiende WalletAccount para agregar id y showMenu
 export interface WalletAccountWithId extends WalletAccount {
@@ -53,6 +54,7 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   private walletService = inject(WalletService);
   private plannerService = inject(PlannerService);
   private attachmentsService = inject(AttachmentsService);
+  private pandaLeadService = inject(PandaLeadService);
 
   // Propiedades
   incomes: IncomeWithId[] = [];
@@ -487,6 +489,8 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   confirmDeleteIncome() {
     if (!this.incomeToDeleteId) return;
 
+    const deleted = this.incomes.find((i) => i.id === this.incomeToDeleteId);
+
     this.incomeService
       .deleteIncome(
         this.userId,
@@ -496,6 +500,9 @@ export default class IncomeComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
+          if (deleted?.origen === 'pandalead') {
+            this.pandaLeadService.excludeMonth(this.userId, this.currentYear, this.currentMonth);
+          }
           this.removeAllAttachments(this.incomeToDeleteId as string);
           this.loadIncomes();
           this.closeDeleteModal();
@@ -778,8 +785,12 @@ export default class IncomeComponent implements OnInit, OnDestroy {
 
   confirmBulkDelete(): void {
     const ids = Array.from(this.selectedIds);
+    const deletesSynced = this.incomes.some((i) => ids.includes(i.id) && i.origen === 'pandalead');
     const ops = ids.map(id => this.incomeService.deleteIncome(this.userId, this.currentYear, this.currentMonth, id));
     forkJoin(ops).subscribe(() => {
+      if (deletesSynced) {
+        this.pandaLeadService.excludeMonth(this.userId, this.currentYear, this.currentMonth);
+      }
       this.selectedIds.clear();
       this.showBulkDeleteConfirm = false;
       this.loadIncomes();

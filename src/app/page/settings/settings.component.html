@@ -29,6 +29,47 @@
   </div>
 
   <div class="mt-6 border-t border-slate-200 pt-6">
+    <h3 class="text-sm font-semibold uppercase tracking-wide" style="color: var(--app-muted)">Integraciones</h3>
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 px-4 py-3">
+      <div>
+        <p class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+          Panda Lead
+          <span *ngIf="isPandaLeadConnected && !isPandaLeadEnabled" class="text-xs font-semibold text-gray-500">○ Apagada</span>
+          <span *ngIf="isPandaLeadConnected && isPandaLeadEnabled && pandaLead.remotePaused()" class="text-xs font-semibold text-amber-600">● Pausada desde Panda Lead</span>
+          <span *ngIf="isPandaLeadConnected && isPandaLeadEnabled && !pandaLead.remotePaused()" class="text-xs font-semibold text-emerald-600">● Conectado</span>
+        </p>
+        <p class="text-xs text-slate-500">Sincroniza automáticamente lo que cobrás en Panda Lead con tus Ingresos.</p>
+        <p *ngIf="!isPandaLeadConnected" class="text-xs text-slate-500 mt-1">
+          ¿No tenés Panda Lead? <a href="https://goldenpandaz.github.io/PandaLead/login" target="_blank" rel="noopener" class="text-sky-600 font-semibold hover:underline">Creá tu cuenta acá</a> para conectarte.
+        </p>
+        <p *ngIf="isPandaLeadConnected && isPandaLeadEnabled && pandaLead.remotePaused()" class="text-xs text-slate-500 mt-1">
+          Se retoma sola cuando se vuelva a encender en Panda Lead.
+        </p>
+        <p *ngIf="pandaLead.connectionWarning()" class="text-xs font-semibold text-amber-600 mt-1">
+          Revisá la conexión con Panda Lead.
+        </p>
+        <p *ngIf="isPandaLeadConnected && isCurrentMonthExcludedFromPandaLead" class="text-xs font-semibold text-amber-600 mt-1">
+          Borraste la fila sincronizada este mes — no se vuelve a crear sola.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button *ngIf="isPandaLeadConnected && isCurrentMonthExcludedFromPandaLead" type="button" (click)="resyncPandaLeadMonth()"
+          [disabled]="isResyncingPandaLead" class="app-secondary-button whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+          <span class="material-icons text-sm align-middle mr-1">sync</span>{{ isResyncingPandaLead ? 'Resincronizando...' : 'Resincronizar este mes' }}
+        </button>
+        <button *ngIf="isPandaLeadConnected" type="button" class="switch-pill" [class.on]="isPandaLeadEnabled" (click)="togglePandaLeadEnabled()" title="Encender/apagar la conexión sin borrar el token">
+          <span class="switch-knob"></span>
+          <span class="switch-text">{{ isPandaLeadEnabled ? 'ON' : 'OFF' }}</span>
+        </button>
+        <button type="button" (click)="openPandaLeadModal()" [disabled]="isPandaLeadConnected && !isPandaLeadEnabled"
+          class="app-secondary-button whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+          <span class="material-icons text-sm align-middle mr-1">link</span>Configurar conexión
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 border-t border-slate-200 pt-6">
     <h3 class="text-sm font-semibold uppercase tracking-wide" style="color: var(--app-muted)">
       Mes activo: <span class="capitalize">{{ currentPeriodLabel }}</span>
     </h3>
@@ -152,6 +193,45 @@
   icon="delete_forever"
   (cancel)="showClearMonthConfirm = false"
   (confirm)="clearMonth()" />
+
+<app-modal-shell *ngIf="isPandaLeadModalOpen" title="Conexión con Panda Lead" size="sm" panelClass="relative animate-pop-in">
+  <button
+    type="button"
+    (click)="closePandaLeadModal()"
+    class="absolute top-3 right-3 rounded-full p-1 text-slate-400 transition hover:bg-gray-100 hover:text-slate-700"
+    title="Cerrar"
+    aria-label="Cerrar">
+    <span class="material-icons text-base">close</span>
+  </button>
+
+  <ng-container *ngIf="!isPandaLeadConnected || pandaLead.connectionWarning()">
+    <p *ngIf="isPandaLeadConnected && pandaLead.connectionWarning()" class="text-sm font-semibold text-amber-600 mb-2">
+      Se perdió la conexión con Panda Lead. Pegá un token nuevo para reconectar.
+    </p>
+    <p class="text-sm text-gray-600 mb-4">Pegá el token que te genera Panda Lead al configurar la conexión de tu lado.</p>
+    <label class="app-field-label">Token</label>
+    <input type="text" [(ngModel)]="pandaLeadTokenInput" placeholder="Token de Panda Lead"
+      class="app-input mb-1" autocomplete="off" />
+    <p *ngIf="pandaLeadError" class="text-xs text-red-600 mb-3">{{ pandaLeadError }}</p>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <button (click)="closePandaLeadModal()" class="app-secondary-button">Cancelar</button>
+      <button *ngIf="isPandaLeadConnected" (click)="disconnectPandaLead()" class="app-warning-button">Desconectar</button>
+      <button (click)="savePandaLeadToken()" [disabled]="!pandaLeadTokenInput.trim() || isSavingPandaLeadToken" class="app-primary-button">
+        {{ isSavingPandaLeadToken ? 'Validando...' : 'Guardar' }}
+      </button>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="isPandaLeadConnected && !pandaLead.connectionWarning()">
+    <p class="text-sm text-emerald-700 font-semibold mb-1">● Conectado</p>
+    <p class="text-sm text-gray-600 mb-4">Kontrol Cash está trayendo tus ingresos de Panda Lead automáticamente.</p>
+    <div class="flex justify-end gap-2">
+      <button (click)="closePandaLeadModal()" class="app-secondary-button">Cerrar</button>
+      <button (click)="disconnectPandaLead()" class="app-warning-button">Desconectar</button>
+    </div>
+  </ng-container>
+</app-modal-shell>
 
 <app-modal-shell *ngIf="selectedChangelogEntry as entry" [title]="'v' + entry.version" modalId="changelog" size="sm" panelClass="relative animate-pop-in">
   <button

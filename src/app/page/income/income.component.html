@@ -37,7 +37,11 @@
         <td *ngIf="selectionMode" class="py-2 px-2 text-center">
           <input type="checkbox" [checked]="selectedIds.has(income.id)" (change)="toggleSelect(income.id)" class="cursor-pointer" />
         </td>
-        <td class="py-2 px-3 sm:px-4">{{ income.nombre }}</td>
+        <td class="py-2 px-3 sm:px-4">
+          {{ income.nombre }}
+          <span *ngIf="income.origen === 'pandalead'" class="material-icons text-sky-500 align-middle ml-1" style="font-size: 16px;"
+            title="Nombre y monto sincronizados con Panda Lead.">sync</span>
+        </td>
         <td class="py-2 px-3 sm:px-4">{{ income.categoria }}</td>
         <td class="py-2 px-3 sm:px-4 text-right">
           ${{ formatCurrency(income.valor) }}

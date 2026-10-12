@@ -62,6 +62,23 @@ export class IncomeService {
     );
   }
 
+  // 🔹 PATCH: Actualizar solo algunos campos de un ingreso existente (merge, no reemplaza el nodo).
+  // Usado por la sincronización con Panda Lead para tocar SOLO `valor`, sin pisar nombre/categoría.
+  updateIncomeFields(userId: string, year: string, month: string, incomeId: string, fields: Partial<Income>): Observable<any> {
+    const base = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/ingresos/${incomeId}.json`;
+    return from(this.auth.getIdToken()).pipe(
+      switchMap((token) => {
+        const url = token ? `${base}?auth=${token}` : base;
+        return this.http.patch(url, fields).pipe(
+          catchError(error => {
+            console.error('[PATCH] Error al actualizar campos de ingreso:', error);
+            return of(null);
+          })
+        );
+      })
+    );
+  }
+
   // 🔹 DELETE: Eliminar un ingreso
   deleteIncome(userId: string, year: string, month: string, incomeId: string): Observable<any> {
     const base = `${this.FIREBASE_BASE_URL}/${userId}/${year}/${month}/ingresos/${incomeId}.json`;
