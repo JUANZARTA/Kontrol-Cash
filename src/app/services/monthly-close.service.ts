@@ -476,9 +476,23 @@ export class MonthlyCloseService {
         (Object.values(data.invoices || {}) as Invoice[]).map(i => [i.nombre, this.formatDate(i.fechaPago), money(i.valor), i.estado]),
         'Sin facturas registradas en este período.', [217, 119, 6]);
 
+      // Historial de movimientos por cuenta: se busca aparte porque no viene en el forkJoin de
+      // arriba (cada cuenta necesita su propio GET a cartera/{id}/movimientos).
+      const walletEntries = Object.entries(data.wallets || {}) as [string, { tipo: string; valor: number }][];
+      const movimientosPorWallet = walletEntries.length
+        ? await firstValueFrom(forkJoin(walletEntries.map(([id]) => this.walletService.getMovimientos(userId, year, month, id))))
+        : [];
+
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Mi Billetera', periodLabel,
-        ['Cuenta', 'Valor'],
-        Object.values(data.wallets || {}).map(w => [w.tipo, money(w.valor)]),
+        ['Cuenta / Movimiento', 'Fecha', 'Valor'],
+        walletEntries.flatMap(([, w], idx) => [
+          [w.tipo, '', money(w.valor)],
+          ...(movimientosPorWallet[idx] || []).map(m => [
+            `   • ${m.descripcion}`,
+            new Date(m.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            { content: `${m.monto >= 0 ? '+' : '-'}${money(Math.abs(m.monto))}`, styles: { textColor: m.monto >= 0 ? [13, 148, 136] : [220, 38, 38] } },
+          ]),
+        ]),
         'Sin cuentas de billetera registradas en este período.', [2, 132, 199]);
 
       this.addSectionPage(doc, autoTable, pageWidth, marginX, 'Alcancías', periodLabel,
