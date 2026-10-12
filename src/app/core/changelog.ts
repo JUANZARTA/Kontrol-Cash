@@ -7,6 +7,14 @@ export interface ChangelogEntry {
 /** Notas de versión de Kontrol Cash, de la más nueva a la más vieja. Solo cambios notorios para el usuario. */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.5',
+    fecha: '12/10/2026',
+    cambios: [
+      'Historial de movimientos por billetera: mirá todas las entradas y salidas de cada cuenta.',
+      'Extracto en PDF: ahora incluye los subgastos, se puede descargar sin cerrar el mes, y tiene un diseño renovado.',
+    ],
+  },
+  {
     version: '2.2.4',
     fecha: '10/10/2026',
     cambios: [
