@@ -7,6 +7,14 @@ export interface ChangelogEntry {
 /** Notas de versión de Kontrol Cash, de la más nueva a la más vieja. Solo cambios notorios para el usuario. */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.6',
+    fecha: '12/10/2026',
+    cambios: [
+      'Integración con Panda Lead: sincronizá automáticamente lo que cobrás ahí con tu Tabla de Ingresos, desde Configuración.',
+      'Arreglo: el ítem activo del menú lateral ahora respeta el modo oscuro y el color personalizado.',
+    ],
+  },
+  {
     version: '2.2.5',
     fecha: '12/10/2026',
     cambios: [
