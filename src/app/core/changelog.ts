@@ -18,7 +18,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '2.2.6',
     fecha: '12/10/2026',
     cambios: [
-      'Integración con Panda Lead: sincronizá automáticamente lo que cobrás ahí con tu Tabla de Ingresos, desde Configuración.',
+      'Integración con Panda Lead: sincroniza automáticamente lo que cobras ahí con tu Tabla de Ingresos, desde Configuración.',
       'Arreglo: el ítem activo del menú lateral ahora respeta el modo oscuro y el color personalizado.',
     ],
   },
@@ -26,7 +26,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '2.2.5',
     fecha: '12/10/2026',
     cambios: [
-      'Historial de movimientos por billetera: mirá todas las entradas y salidas de cada cuenta.',
+      'Historial de movimientos por billetera: mira todas las entradas y salidas de cada cuenta.',
       'Extracto en PDF: ahora incluye los subgastos, se puede descargar sin cerrar el mes, y tiene un diseño renovado.',
     ],
   },
@@ -68,7 +68,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     fecha: '01/09/2026',
     cambios: [
       'El cierre de mes pasa a ser obligatorio y manual, ya no se cierra solo.',
-      'Billetera: podés mover todo el saldo o un valor que elijas a otra billetera.',
+      'Billetera: puedes mover todo el saldo o un valor que elijas a otra billetera.',
       'Gastos: filtros de búsqueda, categoría y comparación en la tabla.',
       'Arreglo en Vehículo: se descuenta bien la billetera en los gastos y se corrige el rendimiento por tanque y por galón.',
     ],
@@ -112,7 +112,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '1.2.0',
     fecha: '03/02/2026',
     cambios: [
-      'Cierre de mes: cerrás el mes actual y arrancás el siguiente limpio.',
+      'Cierre de mes: cierras el mes actual y arrancas el siguiente limpio.',
       'Inicio de sesión con Google.',
       'Mejoras de seguridad en el guardado de tus datos.',
     ],
@@ -126,7 +126,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Rediseño de tablas, menú lateral y encabezado, con animaciones.',
       'Gráficos financieros en Inicio.',
       'Rediseño de las pantallas de inicio de sesión y registro.',
-      'Podés sumarle o restarle valor a un gasto y descontarlo de una billetera.',
+      'Puedes sumarle o restarle valor a un gasto y descontarlo de una billetera.',
     ],
   },
   {

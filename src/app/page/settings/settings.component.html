@@ -38,15 +38,15 @@
           <span *ngIf="isPandaLeadConnected && isPandaLeadEnabled && pandaLead.remotePaused()" class="text-xs font-semibold text-amber-600">● Pausada desde Panda Lead</span>
           <span *ngIf="isPandaLeadConnected && isPandaLeadEnabled && !pandaLead.remotePaused()" class="text-xs font-semibold text-emerald-600">● Conectado</span>
         </p>
-        <p class="text-xs text-slate-500">Sincroniza automáticamente lo que cobrás en Panda Lead con tus Ingresos.</p>
+        <p class="text-xs text-slate-500">Sincroniza automáticamente lo que cobras en Panda Lead con tus Ingresos.</p>
         <p *ngIf="!isPandaLeadConnected" class="text-xs text-slate-500 mt-1">
-          ¿No tenés Panda Lead? <a href="https://goldenpandaz.github.io/PandaLead/login" target="_blank" rel="noopener" class="text-sky-600 font-semibold hover:underline">Creá tu cuenta acá</a> para conectarte.
+          ¿No tienes Panda Lead? <a href="https://goldenpandaz.github.io/PandaLead/login" target="_blank" rel="noopener" class="text-sky-600 font-semibold hover:underline">Crea tu cuenta acá</a> para conectarte.
         </p>
         <p *ngIf="isPandaLeadConnected && isPandaLeadEnabled && pandaLead.remotePaused()" class="text-xs text-slate-500 mt-1">
           Se retoma sola cuando se vuelva a encender en Panda Lead.
         </p>
         <p *ngIf="pandaLead.connectionWarning()" class="text-xs font-semibold text-amber-600 mt-1">
-          Revisá la conexión con Panda Lead.
+          Revisa la conexión con Panda Lead.
         </p>
         <p *ngIf="isPandaLeadConnected && isCurrentMonthExcludedFromPandaLead" class="text-xs font-semibold text-amber-600 mt-1">
           Borraste la fila sincronizada este mes — no se vuelve a crear sola.
@@ -158,7 +158,7 @@
 <section class="app-section-card mt-4">
   <div class="mb-4">
     <h2 class="text-2xl font-semibold text-slate-900">Notas de versión</h2>
-    <p class="text-sm text-slate-500">Mirá qué cambió en cada versión de Kontrol Cash.</p>
+    <p class="text-sm text-slate-500">Mira qué cambió en cada versión de Kontrol Cash.</p>
   </div>
 
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -206,9 +206,9 @@
 
   <ng-container *ngIf="!isPandaLeadConnected || pandaLead.connectionWarning()">
     <p *ngIf="isPandaLeadConnected && pandaLead.connectionWarning()" class="text-sm font-semibold text-amber-600 mb-2">
-      Se perdió la conexión con Panda Lead. Pegá un token nuevo para reconectar.
+      Se perdió la conexión con Panda Lead. Pega un token nuevo para reconectar.
     </p>
-    <p class="text-sm text-gray-600 mb-4">Pegá el token que te genera Panda Lead al configurar la conexión de tu lado.</p>
+    <p class="text-sm text-gray-600 mb-4">Pega el token que te genera Panda Lead al configurar la conexión de tu lado.</p>
     <label class="app-field-label">Token</label>
     <input type="text" [(ngModel)]="pandaLeadTokenInput" placeholder="Token de Panda Lead"
       class="app-input mb-1" autocomplete="off" />

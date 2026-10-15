@@ -93,7 +93,7 @@
         <td class="py-2 px-3 sm:px-4 text-right">${{ formatCurrency(expense.estimacion) }}</td>
         <td class="py-2 px-3 sm:px-4 text-center">
           <button (click)="openAddModal(expense.id)" [disabled]="hasSubExpenses(expense)"
-            [title]="hasSubExpenses(expense) ? 'Este gasto tiene subgastos: editalo desde ahí' : ''"
+            [title]="hasSubExpenses(expense) ? 'Este gasto tiene subgastos: edítalo desde ahí' : ''"
             class="text-lime-600 mr-2 disabled:opacity-30 disabled:cursor-not-allowed">
             <span class="material-icons">add</span>
           </button>
@@ -287,7 +287,7 @@
       (input)="onEditValueInput($event, 'valor')" placeholder="Ej: 50.000" class="app-input mb-3 animate-fadeIn" />
     <p *ngIf="editedExpenseHasSubExpenses" class="text-sm text-slate-500 mb-3 animate-fadeIn">
       Este gasto tiene subgastos: el valor (${{ formatCurrency(editedExpense.valor) }}) se calcula solo con la suma de
-      esos subgastos. Editalo desde la acción "Subgastos" de la tabla.
+      esos subgastos. Edítalo desde la acción "Subgastos" de la tabla.
     </p>
 
     <label class="app-field-label animate-fadeIn">Estimación:</label>
