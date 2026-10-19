@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 import { DateService } from '../../services/date.service';
 import { VehicleService } from '../../services/vehicle.service';
@@ -12,6 +12,8 @@ import { ThemeService } from '../../services/theme.service';
 import { WalletService } from '../../services/wallet.service';
 import { ExpenseService } from '../../services/expense.service';
 import { Expense, ExpenseWithId } from '../../models/expense.model';
+import { SubExpenseService } from '../../services/sub-expense.service';
+import { SubExpense, SubExpenseWithId } from '../../models/sub-expense.model';
 import { LongPressDirective } from '../../shared/directives/long-press.directive';
 import { FinanzasService } from '../../services/finanzas.service';
 import { FinancialStatusBadgeComponent } from '../../shared/components/financial-status-badge/financial-status-badge.component';
@@ -19,6 +21,12 @@ import { FinancialStatusBadgeComponent } from '../../shared/components/financial
 Chart.register(...registerables);
 
 type ChartType = 'rendimiento' | 'dias' | 'kmGalon' | 'costoKm' | 'acumulado';
+
+// Igual que en gastos: cuando un gasto de vehículo tiene subgastos, getExpenses() ya trae
+// el subárbol "subgastos" embebido (RTDB devuelve el nodo completo), sin fetch aparte.
+interface VehicleExpenseWithId extends ExpenseWithId {
+  subgastos?: Record<string, SubExpense>;
+}
 
 @Component({
   selector: 'app-vehicle',
@@ -35,6 +43,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   private themeService = inject(ThemeService);
   private walletService = inject(WalletService);
   private expenseService = inject(ExpenseService);
+  private subExpenseService = inject(SubExpenseService);
   private finanzasService = inject(FinanzasService);
 
   // Igual que en gastos: "Descuadre" solo aparece cuando hay un descuadre real (ver
@@ -83,20 +92,33 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
 
   gasolinaEstimacion = 0;
   newEstimacion = 0;
-  vehicleExpenses: ExpenseWithId[] = [];
+  vehicleExpenses: VehicleExpenseWithId[] = [];
   vehicleExpenseSummary: { descripcion: string; total: number }[] = [];
   isVehicleExpModalOpen = false;
   isVehicleExpEditModalOpen = false;
   isVehicleExpDeleteModalOpen = false;
   newVehicleExp: { descripcion: string; valor: number; estimacion: number } = { descripcion: '', valor: 0, estimacion: 0 };
-  editedVehicleExp: ExpenseWithId | null = null;
+  editedVehicleExp: VehicleExpenseWithId | null = null;
   vehicleExpToDeleteId: string | null = null;
   selectedWalletForVehicleExp = '';
 
   isVehicleExpAddValModalOpen = false;
-  vehicleExpAddValTarget: ExpenseWithId | null = null;
+  vehicleExpAddValTarget: VehicleExpenseWithId | null = null;
   vehicleExpAddVal = 0;
   selectedWalletForVehicleExpAdd = '';
+
+  // Subgastos de un gasto de vehículo (mismo patrón que en Gastos)
+  showVehicleSubExpensesModal = false;
+  vehicleSubExpensesParent: VehicleExpenseWithId | null = null;
+  vehicleSubExpenses: SubExpenseWithId[] = [];
+  vehicleSubExpenseLoading = false;
+  newVehicleSubExpense: { nombre: string; valor: number; walletId: string } = { nombre: '', valor: 0, walletId: '' };
+  editingVehicleSubExpenseId: string | null = null;
+  editVehicleSubExpenseDraft: { nombre: string; valor: number } = { nombre: '', valor: 0 };
+
+  get vehicleSubExpensesTotal(): number {
+    return this.vehicleSubExpenses.reduce((sum, s) => sum + Number(s.valor), 0);
+  }
 
   chartType: ChartType = 'kmGalon';
   showChartMenu = false;
@@ -355,6 +377,197 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     this.expenseService.deleteExpense(this.userId, this.currentYear, this.currentMonth, this.vehicleExpToDeleteId).subscribe(() => {
       this.closeVehicleExpDeleteModal();
       this.loadGasolinaAndVehicleExpenses();
+    });
+  }
+
+  // ======================
+  // Subgastos de un gasto de vehículo (mismo patrón que en Gastos)
+  // ======================
+  hasVehicleSubExpenses(exp: VehicleExpenseWithId): boolean {
+    return !!exp.subgastos && Object.keys(exp.subgastos).length > 0;
+  }
+
+  openVehicleSubExpensesModal(id: string): void {
+    const expense = this.vehicleExpenses.find((e) => e.id === id);
+    if (!expense) return;
+
+    this.vehicleSubExpensesParent = expense;
+    this.showVehicleSubExpensesModal = true;
+    this.newVehicleSubExpense = { nombre: '', valor: 0, walletId: '' };
+    this.editingVehicleSubExpenseId = null;
+    this.loadWallets();
+    this.loadVehicleSubExpenses();
+  }
+
+  closeVehicleSubExpensesModal(): void {
+    this.showVehicleSubExpensesModal = false;
+    this.vehicleSubExpensesParent = null;
+    this.vehicleSubExpenses = [];
+    this.editingVehicleSubExpenseId = null;
+  }
+
+  private loadVehicleSubExpenses(onLoaded?: () => void): void {
+    if (!this.vehicleSubExpensesParent) return;
+    const parentId = this.vehicleSubExpensesParent.id;
+
+    this.vehicleSubExpenseLoading = true;
+    this.subExpenseService
+      .getSubExpenses(this.userId, this.currentYear, this.currentMonth, parentId)
+      .subscribe((data) => {
+        this.vehicleSubExpenses = Object.entries(data || {}).map(([id, s]) => ({ id, ...(s as SubExpense) }));
+        this.vehicleSubExpenseLoading = false;
+
+        // Primera vez que se abren subgastos en una fila que ya tenía valor cargado a mano:
+        // se crea un renglón "saldo inicial" con ese valor para no perderlo.
+        if (this.vehicleSubExpenses.length === 0 && Number(this.vehicleSubExpensesParent?.valor) > 0) {
+          const seed = new SubExpense(`${this.vehicleSubExpensesParent!.descripcion} (saldo inicial)`, Number(this.vehicleSubExpensesParent!.valor));
+          this.subExpenseService
+            .addSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, seed)
+            .subscribe(() => this.loadVehicleSubExpenses(onLoaded));
+          return;
+        }
+
+        onLoaded?.();
+      });
+  }
+
+  // Recalcula el valor del gasto de vehículo padre como la suma de sus subgastos y lo persiste.
+  private syncVehicleExpParentValorFromSubExpenses(): void {
+    if (!this.vehicleSubExpensesParent) return;
+    const parent = this.vehicleSubExpensesParent;
+    const total = this.vehicleSubExpensesTotal;
+
+    this.expenseService
+      .updateExpense(this.userId, this.currentYear, this.currentMonth, parent.id, {
+        descripcion: parent.descripcion,
+        categoria: parent.categoria,
+        valor: total,
+        estimacion: parent.estimacion,
+      })
+      .subscribe(() => {
+        parent.valor = total;
+        this.loadGasolinaAndVehicleExpenses();
+      });
+  }
+
+  addVehicleSubExpense(): void {
+    if (!this.vehicleSubExpensesParent) return;
+
+    const nombre = this.newVehicleSubExpense.nombre.trim();
+    const valor = Number(this.newVehicleSubExpense.valor);
+    if (!nombre || valor <= 0) {
+      alert('Completa nombre y valor del subgasto.');
+      return;
+    }
+    if (!this.newVehicleSubExpense.walletId) {
+      alert('Selecciona una billetera para el subgasto.');
+      return;
+    }
+
+    const isDescuadre = this.newVehicleSubExpense.walletId === this.DESCUADRE;
+    const wallet = isDescuadre ? null : this.wallets.find((w) => w.id === this.newVehicleSubExpense.walletId);
+    if (!isDescuadre && !wallet) return;
+
+    if (wallet && valor > wallet.valor) {
+      alert('No puedes gastar más que el saldo de la billetera.');
+      return;
+    }
+
+    const parentId = this.vehicleSubExpensesParent.id;
+    const sub = new SubExpense(nombre, valor, isDescuadre ? undefined : wallet!.id);
+
+    const afterWallet = () => {
+      this.subExpenseService
+        .addSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, sub)
+        .subscribe(() => {
+          this.newVehicleSubExpense = { nombre: '', valor: 0, walletId: '' };
+          this.loadWallets();
+          this.loadVehicleSubExpenses(() => this.syncVehicleExpParentValorFromSubExpenses());
+        });
+    };
+
+    if (wallet) {
+      this.walletService
+        .registrarMovimiento(this.userId, this.currentYear, this.currentMonth, wallet.id, wallet, -valor, 'vehiculo', `Subgasto: ${nombre} (${this.vehicleSubExpensesParent.descripcion})`, parentId)
+        .subscribe(afterWallet);
+    } else {
+      afterWallet();
+    }
+  }
+
+  startEditVehicleSubExpense(sub: SubExpenseWithId): void {
+    this.editingVehicleSubExpenseId = sub.id;
+    this.editVehicleSubExpenseDraft = { nombre: sub.nombre, valor: sub.valor };
+  }
+
+  cancelEditVehicleSubExpense(): void {
+    this.editingVehicleSubExpenseId = null;
+  }
+
+  saveEditedVehicleSubExpense(): void {
+    if (!this.vehicleSubExpensesParent || !this.editingVehicleSubExpenseId) return;
+    const original = this.vehicleSubExpenses.find((s) => s.id === this.editingVehicleSubExpenseId);
+    if (!original) return;
+
+    const nombre = this.editVehicleSubExpenseDraft.nombre.trim();
+    const valor = Number(this.editVehicleSubExpenseDraft.valor);
+    if (!nombre || valor <= 0) {
+      alert('Completa nombre y valor del subgasto.');
+      return;
+    }
+
+    const parentId = this.vehicleSubExpensesParent.id;
+    const delta = valor - Number(original.valor);
+    const wallet = original.walletId && original.walletId !== this.DESCUADRE
+      ? this.wallets.find((w) => w.id === original.walletId)
+      : null;
+
+    if (wallet && delta > 0 && delta > wallet.valor) {
+      alert('No puedes gastar más que el saldo de la billetera.');
+      return;
+    }
+
+    const applyWalletDelta = () => {
+      if (!wallet || delta === 0) return of(null);
+      return this.walletService.registrarMovimiento(
+        this.userId, this.currentYear, this.currentMonth, wallet.id,
+        wallet, -delta, delta > 0 ? 'vehiculo' : 'devolucion_gasto', `Edición de subgasto: ${nombre}`, original.id
+      );
+    };
+
+    applyWalletDelta().subscribe(() => {
+      const updated = new SubExpense(nombre, valor, original.walletId);
+      this.subExpenseService
+        .updateSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, original.id, updated)
+        .subscribe(() => {
+          this.editingVehicleSubExpenseId = null;
+          this.loadWallets();
+          this.loadVehicleSubExpenses(() => this.syncVehicleExpParentValorFromSubExpenses());
+        });
+    });
+  }
+
+  deleteVehicleSubExpense(sub: SubExpenseWithId): void {
+    if (!this.vehicleSubExpensesParent) return;
+    const parentId = this.vehicleSubExpensesParent.id;
+
+    const refund = () => {
+      if (!sub.walletId || sub.walletId === this.DESCUADRE) return of(null);
+      const wallet = this.wallets.find((w) => w.id === sub.walletId);
+      if (!wallet) return of(null);
+      return this.walletService.registrarMovimiento(
+        this.userId, this.currentYear, this.currentMonth, wallet.id,
+        wallet, Number(sub.valor), 'devolucion_gasto', `Devolución por eliminar subgasto: ${sub.nombre}`, sub.id
+      );
+    };
+
+    refund().subscribe(() => {
+      this.subExpenseService
+        .deleteSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, sub.id)
+        .subscribe(() => {
+          this.loadWallets();
+          this.loadVehicleSubExpenses(() => this.syncVehicleExpParentValorFromSubExpenses());
+        });
     });
   }
 
@@ -673,7 +886,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   formatCurrencyInput(v: number): string { return v ? this.formatCurrency(v) : ''; }
   formatNumberInput(v: number): string { return v ? this.formatNumber(v) : ''; }
 
-  onMoneyInput(event: Event, field: 'newMonto' | 'editMonto' | 'pumpNew' | 'pumpEdit' | 'estimacion' | 'vehicleExpNew' | 'vehicleExpEstimacion' | 'vehicleExpEdit' | 'vehicleExpEditEstimacion' | 'vehicleExpAddVal'): void {
+  onMoneyInput(event: Event, field: 'newMonto' | 'editMonto' | 'pumpNew' | 'pumpEdit' | 'estimacion' | 'vehicleExpNew' | 'vehicleExpEstimacion' | 'vehicleExpEdit' | 'vehicleExpEditEstimacion' | 'vehicleExpAddVal' | 'vehicleSubExpNew' | 'vehicleSubExpEdit'): void {
     const input = event.target as HTMLInputElement;
     const raw = input.value.replace(/[^\d]/g, '');
     const value = Number(raw) || 0;
@@ -688,6 +901,8 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     if (field === 'vehicleExpEdit' && this.editedVehicleExp) this.editedVehicleExp.valor = value;
     if (field === 'vehicleExpEditEstimacion' && this.editedVehicleExp) this.editedVehicleExp.estimacion = value;
     if (field === 'vehicleExpAddVal') this.vehicleExpAddVal = value;
+    if (field === 'vehicleSubExpNew') this.newVehicleSubExpense.valor = value;
+    if (field === 'vehicleSubExpEdit') this.editVehicleSubExpenseDraft.valor = value;
 
     input.value = value ? this.formatCurrency(value) : '';
   }
@@ -716,30 +931,37 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
         // Orden de ingreso (tal cual quedó en la base), con la referencia siempre arriba.
         .sort((a, b) => (a.esReferencia === b.esReferencia) ? 0 : (a.esReferencia ? -1 : 1));
       const total = this.entries.filter(e => !e.esReferencia).reduce((sum, e) => sum + (e.monto || 0), 0);
-      this.syncGasolinaExpense(total);
-      this.finanzasService.mostrarEstadoFinanciero(this, this.userId, this.currentYear, this.currentMonth);
+      this.syncGasolinaExpense(total, () => {
+        this.finanzasService.mostrarEstadoFinanciero(this, this.userId, this.currentYear, this.currentMonth);
+      });
     });
     this.loadAllEntriesForChart();
   }
 
-  private syncGasolinaExpense(total: number): void {
+  // onDone se dispara solo cuando termina de escribirse el gasto "Gasolina" en la base.
+  // Si se llamaba a mostrarEstadoFinanciero() en paralelo (sin esperar esta escritura), la
+  // lectura del descuadre ganaba la carrera casi siempre y mostraba el gasto viejo hasta recargar.
+  private syncGasolinaExpense(total: number, onDone?: () => void): void {
     this.vehicleService.getGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth).subscribe((existingId) => {
       if (total <= 0) {
         if (existingId) {
-          this.expenseService.deleteExpense(this.userId, this.currentYear, this.currentMonth, existingId).subscribe();
+          this.expenseService.deleteExpense(this.userId, this.currentYear, this.currentMonth, existingId).subscribe(() => onDone?.());
           this.vehicleService.clearGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth).subscribe();
+        } else {
+          onDone?.();
         }
         return;
       }
       const expense = new Expense('Gasolina', 'Vehículo',total, this.gasolinaEstimacion);
       if (existingId) {
-        this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, existingId, expense).subscribe();
+        this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, existingId, expense).subscribe(() => onDone?.());
       } else {
         this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe((res) => {
           const newId = res?.name;
           if (newId) {
             this.vehicleService.setGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth, newId).subscribe();
           }
+          onDone?.();
         });
       }
     });
