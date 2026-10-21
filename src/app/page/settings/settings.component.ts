@@ -39,6 +39,12 @@ export default class SettingsComponent implements OnInit, OnDestroy {
 
   readonly changelog = CHANGELOG;
   readonly appVersion = APP_VERSION;
+  readonly tutorialVideoUrl = 'https://youtube.com/shorts/xQYTQ2W8Vcw';
+
+  openTutorial(): void {
+    if (!this.tutorialVideoUrl) return;
+    window.open(this.tutorialVideoUrl, '_blank', 'noopener');
+  }
   selectedChangelogEntry: ChangelogEntry | null = null;
   selectedPhotoFile: File | null = null;
   profilePhotoPreview = 'assets/img/logoIcono.png';

@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription, forkJoin, of } from 'rxjs';
+import { Subscription, forkJoin, of, Observable } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 import { DateService } from '../../services/date.service';
 import { VehicleService } from '../../services/vehicle.service';
@@ -527,7 +527,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       return;
     }
 
-    const applyWalletDelta = () => {
+    const applyWalletDelta = (): Observable<number | null> => {
       if (!wallet || delta === 0) return of(null);
       return this.walletService.registrarMovimiento(
         this.userId, this.currentYear, this.currentMonth, wallet.id,
@@ -551,7 +551,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
     if (!this.vehicleSubExpensesParent) return;
     const parentId = this.vehicleSubExpensesParent.id;
 
-    const refund = () => {
+    const refund = (): Observable<number | null> => {
       if (!sub.walletId || sub.walletId === this.DESCUADRE) return of(null);
       const wallet = this.wallets.find((w) => w.id === sub.walletId);
       if (!wallet) return of(null);

@@ -1,7 +1,14 @@
 <section class="app-section-card">
-  <div class="mb-6">
-    <h2 class="text-2xl font-semibold text-slate-900">Configuración del sistema</h2>
-    <p class="text-sm text-slate-500">Administra tus preferencias y módulos visibles.</p>
+  <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h2 class="text-2xl font-semibold text-slate-900">Configuración del sistema</h2>
+      <p class="text-sm text-slate-500">Administra tus preferencias y módulos visibles.</p>
+    </div>
+    <button type="button" (click)="openTutorial()" [disabled]="!tutorialVideoUrl"
+      class="app-secondary-button whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+      [title]="tutorialVideoUrl ? 'Ver tutorial en YouTube' : 'Tutorial próximamente'">
+      <span class="material-icons text-sm align-middle mr-1">play_circle</span>Ver tutorial
+    </button>
   </div>
 
   <div class="mb-6 flex items-center gap-4">
