@@ -135,7 +135,8 @@
       <button (click)="closeModal()" class="app-secondary-button animate-fadeIn">
         Cancelar
       </button>
-      <button (click)="addDebt()" class="app-primary-button animate-fadeIn">
+      <button (click)="addDebt()" [disabled]="guardandoDeuda"
+        class="app-primary-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">
         Agregar
       </button>
     </div>
@@ -174,7 +175,8 @@
       <button (click)="closeEditModal()" class="app-secondary-button animate-fadeIn">
         Cancelar
       </button>
-      <button (click)="saveEditedDebt()" class="app-primary-button animate-fadeIn">
+      <button (click)="saveEditedDebt()" [disabled]="guardandoEdicionDeuda"
+        class="app-primary-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">
         Guardar
       </button>
     </div>
@@ -192,10 +194,12 @@
       <button (click)="closeAddValueModal()" class="app-secondary-button animate-fadeIn">
         Cancelar
       </button>
-      <button (click)="applyValue('subtract')" class="app-primary-button animate-fadeIn">
+      <button (click)="applyValue('subtract')" [disabled]="guardandoValorDeuda"
+        class="app-primary-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">
         Restar
       </button>
-      <button (click)="applyValue('add')" class="app-success-button animate-fadeIn">
+      <button (click)="applyValue('add')" [disabled]="guardandoValorDeuda"
+        class="app-success-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">
         Sumar
       </button>
     </div>
@@ -231,7 +235,7 @@
 
   <div class="flex justify-end gap-2 mt-4">
     <button (click)="closePayDebtModal()" class="app-secondary-button">Cancelar</button>
-    <button (click)="confirmPayDebt()" [disabled]="!selectedWalletForDebt"
+    <button (click)="confirmPayDebt()" [disabled]="!selectedWalletForDebt || pagandoDeuda"
       class="app-success-button disabled:opacity-50">
       Confirmar pago
     </button>
@@ -266,7 +270,8 @@
               Pagar
             </button>
             <button *ngIf="n === getCuotasPagadas(cuotasModalTarget!)"
-              (click)="undoCuotaFromModal(cuotasModalTarget!)" class="text-orange-600 text-xs underline">
+              (click)="undoCuotaFromModal(cuotasModalTarget!)" [disabled]="deshaciendoCuota"
+              class="text-orange-600 text-xs underline disabled:opacity-40 disabled:cursor-not-allowed">
               Deshacer
             </button>
           </td>

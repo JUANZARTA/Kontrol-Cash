@@ -68,6 +68,15 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   selectedMovementId: string | null = null;
   adjustMovementValue = 0;
 
+  guardandoAlcancia = false;
+  guardandoEdicionAlcancia = false;
+  eliminandoAlcancia = false;
+  guardandoMovimiento = false;
+  guardandoEdicionMovimiento = false;
+  eliminandoMovimiento = false;
+  ajustandoMovimiento = false;
+  guardandoMeta = false;
+
   ngOnInit() {
     this.route.queryParamMap.subscribe((params) => {
       this.requestedPiggybankId = params.get('piggybank');
@@ -139,6 +148,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   }
 
   addPiggybank() {
+    if (this.guardandoAlcancia) return;
     const nombre = (this.newPiggybank.nombre || this.newPiggybank.tipo || '').trim();
     if (!nombre) {
       alert('El nombre de la alcancía es obligatorio.');
@@ -152,12 +162,17 @@ export default class SavingsComponent implements OnInit, OnDestroy {
       valor: Math.max(0, Number(this.newPiggybank.valor || 0)),
     };
 
+    this.guardandoAlcancia = true;
     this.savingsService.addSaving(this.userId, this.currentYear, this.currentMonth, payload).subscribe({
       next: () => {
+        this.guardandoAlcancia = false;
         this.closePiggybankModal();
         this.loadPiggybanks();
       },
-      error: (err) => console.error('Error al crear alcancía:', err),
+      error: (err) => {
+        this.guardandoAlcancia = false;
+        console.error('Error al crear alcancía:', err);
+      },
     });
   }
 
@@ -175,6 +190,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   }
 
   saveEditedPiggybank() {
+    if (this.guardandoEdicionAlcancia) return;
     if (!this.editedPiggybankId) return;
     const nombre = (this.editedPiggybank.nombre || this.editedPiggybank.tipo || '').trim();
     if (!nombre) {
@@ -189,9 +205,17 @@ export default class SavingsComponent implements OnInit, OnDestroy {
       valor: Math.max(0, Number(this.editedPiggybank.valor || 0)),
     };
 
+    this.guardandoEdicionAlcancia = true;
     this.savingsService
       .updateSaving(this.userId, this.currentYear, this.currentMonth, this.editedPiggybankId, payload)
-      .subscribe({ next: () => { this.closeEditPiggybankModal(); this.loadPiggybanks(); } });
+      .subscribe({
+        next: () => {
+          this.guardandoEdicionAlcancia = false;
+          this.closeEditPiggybankModal();
+          this.loadPiggybanks();
+        },
+        error: () => { this.guardandoEdicionAlcancia = false; },
+      });
   }
 
   openDeletePiggybankModal(id: string) {
@@ -205,17 +229,21 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   }
 
   confirmDeletePiggybank() {
+    if (this.eliminandoAlcancia) return;
     if (!this.piggybankToDeleteId) return;
+    this.eliminandoAlcancia = true;
     this.savingsService
       .deleteSaving(this.userId, this.currentYear, this.currentMonth, this.piggybankToDeleteId)
       .subscribe({
         next: () => {
+          this.eliminandoAlcancia = false;
           if (this.selectedPiggybank?.id === this.piggybankToDeleteId) {
             this.backToPiggybanks();
           }
           this.closeDeletePiggybankModal();
           this.loadPiggybanks();
         },
+        error: () => { this.eliminandoAlcancia = false; },
       });
   }
 
@@ -243,6 +271,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   }
 
   addMovement(action: 'add' | 'subtract') {
+    if (this.guardandoMovimiento) return;
     if (!this.selectedPiggybank) return;
     const nombre = (this.newMovement.nombre || '').trim();
     if (!nombre || this.newMovement.valor <= 0) {
@@ -260,6 +289,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
       valor: Math.max(0, Number(piggy.valor || 0) + signedValue),
     };
 
+    this.guardandoMovimiento = true;
     this.savingsService
       .addSavingMovement(this.userId, this.currentYear, this.currentMonth, piggy.id, movementPayload)
       .subscribe({
@@ -268,11 +298,14 @@ export default class SavingsComponent implements OnInit, OnDestroy {
             .updateSaving(this.userId, this.currentYear, this.currentMonth, piggy.id, updatedPiggy)
             .subscribe({
               next: () => {
+                this.guardandoMovimiento = false;
                 this.closeMovementModal();
                 this.loadPiggybanks();
               },
+              error: () => { this.guardandoMovimiento = false; },
             });
         },
+        error: () => { this.guardandoMovimiento = false; },
       });
   }
 
@@ -290,6 +323,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   }
 
   saveEditedMovement() {
+    if (this.guardandoEdicionMovimiento) return;
     if (!this.selectedPiggybank || !this.editedMovementId) return;
     const original = this.movements.find((m) => m.id === this.editedMovementId);
     if (!original) return;
@@ -306,6 +340,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
       valor: Math.max(0, Number(piggy.valor || 0) + diff),
     };
 
+    this.guardandoEdicionMovimiento = true;
     this.savingsService
       .updateSavingMovement(this.userId, this.currentYear, this.currentMonth, piggy.id, this.editedMovementId, {
         nombre: newNombre,
@@ -315,11 +350,14 @@ export default class SavingsComponent implements OnInit, OnDestroy {
         next: () => {
           this.savingsService.updateSaving(this.userId, this.currentYear, this.currentMonth, piggy.id, updatedPiggy).subscribe({
             next: () => {
+              this.guardandoEdicionMovimiento = false;
               this.closeEditMovementModal();
               this.loadPiggybanks();
             },
+            error: () => { this.guardandoEdicionMovimiento = false; },
           });
         },
+        error: () => { this.guardandoEdicionMovimiento = false; },
       });
   }
 
@@ -334,6 +372,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   }
 
   confirmDeleteMovement() {
+    if (this.eliminandoMovimiento) return;
     if (!this.selectedPiggybank || !this.movementToDeleteId) return;
     const movement = this.movements.find((m) => m.id === this.movementToDeleteId);
     if (!movement) return;
@@ -345,17 +384,21 @@ export default class SavingsComponent implements OnInit, OnDestroy {
       valor: Math.max(0, Number(piggy.valor || 0) - Number(movement.valor || 0)),
     };
 
+    this.eliminandoMovimiento = true;
     this.savingsService
       .deleteSavingMovement(this.userId, this.currentYear, this.currentMonth, piggy.id, this.movementToDeleteId)
       .subscribe({
         next: () => {
           this.savingsService.updateSaving(this.userId, this.currentYear, this.currentMonth, piggy.id, updatedPiggy).subscribe({
             next: () => {
+              this.eliminandoMovimiento = false;
               this.closeDeleteMovementModal();
               this.loadPiggybanks();
             },
+            error: () => { this.eliminandoMovimiento = false; },
           });
         },
+        error: () => { this.eliminandoMovimiento = false; },
       });
   }
 
@@ -372,6 +415,7 @@ export default class SavingsComponent implements OnInit, OnDestroy {
   }
 
   applyAdjustMovement(action: 'add' | 'subtract') {
+    if (this.ajustandoMovimiento) return;
     if (!this.selectedPiggybank || !this.selectedMovementId) return;
     const movement = this.movements.find((m) => m.id === this.selectedMovementId);
     if (!movement) return;
@@ -390,21 +434,26 @@ export default class SavingsComponent implements OnInit, OnDestroy {
       valor: Math.max(0, Number(piggy.valor || 0) + delta),
     };
 
+    this.ajustandoMovimiento = true;
     this.savingsService
       .updateSavingMovement(this.userId, this.currentYear, this.currentMonth, piggy.id, movement.id, updatedMovement)
       .subscribe({
         next: () => {
           this.savingsService.updateSaving(this.userId, this.currentYear, this.currentMonth, piggy.id, updatedPiggy).subscribe({
             next: () => {
+              this.ajustandoMovimiento = false;
               this.closeAdjustMovementModal();
               this.loadPiggybanks();
             },
+            error: () => { this.ajustandoMovimiento = false; },
           });
         },
+        error: () => { this.ajustandoMovimiento = false; },
       });
   }
 
   savePiggybankGoal() {
+    if (this.guardandoMeta) return;
     if (!this.selectedPiggybank) return;
     const piggy = this.selectedPiggybank;
     const payload: Saving = {
@@ -413,8 +462,10 @@ export default class SavingsComponent implements OnInit, OnDestroy {
       valor: Number(piggy.valor || 0),
       metaAhorro: Math.max(0, Number(piggy.metaAhorro || 0)),
     };
+    this.guardandoMeta = true;
     this.savingsService.updateSaving(this.userId, this.currentYear, this.currentMonth, piggy.id, payload).subscribe({
-      next: () => this.loadPiggybanks(),
+      next: () => { this.guardandoMeta = false; this.loadPiggybanks(); },
+      error: () => { this.guardandoMeta = false; },
     });
   }
 

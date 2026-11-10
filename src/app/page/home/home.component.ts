@@ -92,6 +92,12 @@ export default class HomeComponent implements OnInit, OnDestroy {
   isAddExpenseModalOpen = false;
   quickExpense = { descripcion: '', categoria: CategoriaGasto.Comida, valor: 0 };
 
+  // Guards de reentrancia para evitar escrituras duplicadas en Firebase
+  agregandoIngresoRapido: boolean = false;
+  agregandoGastoRapido: boolean = false;
+  pagandoFactura: boolean = false;
+  cambiandoEstadoDeuda: boolean = false;
+
   showVehicle = false;
   showStatistics = true;
   private settingsSub?: Subscription;
@@ -697,6 +703,9 @@ export default class HomeComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.cambiandoEstadoDeuda) return;
+    this.cambiandoEstadoDeuda = true;
+
     const nuevoEstado: 'Pendiente' | 'Pagado' =
       debt.estado === 'Pendiente' ? 'Pagado' : 'Pendiente';
 
@@ -717,11 +726,13 @@ export default class HomeComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.loadDebts();
+          this.cambiandoEstadoDeuda = false;
         },
         error: (err) => {
           console.error('Error al cambiar estado de la deuda:', err);
           // revertir UI
           debt.estado = estadoAnterior;
+          this.cambiandoEstadoDeuda = false;
         },
       });
   }
@@ -759,6 +770,9 @@ export default class HomeComponent implements OnInit, OnDestroy {
       alert('Saldo insuficiente');
       return;
     }
+
+    if (this.pagandoFactura) return;
+    this.pagandoFactura = true;
 
     // 1️⃣ Restar de la cartera
     this.walletService
@@ -810,10 +824,17 @@ export default class HomeComponent implements OnInit, OnDestroy {
               next: () => {
                 this.closePayInvoiceModal();
                 this.loadData();
+                this.pagandoFactura = false;
               },
-              error: (err) =>
-                console.error('[PUT] Error al actualizar factura pagada:', err),
+              error: (err) => {
+                console.error('[PUT] Error al actualizar factura pagada:', err);
+                this.pagandoFactura = false;
+              },
             });
+        },
+        error: (err: any) => {
+          console.error('Error al registrar gasto de factura:', err);
+          this.pagandoFactura = false;
         },
       });
   }
@@ -879,11 +900,21 @@ export default class HomeComponent implements OnInit, OnDestroy {
 
   addQuickIncome() {
     if (!this.quickIncome.nombre.trim() || !this.quickIncome.valor) return;
+    if (this.agregandoIngresoRapido) return;
+    this.agregandoIngresoRapido = true;
+
     const income = new Income(this.quickIncome.nombre.trim(), this.quickIncome.categoria, this.quickIncome.valor);
-    this.incomeService.addIncome(this.currentUser, this.currentYear, this.currentMonth, income).subscribe(() => {
-      this.isAddIncomeModalOpen = false;
-      this.quickIncome = { nombre: '', categoria: CategoriaIngreso.Fijo, valor: 0 };
-      this.loadData();
+    this.incomeService.addIncome(this.currentUser, this.currentYear, this.currentMonth, income).subscribe({
+      next: () => {
+        this.isAddIncomeModalOpen = false;
+        this.quickIncome = { nombre: '', categoria: CategoriaIngreso.Fijo, valor: 0 };
+        this.loadData();
+        this.agregandoIngresoRapido = false;
+      },
+      error: (err) => {
+        console.error('Error al agregar ingreso rápido:', err);
+        this.agregandoIngresoRapido = false;
+      },
     });
   }
 
@@ -896,11 +927,21 @@ export default class HomeComponent implements OnInit, OnDestroy {
 
   addQuickExpense() {
     if (!this.quickExpense.descripcion.trim() || !this.quickExpense.valor) return;
+    if (this.agregandoGastoRapido) return;
+    this.agregandoGastoRapido = true;
+
     const expense = new Expense(this.quickExpense.descripcion.trim(), this.quickExpense.categoria, this.quickExpense.valor, 0);
-    this.expenseService.addExpense(this.currentUser, this.currentYear, this.currentMonth, expense).subscribe(() => {
-      this.isAddExpenseModalOpen = false;
-      this.quickExpense = { descripcion: '', categoria: CategoriaGasto.Comida, valor: 0 };
-      this.loadData();
+    this.expenseService.addExpense(this.currentUser, this.currentYear, this.currentMonth, expense).subscribe({
+      next: () => {
+        this.isAddExpenseModalOpen = false;
+        this.quickExpense = { descripcion: '', categoria: CategoriaGasto.Comida, valor: 0 };
+        this.loadData();
+        this.agregandoGastoRapido = false;
+      },
+      error: (err) => {
+        console.error('Error al agregar gasto rápido:', err);
+        this.agregandoGastoRapido = false;
+      },
     });
   }
 }

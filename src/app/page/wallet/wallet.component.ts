@@ -93,6 +93,14 @@ export default class WalletComponent implements OnInit, OnDestroy {
   cuadreDescuadreWallet: number = 0;
   estadoCartera: string = '';
 
+  // Guards de reentrancia para evitar escrituras duplicadas en Firebase
+  guardandoCuenta: boolean = false;
+  aplicandoValorCuenta: boolean = false;
+  guardandoEdicionCuenta: boolean = false;
+  vaciandoCuenta: boolean = false;
+  eliminandoCuenta: boolean = false;
+  registrandoMovimientoCuenta: boolean = false;
+
   // Referencia a Math para usar en el template
   Math = Math;
 
@@ -237,6 +245,9 @@ export default class WalletComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.guardandoCuenta) return;
+    this.guardandoCuenta = true;
+
     this.walletService
       .addAccount(
         this.userId,
@@ -248,9 +259,11 @@ export default class WalletComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadAllData();
           this.closeModal();
+          this.guardandoCuenta = false;
         },
         error: (err) => {
           console.error('Error al agregar cuenta:', err);
+          this.guardandoCuenta = false;
         },
       });
   }
@@ -270,9 +283,14 @@ export default class WalletComponent implements OnInit, OnDestroy {
 
   applyValue(action: 'add' | 'subtract') {
     if (!this.selectedAccountId) return;
+    if (this.aplicandoValorCuenta) return;
+    this.aplicandoValorCuenta = true;
 
     const account = this.wallet.find((a) => a.id === this.selectedAccountId);
-    if (!account) return;
+    if (!account) {
+      this.aplicandoValorCuenta = false;
+      return;
+    }
 
     const finalValue = action === 'subtract' ? -Math.abs(this.newValue) : Math.abs(this.newValue);
 
@@ -291,9 +309,11 @@ export default class WalletComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadAllData();
           this.closeAddValueModal();
+          this.aplicandoValorCuenta = false;
         },
         error: (err) => {
           console.error('Error al actualizar cuenta:', err);
+          this.aplicandoValorCuenta = false;
         },
       });
   }
@@ -318,6 +338,8 @@ export default class WalletComponent implements OnInit, OnDestroy {
 
   saveEditedAccount() {
     if (!this.editedId) return;
+    if (this.guardandoEdicionCuenta) return;
+    this.guardandoEdicionCuenta = true;
 
     const original = this.wallet.find((a) => a.id === this.editedId);
     const delta = this.editedAccount.valor - (original?.valor ?? this.editedAccount.valor);
@@ -340,9 +362,11 @@ export default class WalletComponent implements OnInit, OnDestroy {
       next: () => {
         this.loadAllData();
         this.closeEditModal();
+        this.guardandoEdicionCuenta = false;
       },
       error: (err) => {
         console.error('Error al actualizar cuenta:', err);
+        this.guardandoEdicionCuenta = false;
       },
     });
   }
@@ -372,10 +396,15 @@ export default class WalletComponent implements OnInit, OnDestroy {
 
   confirmEmptyAccount() {
     if (!this.accountToEmptyId) return;
+    if (this.vaciandoCuenta) return;
+    this.vaciandoCuenta = true;
 
     // Buscar la cuenta en el wallet
     const account = this.wallet.find((a) => a.id === this.accountToEmptyId);
-    if (!account) return;
+    if (!account) {
+      this.vaciandoCuenta = false;
+      return;
+    }
 
     // Actualizar mediante el servicio
     this.walletService
@@ -393,9 +422,11 @@ export default class WalletComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadAllData(); // recarga los datos
           this.closeEmptyModal(); // cierra el modal
+          this.vaciandoCuenta = false;
         },
         error: (err: any) => {
           console.error('Error al vaciar cuenta:', err);
+          this.vaciandoCuenta = false;
         },
       });
   }
@@ -418,6 +449,8 @@ export default class WalletComponent implements OnInit, OnDestroy {
 
   confirmDeleteAccount() {
     if (!this.accountToDeleteId) return;
+    if (this.eliminandoCuenta) return;
+    this.eliminandoCuenta = true;
 
     this.walletService
       .deleteAccount(
@@ -430,9 +463,11 @@ export default class WalletComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadAllData();
           this.closeDeleteModal();
+          this.eliminandoCuenta = false;
         },
         error: (err) => {
           console.error('Error al eliminar cuenta:', err);
+          this.eliminandoCuenta = false;
         },
       });
   }
@@ -476,6 +511,9 @@ export default class WalletComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.registrandoMovimientoCuenta) return;
+    this.registrandoMovimientoCuenta = true;
+
     this.walletService
       .registrarMovimiento(
         this.userId, this.currentYear, this.currentMonth, source.id,
@@ -493,8 +531,12 @@ export default class WalletComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadAllData();
           this.closeTransactionModal();
+          this.registrandoMovimientoCuenta = false;
         },
-        error: (err) => console.error('Error al transferir dinero:', err),
+        error: (err) => {
+          console.error('Error al transferir dinero:', err);
+          this.registrandoMovimientoCuenta = false;
+        },
       });
   }
 

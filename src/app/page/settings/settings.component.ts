@@ -65,6 +65,8 @@ export default class SettingsComponent implements OnInit, OnDestroy {
   pandaLeadTokenInput = '';
   pandaLeadError = '';
   isSavingPandaLeadToken = false;
+  desconectandoPandaLead = false;
+  alternandoPandaLead = false;
 
   ngOnInit(): void {
     this.biometric.isSupported().then((ok) => this.biometricSupported.set(ok));
@@ -122,13 +124,17 @@ export default class SettingsComponent implements OnInit, OnDestroy {
   }
 
   clearMonth(): void {
+    if (this.isClearingMonth) return;
     this.showClearMonthConfirm = false;
     this.isClearingMonth = true;
     this.clearMonthMessage = '';
     const clearedPeriodLabel = this.currentPeriodLabel;
-    this.closeService.clearMonth(this.userId, this.currentYear, this.currentMonth).subscribe(() => {
-      this.isClearingMonth = false;
-      this.clearMonthMessage = `Se vació el mes de ${clearedPeriodLabel}.`;
+    this.closeService.clearMonth(this.userId, this.currentYear, this.currentMonth).subscribe({
+      next: () => {
+        this.isClearingMonth = false;
+        this.clearMonthMessage = `Se vació el mes de ${clearedPeriodLabel}.`;
+      },
+      error: () => { this.isClearingMonth = false; },
     });
   }
 
@@ -174,6 +180,7 @@ export default class SettingsComponent implements OnInit, OnDestroy {
   }
 
   async save(): Promise<void> {
+    if (this.isSaving) return;
     if (!this.userId) return;
 
     this.isSaving = true;
@@ -254,16 +261,22 @@ export default class SettingsComponent implements OnInit, OnDestroy {
   }
 
   togglePandaLeadEnabled(): void {
+    if (this.alternandoPandaLead) return;
     if (!this.settings.pandaLeadToken) return;
     const next = !this.isPandaLeadEnabled;
     const payload: UserSystemSettings = { ...this.settings, pandaLeadEnabled: next };
-    this.settingsService.saveSettings(this.userId, payload).subscribe(() => {
-      this.settings.pandaLeadEnabled = next;
-      if (!next) {
-        // Apagado: estos avisos ya no aplican, el ciclo de sync ni siquiera va a correr.
-        this.pandaLead.connectionWarning.set(false);
-        this.pandaLead.remotePaused.set(false);
-      }
+    this.alternandoPandaLead = true;
+    this.settingsService.saveSettings(this.userId, payload).subscribe({
+      next: () => {
+        this.alternandoPandaLead = false;
+        this.settings.pandaLeadEnabled = next;
+        if (!next) {
+          // Apagado: estos avisos ya no aplican, el ciclo de sync ni siquiera va a correr.
+          this.pandaLead.connectionWarning.set(false);
+          this.pandaLead.remotePaused.set(false);
+        }
+      },
+      error: () => { this.alternandoPandaLead = false; },
     });
   }
 
@@ -287,45 +300,57 @@ export default class SettingsComponent implements OnInit, OnDestroy {
     this.isSavingPandaLeadToken = true;
     this.pandaLeadError = '';
 
-    this.pandaLead.validateToken(token).subscribe((valido) => {
-      if (!valido) {
-        this.isSavingPandaLeadToken = false;
-        this.pandaLeadError = 'Token inválido.';
-        return;
-      }
+    this.pandaLead.validateToken(token).subscribe({
+      next: (valido) => {
+        if (!valido) {
+          this.isSavingPandaLeadToken = false;
+          this.pandaLeadError = 'Token inválido.';
+          return;
+        }
 
-      const payload: UserSystemSettings = { ...this.settings, pandaLeadToken: token, pandaLeadEnabled: true };
-      this.settingsService.saveSettings(this.userId, payload).subscribe({
-        next: () => {
-          this.settings.pandaLeadToken = token;
-          this.settings.pandaLeadEnabled = true;
-          this.pandaLead.connectionWarning.set(false);
-          this.pandaLead.markConnected(token);
-          this.isSavingPandaLeadToken = false;
-          this.closePandaLeadModal();
-        },
-        error: () => {
-          this.isSavingPandaLeadToken = false;
-          this.pandaLeadError = 'No se pudo guardar la conexión.';
-        },
-      });
+        const payload: UserSystemSettings = { ...this.settings, pandaLeadToken: token, pandaLeadEnabled: true };
+        this.settingsService.saveSettings(this.userId, payload).subscribe({
+          next: () => {
+            this.settings.pandaLeadToken = token;
+            this.settings.pandaLeadEnabled = true;
+            this.pandaLead.connectionWarning.set(false);
+            this.pandaLead.markConnected(token);
+            this.isSavingPandaLeadToken = false;
+            this.closePandaLeadModal();
+          },
+          error: () => {
+            this.isSavingPandaLeadToken = false;
+            this.pandaLeadError = 'No se pudo guardar la conexión.';
+          },
+        });
+      },
+      error: () => {
+        this.isSavingPandaLeadToken = false;
+        this.pandaLeadError = 'No se pudo validar el token.';
+      },
     });
   }
 
   disconnectPandaLead(): void {
+    if (this.desconectandoPandaLead) return;
+    this.desconectandoPandaLead = true;
     const tokenToClear = this.settings.pandaLeadToken || '';
     const payload: UserSystemSettings = { ...this.settings, pandaLeadToken: '', pandaLeadExcludedMonths: [] };
-    this.settingsService.saveSettings(this.userId, payload).subscribe(() => {
-      this.settings.pandaLeadToken = '';
-      this.settings.pandaLeadExcludedMonths = [];
-      this.pandaLead.connectionWarning.set(false);
-      if (tokenToClear) {
-        this.pandaLead.clearConnectionMarks(tokenToClear);
-        if (this.currentYear && this.currentMonth) {
-          this.pandaLead.stripOrigenForMonth(this.userId, this.currentYear, this.currentMonth);
+    this.settingsService.saveSettings(this.userId, payload).subscribe({
+      next: () => {
+        this.desconectandoPandaLead = false;
+        this.settings.pandaLeadToken = '';
+        this.settings.pandaLeadExcludedMonths = [];
+        this.pandaLead.connectionWarning.set(false);
+        if (tokenToClear) {
+          this.pandaLead.clearConnectionMarks(tokenToClear);
+          if (this.currentYear && this.currentMonth) {
+            this.pandaLead.stripOrigenForMonth(this.userId, this.currentYear, this.currentMonth);
+          }
         }
-      }
-      this.closePandaLeadModal();
+        this.closePandaLeadModal();
+      },
+      error: () => { this.desconectandoPandaLead = false; },
     });
   }
 
@@ -338,30 +363,36 @@ export default class SettingsComponent implements OnInit, OnDestroy {
     this.feedbackMessage = 'Resincronizando este mes con Panda Lead...';
     const yyyyMm = `${this.currentYear}-${this.currentMonth}`;
 
-    this.pandaLead.resyncMonth(this.userId, this.settings.pandaLeadToken, this.currentYear, this.currentMonth).subscribe((result) => {
-      this.isResyncingPandaLead = false;
-      // Se quita acá también localmente: resyncMonth ya lo sacó de la lista en el servidor,
-      // pero este componente guardó `this.settings` como una copia propia al cargar la página,
-      // así que si no la actualizamos acá el aviso/botón se quedan pegados aunque sí funcionó.
-      this.settings.pandaLeadExcludedMonths = (this.settings.pandaLeadExcludedMonths || []).filter((m) => m !== yyyyMm);
+    this.pandaLead.resyncMonth(this.userId, this.settings.pandaLeadToken, this.currentYear, this.currentMonth).subscribe({
+      next: (result) => {
+        this.isResyncingPandaLead = false;
+        // Se quita acá también localmente: resyncMonth ya lo sacó de la lista en el servidor,
+        // pero este componente guardó `this.settings` como una copia propia al cargar la página,
+        // así que si no la actualizamos acá el aviso/botón se quedan pegados aunque sí funcionó.
+        this.settings.pandaLeadExcludedMonths = (this.settings.pandaLeadExcludedMonths || []).filter((m) => m !== yyyyMm);
 
-      switch (result) {
-        case 'synced':
-          this.feedbackMessage = 'Mes resincronizado con Panda Lead.';
-          break;
-        case 'no-income':
-          this.feedbackMessage = 'Panda Lead no tiene ingresos este mes.';
-          break;
-        case 'paused':
-          this.feedbackMessage = 'La conexión está pausada desde Panda Lead.';
-          break;
-        case 'invalid-token':
-          this.feedbackMessage = 'El token de Panda Lead ya no es válido.';
-          break;
-        case 'error':
-          this.feedbackMessage = 'No se pudo resincronizar, intentá de nuevo.';
-          break;
-      }
+        switch (result) {
+          case 'synced':
+            this.feedbackMessage = 'Mes resincronizado con Panda Lead.';
+            break;
+          case 'no-income':
+            this.feedbackMessage = 'Panda Lead no tiene ingresos este mes.';
+            break;
+          case 'paused':
+            this.feedbackMessage = 'La conexión está pausada desde Panda Lead.';
+            break;
+          case 'invalid-token':
+            this.feedbackMessage = 'El token de Panda Lead ya no es válido.';
+            break;
+          case 'error':
+            this.feedbackMessage = 'No se pudo resincronizar, intentá de nuevo.';
+            break;
+        }
+      },
+      error: () => {
+        this.isResyncingPandaLead = false;
+        this.feedbackMessage = 'No se pudo resincronizar, intentá de nuevo.';
+      },
     });
   }
 

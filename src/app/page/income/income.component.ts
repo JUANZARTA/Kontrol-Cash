@@ -115,6 +115,17 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   editedId: string | null = null;
   movementAttachments: Record<string, MovementAttachment[]> = {};
 
+  // Guards de reentrancia para evitar escrituras duplicadas en Firebase
+  guardandoIngreso: boolean = false;
+  guardandoEdicionIngreso: boolean = false;
+  eliminandoIngreso: boolean = false;
+  eliminandoIngresosMasivo: boolean = false;
+  aplicandoValorIngreso: boolean = false;
+  agregandoCuentaRapidaIngreso: boolean = false;
+  registrandoMovimientoIngreso: boolean = false;
+  guardandoCategoriaIngreso: boolean = false;
+  eliminandoCategoriaIngreso: boolean = false;
+
   readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
 
   currentYear: string = '';
@@ -286,16 +297,36 @@ export default class IncomeComponent implements OnInit, OnDestroy {
       (value) => !this.defaultCategorias.includes(value)
     );
 
-    this.plannerService.saveCustomCategories(this.userId, 'income', updatedCategories).subscribe(() => {
-      this.customCategoryName = '';
-      this.loadPlannerConfig();
+    if (this.guardandoCategoriaIngreso) return;
+    this.guardandoCategoriaIngreso = true;
+
+    this.plannerService.saveCustomCategories(this.userId, 'income', updatedCategories).subscribe({
+      next: () => {
+        this.customCategoryName = '';
+        this.loadPlannerConfig();
+        this.guardandoCategoriaIngreso = false;
+      },
+      error: (err) => {
+        console.error('Error al guardar categoría:', err);
+        this.guardandoCategoriaIngreso = false;
+      },
     });
   }
 
   removeCustomCategory(category: string) {
+    if (this.eliminandoCategoriaIngreso) return;
+    this.eliminandoCategoriaIngreso = true;
+
     const updatedCategories = this.customCategories.filter((item) => item !== category);
-    this.plannerService.saveCustomCategories(this.userId, 'income', updatedCategories).subscribe(() => {
-      this.loadPlannerConfig();
+    this.plannerService.saveCustomCategories(this.userId, 'income', updatedCategories).subscribe({
+      next: () => {
+        this.loadPlannerConfig();
+        this.eliminandoCategoriaIngreso = false;
+      },
+      error: (err) => {
+        console.error('Error al eliminar categoría:', err);
+        this.eliminandoCategoriaIngreso = false;
+      },
     });
   }
 
@@ -321,6 +352,9 @@ export default class IncomeComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.guardandoIngreso) return;
+    this.guardandoIngreso = true;
+
     this.incomeService
       .addIncome(
         this.userId,
@@ -332,9 +366,11 @@ export default class IncomeComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadIncomes();
           this.closeModal();
+          this.guardandoIngreso = false;
         },
         error: (err) => {
           console.error('Error al agregar ingreso:', err);
+          this.guardandoIngreso = false;
         },
       });
   }
@@ -357,6 +393,9 @@ export default class IncomeComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.agregandoCuentaRapidaIngreso) return;
+    this.agregandoCuentaRapidaIngreso = true;
+
     this.walletService
       .addAccount(
         this.userId,
@@ -368,9 +407,11 @@ export default class IncomeComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadWallets(); // solo recargamos las billeteras
           this.closeModalW(); // cerramos correctamente el modal
+          this.agregandoCuentaRapidaIngreso = false;
         },
         error: (err) => {
           console.error('Error al agregar cuenta:', err);
+          this.agregandoCuentaRapidaIngreso = false;
         },
       });
   }
@@ -390,6 +431,8 @@ export default class IncomeComponent implements OnInit, OnDestroy {
 
   applyValue(action: 'add' | 'subtract') {
     if (!this.selectedIncomeId) return;
+    if (this.aplicandoValorIngreso) return;
+    this.aplicandoValorIngreso = true;
 
     const income = this.incomes.find((i) => i.id === this.selectedIncomeId);
     if (!income) return;
@@ -422,9 +465,11 @@ export default class IncomeComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadIncomes();
           this.closeAddValueModal();
+          this.aplicandoValorIngreso = false;
         },
         error: (err) => {
           console.error('Error al actualizar ingreso:', err);
+          this.aplicandoValorIngreso = false;
         },
       });
   }
@@ -453,6 +498,8 @@ export default class IncomeComponent implements OnInit, OnDestroy {
 
   saveEditedIncome() {
     if (!this.editedId) return;
+    if (this.guardandoEdicionIngreso) return;
+    this.guardandoEdicionIngreso = true;
 
     this.incomeService
       .updateIncome(
@@ -466,9 +513,11 @@ export default class IncomeComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadIncomes();
           this.closeEditModal();
+          this.guardandoEdicionIngreso = false;
         },
         error: (err) => {
           console.error('Error al editar ingreso:', err);
+          this.guardandoEdicionIngreso = false;
         },
       });
   }
@@ -488,6 +537,8 @@ export default class IncomeComponent implements OnInit, OnDestroy {
 
   confirmDeleteIncome() {
     if (!this.incomeToDeleteId) return;
+    if (this.eliminandoIngreso) return;
+    this.eliminandoIngreso = true;
 
     const deleted = this.incomes.find((i) => i.id === this.incomeToDeleteId);
 
@@ -506,9 +557,11 @@ export default class IncomeComponent implements OnInit, OnDestroy {
           this.removeAllAttachments(this.incomeToDeleteId as string);
           this.loadIncomes();
           this.closeDeleteModal();
+          this.eliminandoIngreso = false;
         },
         error: (err) => {
           console.error('Error al eliminar ingreso:', err);
+          this.eliminandoIngreso = false;
         },
       });
   }
@@ -610,6 +663,9 @@ export default class IncomeComponent implements OnInit, OnDestroy {
     const toAccount = this.wallet.find((w) => w.id === this.selectedWallet);
     if (!toAccount) return;
 
+    if (this.registrandoMovimientoIngreso) return;
+    this.registrandoMovimientoIngreso = true;
+
     // Guardar en DB usando WalletService
     this.walletService
       .registrarMovimiento(
@@ -634,6 +690,8 @@ export default class IncomeComponent implements OnInit, OnDestroy {
           (this.cuadreDescuadre ?? 0) + (this.assignedValue ?? 0);
 
         this.closeTransactionModal();
+
+        this.registrandoMovimientoIngreso = false;
 
         // Forzar recarga de la página después de 500ms
         setTimeout(() => {
@@ -784,16 +842,26 @@ export default class IncomeComponent implements OnInit, OnDestroy {
   }
 
   confirmBulkDelete(): void {
+    if (this.eliminandoIngresosMasivo) return;
+    this.eliminandoIngresosMasivo = true;
+
     const ids = Array.from(this.selectedIds);
     const deletesSynced = this.incomes.some((i) => ids.includes(i.id) && i.origen === 'pandalead');
     const ops = ids.map(id => this.incomeService.deleteIncome(this.userId, this.currentYear, this.currentMonth, id));
-    forkJoin(ops).subscribe(() => {
-      if (deletesSynced) {
-        this.pandaLeadService.excludeMonth(this.userId, this.currentYear, this.currentMonth);
-      }
-      this.selectedIds.clear();
-      this.showBulkDeleteConfirm = false;
-      this.loadIncomes();
+    forkJoin(ops).subscribe({
+      next: () => {
+        if (deletesSynced) {
+          this.pandaLeadService.excludeMonth(this.userId, this.currentYear, this.currentMonth);
+        }
+        this.selectedIds.clear();
+        this.showBulkDeleteConfirm = false;
+        this.loadIncomes();
+        this.eliminandoIngresosMasivo = false;
+      },
+      error: (err) => {
+        console.error('Error al eliminar ingresos seleccionados:', err);
+        this.eliminandoIngresosMasivo = false;
+      },
     });
   }
 }

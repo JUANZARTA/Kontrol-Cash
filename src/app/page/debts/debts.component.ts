@@ -92,6 +92,15 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   newDebt: Debt = new Debt('', '', '', 0, 'Pendiente');
   newDebtTotalCuotas: number = 1;
 
+  // Guards de reentrancia (evitan doble submit)
+  guardandoDeuda: boolean = false;
+  guardandoEdicionDeuda: boolean = false;
+  guardandoValorDeuda: boolean = false;
+  eliminandoDeuda: boolean = false;
+  eliminandoSeleccionadas: boolean = false;
+  pagandoDeuda: boolean = false;
+  deshaciendoCuota: boolean = false;
+
   readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
 
   currentYear: string = '';
@@ -161,6 +170,9 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.guardandoDeuda) return;
+    this.guardandoDeuda = true;
+
     this.debtService
       .addDebt(this.userId, this.currentYear, this.currentMonth, {
         ...this.newDebt,
@@ -169,8 +181,13 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: () => {
+          this.guardandoDeuda = false;
           this.loadDebts();
           this.closeModal();
+        },
+        error: (err) => {
+          this.guardandoDeuda = false;
+          console.error('Error al agregar deuda:', err);
         },
       });
   }
@@ -257,9 +274,14 @@ export default class DebtsComponent implements OnInit, OnDestroy {
 
   saveEditedDebt() {
     if (!this.editedId) return;
+    if (this.guardandoEdicionDeuda) return;
+    this.guardandoEdicionDeuda = true;
 
     const original = this.debts.find((d) => d.id === this.editedId);
-    if (!original) return;
+    if (!original) {
+      this.guardandoEdicionDeuda = false;
+      return;
+    }
 
     const totalCuotas = Math.max(1, Math.floor(this.editedDebtTotalCuotas || 1));
     const cuotasPagadas = Math.max(0, Math.min(this.getCuotasPagadas(original), totalCuotas));
@@ -286,10 +308,12 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
+          this.guardandoEdicionDeuda = false;
           this.loadDebts();
           this.closeEditModal();
         },
         error: (err) => {
+          this.guardandoEdicionDeuda = false;
           console.error('Error al actualizar deuda:', err);
         },
       });
@@ -321,6 +345,8 @@ export default class DebtsComponent implements OnInit, OnDestroy {
 
   confirmDeleteDebt() {
     if (!this.debtToDeleteId) return;
+    if (this.eliminandoDeuda) return;
+    this.eliminandoDeuda = true;
 
     this.debtService
       .deleteDebt(
@@ -331,10 +357,12 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
+          this.eliminandoDeuda = false;
           this.loadDebts();
           this.closeDeleteModal();
         },
         error: (err) => {
+          this.eliminandoDeuda = false;
           console.error('Error al eliminar deuda:', err);
         },
       });
@@ -561,9 +589,12 @@ export default class DebtsComponent implements OnInit, OnDestroy {
 
   applyValue(action: 'add' | 'subtract') {
     if (!this.selectedDebtId) return;
+    if (this.guardandoValorDeuda) return;
 
     const debt = this.debts.find((d) => d.id === this.selectedDebtId);
     if (!debt) return;
+
+    this.guardandoValorDeuda = true;
 
     let finalValue = this.newValue;
 
@@ -599,10 +630,12 @@ export default class DebtsComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
+          this.guardandoValorDeuda = false;
           this.loadDebts();
           this.closeAddValueModal();
         },
         error: (err) => {
+          this.guardandoValorDeuda = false;
           console.error('Error al actualizar deuda:', err);
         },
       });
@@ -652,16 +685,20 @@ export default class DebtsComponent implements OnInit, OnDestroy {
 
   confirmPayDebt(): void {
     if (!this.payDebtTarget || !this.selectedWalletForDebt) return;
+    if (this.pagandoDeuda) return;
 
     const debt = this.payDebtTarget;
     const account = this.wallet.find(w => w.id === this.selectedWalletForDebt);
     if (!account) return;
+
+    this.pagandoDeuda = true;
 
     const totalCuotas = this.getTotalCuotas(debt);
     const cuotasPagadas = this.getCuotasPagadas(debt);
     const monto = this.getPayModalMonto();
 
     if (account.valor < monto) {
+      this.pagandoDeuda = false;
       this.showToast('Saldo insuficiente en la billetera seleccionada.');
       return;
     }
@@ -700,15 +737,23 @@ export default class DebtsComponent implements OnInit, OnDestroy {
                 this.debtService.updateDebt(this.userId, this.currentYear, this.currentMonth, debt.id, updatedDebt)
                   .subscribe({
                     next: () => {
+                      this.pagandoDeuda = false;
                       this.closePayDebtModal();
                       this.loadDebts();
                       this.showToast(`$${this.formatCurrency(monto)} pagados desde ${account.tipo}.`);
+                    },
+                    error: () => {
+                      this.pagandoDeuda = false;
+                      this.showToast('Error al actualizar la deuda.');
                     },
                   });
               },
             });
         },
-        error: () => this.showToast('Error al actualizar la billetera.'),
+        error: () => {
+          this.pagandoDeuda = false;
+          this.showToast('Error al actualizar la billetera.');
+        },
       });
   }
 
@@ -742,6 +787,8 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   undoAndDeleteExpense(debt: DebtWithId): void {
     const cuotasPagadas = this.getCuotasPagadas(debt);
     if (cuotasPagadas <= 0) return;
+    if (this.deshaciendoCuota) return;
+    this.deshaciendoCuota = true;
 
     const totalCuotas = this.getTotalCuotas(debt);
     const montoDevolver = this.getCuotaMonto(debt);
@@ -784,12 +831,35 @@ export default class DebtsComponent implements OnInit, OnDestroy {
                   w, montoDevolver, 'deuda', `Devolución al deshacer cuota: ${debt.acreedor}`, debt.id
                 ));
               }
-              forkJoin(ops).subscribe({ next: () => { this.loadDebts(); this.showToast(`$${this.formatCurrency(montoDevolver)} devueltos a la billetera.`); } });
+              forkJoin(ops).subscribe({
+                next: () => {
+                  this.deshaciendoCuota = false;
+                  this.loadDebts();
+                  this.showToast(`$${this.formatCurrency(montoDevolver)} devueltos a la billetera.`);
+                },
+                error: (err: any) => {
+                  this.deshaciendoCuota = false;
+                  console.error('Error al deshacer cuota:', err);
+                },
+              });
             },
           });
         } else {
-          forkJoin(ops).subscribe({ next: () => this.loadDebts() });
+          forkJoin(ops).subscribe({
+            next: () => {
+              this.deshaciendoCuota = false;
+              this.loadDebts();
+            },
+            error: (err: any) => {
+              this.deshaciendoCuota = false;
+              console.error('Error al deshacer cuota:', err);
+            },
+          });
         }
+      },
+      error: (err: any) => {
+        this.deshaciendoCuota = false;
+        console.error('Error al obtener gastos para deshacer cuota:', err);
       },
     });
   }
@@ -832,12 +902,22 @@ export default class DebtsComponent implements OnInit, OnDestroy {
   }
 
   confirmBulkDelete(): void {
+    if (this.eliminandoSeleccionadas) return;
+    this.eliminandoSeleccionadas = true;
+
     const ids = Array.from(this.selectedIds);
     const ops = ids.map(id => this.debtService.deleteDebt(this.userId, this.currentYear, this.currentMonth, id));
-    forkJoin(ops).subscribe(() => {
-      this.selectedIds.clear();
-      this.showBulkDeleteConfirm = false;
-      this.loadDebts();
+    forkJoin(ops).subscribe({
+      next: () => {
+        this.eliminandoSeleccionadas = false;
+        this.selectedIds.clear();
+        this.showBulkDeleteConfirm = false;
+        this.loadDebts();
+      },
+      error: (err) => {
+        this.eliminandoSeleccionadas = false;
+        console.error('Error al eliminar deudas seleccionadas:', err);
+      },
     });
   }
 }

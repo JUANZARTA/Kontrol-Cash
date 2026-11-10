@@ -87,6 +87,15 @@ export default class LoansComponent implements OnInit, OnDestroy {
   newLoan: Loan = new Loan('', '', '', 0, 'Pendiente');
   newLoanTotalCuotas: number = 1;
 
+  // Guards de reentrancia (evitan doble submit)
+  guardandoPrestamo: boolean = false;
+  guardandoEdicionPrestamo: boolean = false;
+  guardandoValorPrestamo: boolean = false;
+  eliminandoPrestamo: boolean = false;
+  eliminandoSeleccionados: boolean = false;
+  pagandoPrestamo: boolean = false;
+  deshaciendoCuotaPrestamo: boolean = false;
+
   readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
 
   currentYear: string = '';
@@ -193,6 +202,9 @@ export default class LoansComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.guardandoPrestamo) return;
+    this.guardandoPrestamo = true;
+
     // 1️⃣ Crear el préstamo en backend
     const loanToSave: Loan = {
       ...this.newLoan,
@@ -219,15 +231,21 @@ export default class LoansComponent implements OnInit, OnDestroy {
             )
             .subscribe({
               next: () => {
+                this.guardandoPrestamo = false;
                 this.loadLoans(); // recarga préstamos y billeteras
                 this.closeModal(); // cierra modal y limpia formulario
                 this.selectedWallet = ''; // limpiar selección
               },
-              error: (err: any) =>
-                console.error('Error al actualizar billetera:', err),
+              error: (err: any) => {
+                this.guardandoPrestamo = false;
+                console.error('Error al actualizar billetera:', err);
+              },
             });
         },
-        error: (err: any) => console.error('Error al agregar préstamo:', err),
+        error: (err: any) => {
+          this.guardandoPrestamo = false;
+          console.error('Error al agregar préstamo:', err);
+        },
       });
   }
 
@@ -264,9 +282,12 @@ export default class LoansComponent implements OnInit, OnDestroy {
 
   applyValue(action: 'add' | 'subtract') {
     if (!this.selectedLoanId) return;
+    if (this.guardandoValorPrestamo) return;
 
     const loan = this.loans.find((l) => l.id === this.selectedLoanId);
     if (!loan) return;
+
+    this.guardandoValorPrestamo = true;
 
     let finalValue = this.newValue;
 
@@ -298,10 +319,12 @@ export default class LoansComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
+          this.guardandoValorPrestamo = false;
           this.loadLoans();
           this.closeAddValueModal();
         },
         error: (err) => {
+          this.guardandoValorPrestamo = false;
           console.error('Error al actualizar préstamo:', err);
         },
       });
@@ -334,10 +357,13 @@ export default class LoansComponent implements OnInit, OnDestroy {
 
   confirmLoanPayment() {
     if (!this.loanToPay || !this.selectedPaymentWallet) return;
+    if (this.pagandoPrestamo) return;
 
     const loan = this.loanToPay;
     const account = this.wallet.find(w => w.id === this.selectedPaymentWallet);
     if (!account) return;
+
+    this.pagandoPrestamo = true;
 
     const monto = this.getPayModalMonto();
     const totalCuotas = this.getTotalCuotas(loan);
@@ -362,6 +388,7 @@ export default class LoansComponent implements OnInit, OnDestroy {
         this.loanService.updateLoan(this.userId, this.currentYear, this.currentMonth, loan.id, updatedLoan)
           .subscribe({
             next: () => {
+              this.pagandoPrestamo = false;
               this.isPaymentModalOpen = false;
               this.loanToPay = null;
               this.selectedPaymentWallet = '';
@@ -369,9 +396,16 @@ export default class LoansComponent implements OnInit, OnDestroy {
               this.loadWallets();
               this.showToast(`$${this.formatCurrency(monto)} recibidos en ${account.tipo}.`);
             },
+            error: () => {
+              this.pagandoPrestamo = false;
+              this.showToast('Error al actualizar el préstamo.');
+            },
           });
       },
-      error: () => this.showToast('Error al actualizar la billetera.'),
+      error: () => {
+        this.pagandoPrestamo = false;
+        this.showToast('Error al actualizar la billetera.');
+      },
     });
   }
 
@@ -403,9 +437,14 @@ export default class LoansComponent implements OnInit, OnDestroy {
 
   saveEditedLoan() {
     if (!this.editedId) return;
+    if (this.guardandoEdicionPrestamo) return;
+    this.guardandoEdicionPrestamo = true;
 
     const original = this.loans.find((l) => l.id === this.editedId);
-    if (!original) return;
+    if (!original) {
+      this.guardandoEdicionPrestamo = false;
+      return;
+    }
 
     const totalCuotas = Math.max(1, Math.floor(this.editedLoanTotalCuotas || 1));
     const cuotasPagadas = Math.max(0, Math.min(this.getCuotasPagadas(original), totalCuotas));
@@ -428,10 +467,12 @@ export default class LoansComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
+          this.guardandoEdicionPrestamo = false;
           this.loadLoans();
           this.closeEditModal();
         },
         error: (err) => {
+          this.guardandoEdicionPrestamo = false;
           console.error('Error al actualizar préstamo:', err);
         },
       });
@@ -467,11 +508,14 @@ export default class LoansComponent implements OnInit, OnDestroy {
 
   confirmReturnAndDelete(): void {
     if (!this.loanToDeleteId) return;
+    if (this.eliminandoPrestamo) return;
+    this.eliminandoPrestamo = true;
+
     const loan = this.loans.find(l => l.id === this.loanToDeleteId);
     const monto = loan ? this.getRemainingAmount(loan) : 0;
 
     const finish = () => {
-      this.deleteLoanById(this.loanToDeleteId!);
+      this.deleteLoanById(this.loanToDeleteId!, true);
       this.showReturnWalletModal = false;
       this.selectedReturnWallet = '';
     };
@@ -488,6 +532,10 @@ export default class LoansComponent implements OnInit, OnDestroy {
             this.showToast(`$${this.formatCurrency(monto)} devueltos a ${account.tipo}.`);
             finish();
           },
+          error: (err) => {
+            this.eliminandoPrestamo = false;
+            console.error('Error al devolver saldo a billetera:', err);
+          },
         });
         return;
       }
@@ -495,11 +543,22 @@ export default class LoansComponent implements OnInit, OnDestroy {
     finish();
   }
 
-  deleteLoanById(id: string): void {
+  deleteLoanById(id: string, skipGuard: boolean = false): void {
+    if (!skipGuard) {
+      if (this.eliminandoPrestamo) return;
+      this.eliminandoPrestamo = true;
+    }
     this.loanService.deleteLoan(this.userId, this.currentYear, this.currentMonth, id)
       .subscribe({
-        next: () => { this.loanToDeleteId = null; this.loadLoans(); },
-        error: err => console.error('Error al eliminar préstamo:', err),
+        next: () => {
+          this.eliminandoPrestamo = false;
+          this.loanToDeleteId = null;
+          this.loadLoans();
+        },
+        error: err => {
+          this.eliminandoPrestamo = false;
+          console.error('Error al eliminar préstamo:', err);
+        },
       });
   }
 
@@ -694,6 +753,8 @@ export default class LoansComponent implements OnInit, OnDestroy {
   undoAndReturnToWallet(loan: LoanWithId): void {
     const cuotasPagadas = this.getCuotasPagadas(loan);
     if (cuotasPagadas <= 0) return;
+    if (this.deshaciendoCuotaPrestamo) return;
+    this.deshaciendoCuotaPrestamo = true;
 
     const monto = loan.valor / this.getTotalCuotas(loan);
     const updatedLoan: Loan = {
@@ -720,18 +781,29 @@ export default class LoansComponent implements OnInit, OnDestroy {
                 w, -monto, 'deudor', `Deshacer cuota pagada: ${loan.deudor}`, loan.id),
             ]).subscribe({
               next: () => {
+                this.deshaciendoCuotaPrestamo = false;
                 this.loadLoans();
                 this.loadWallets();
                 this.showToast(`$${this.formatCurrency(monto)} descontados de ${w.tipo}.`);
               },
+              error: (err) => {
+                this.deshaciendoCuotaPrestamo = false;
+                console.error('Error al deshacer cuota del deudor:', err);
+              },
             });
           } else {
-            update$.subscribe({ next: () => this.loadLoans() });
+            update$.subscribe({
+              next: () => { this.deshaciendoCuotaPrestamo = false; this.loadLoans(); },
+              error: (err) => { this.deshaciendoCuotaPrestamo = false; console.error('Error al deshacer cuota del deudor:', err); },
+            });
           }
         },
       });
     } else {
-      update$.subscribe({ next: () => this.loadLoans() });
+      update$.subscribe({
+        next: () => { this.deshaciendoCuotaPrestamo = false; this.loadLoans(); },
+        error: (err) => { this.deshaciendoCuotaPrestamo = false; console.error('Error al deshacer cuota del deudor:', err); },
+      });
     }
   }
 
@@ -795,12 +867,22 @@ export default class LoansComponent implements OnInit, OnDestroy {
   }
 
   confirmBulkDelete(): void {
+    if (this.eliminandoSeleccionados) return;
+    this.eliminandoSeleccionados = true;
+
     const ids = Array.from(this.selectedIds);
     const ops = ids.map(id => this.loanService.deleteLoan(this.userId, this.currentYear, this.currentMonth, id));
-    forkJoin(ops).subscribe(() => {
-      this.selectedIds.clear();
-      this.showBulkDeleteConfirm = false;
-      this.loadLoans();
+    forkJoin(ops).subscribe({
+      next: () => {
+        this.eliminandoSeleccionados = false;
+        this.selectedIds.clear();
+        this.showBulkDeleteConfirm = false;
+        this.loadLoans();
+      },
+      error: (err) => {
+        this.eliminandoSeleccionados = false;
+        console.error('Error al eliminar deudores seleccionados:', err);
+      },
     });
   }
 

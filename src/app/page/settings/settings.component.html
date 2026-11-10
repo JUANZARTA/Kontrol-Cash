@@ -64,7 +64,7 @@
           [disabled]="isResyncingPandaLead" class="app-secondary-button whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
           <span class="material-icons text-sm align-middle mr-1">sync</span>{{ isResyncingPandaLead ? 'Resincronizando...' : 'Resincronizar este mes' }}
         </button>
-        <button *ngIf="isPandaLeadConnected" type="button" class="switch-pill" [class.on]="isPandaLeadEnabled" (click)="togglePandaLeadEnabled()" title="Encender/apagar la conexión sin borrar el token">
+        <button *ngIf="isPandaLeadConnected" type="button" class="switch-pill" [class.on]="isPandaLeadEnabled" [disabled]="alternandoPandaLead" (click)="togglePandaLeadEnabled()" title="Encender/apagar la conexión sin borrar el token">
           <span class="switch-knob"></span>
           <span class="switch-text">{{ isPandaLeadEnabled ? 'ON' : 'OFF' }}</span>
         </button>
@@ -223,7 +223,7 @@
 
     <div class="flex justify-end gap-2 mt-4">
       <button (click)="closePandaLeadModal()" class="app-secondary-button">Cancelar</button>
-      <button *ngIf="isPandaLeadConnected" (click)="disconnectPandaLead()" class="app-warning-button">Desconectar</button>
+      <button *ngIf="isPandaLeadConnected" (click)="disconnectPandaLead()" [disabled]="desconectandoPandaLead" class="app-warning-button">Desconectar</button>
       <button (click)="savePandaLeadToken()" [disabled]="!pandaLeadTokenInput.trim() || isSavingPandaLeadToken" class="app-primary-button">
         {{ isSavingPandaLeadToken ? 'Validando...' : 'Guardar' }}
       </button>
@@ -235,7 +235,7 @@
     <p class="text-sm text-gray-600 mb-4">Kontrol Cash está trayendo tus ingresos de Panda Lead automáticamente.</p>
     <div class="flex justify-end gap-2">
       <button (click)="closePandaLeadModal()" class="app-secondary-button">Cerrar</button>
-      <button (click)="disconnectPandaLead()" class="app-warning-button">Desconectar</button>
+      <button (click)="disconnectPandaLead()" [disabled]="desconectandoPandaLead" class="app-warning-button">Desconectar</button>
     </div>
   </ng-container>
 </app-modal-shell>

@@ -93,7 +93,8 @@
       placeholder="Ej: 100.000" class="app-input mb-3" />
     <div class="flex justify-end gap-2">
       <button (click)="closeAddInvoiceModal()" class="app-secondary-button">Cancelar</button>
-      <button (click)="addInvoice()" class="app-primary-button">Agregar</button>
+      <button (click)="addInvoice()" [disabled]="guardandoFactura"
+        class="app-primary-button disabled:opacity-40 disabled:cursor-not-allowed">Agregar</button>
     </div>
 </app-modal-shell>
 
@@ -109,7 +110,8 @@
       placeholder="Ej: 50.000" class="app-input mb-3" />
     <div class="flex justify-end gap-2">
       <button (click)="closeEditInvoiceModal()" class="app-secondary-button">Cancelar</button>
-      <button (click)="saveEditedInvoice()" class="app-primary-button">Guardar</button>
+      <button (click)="saveEditedInvoice()" [disabled]="guardandoEdicionFactura"
+        class="app-primary-button disabled:opacity-40 disabled:cursor-not-allowed">Guardar</button>
     </div>
 </app-modal-shell>
 
@@ -131,6 +133,6 @@
     <div class="flex justify-end gap-2">
       <button (click)="closePayInvoiceModal()" class="app-secondary-button">Cancelar</button>
       <button (click)="confirmPayInvoice()" class="app-success-button"
-        [disabled]="!selectedWalletForPayment">Pagar</button>
+        [disabled]="!selectedWalletForPayment || pagandoFactura">Pagar</button>
     </div>
 </app-modal-shell>

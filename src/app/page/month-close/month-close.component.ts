@@ -44,6 +44,9 @@ export default class MonthCloseComponent implements OnInit, OnDestroy {
   closeSuccess = false;
   snapshotToDelete: MonthlyCloseSnapshot | null = null;
 
+  cerrandoMes = false;
+  reabriendoMes = false;
+
   preview = {
     wallets: 0,
     savings: 0,
@@ -114,23 +117,41 @@ export default class MonthCloseComponent implements OnInit, OnDestroy {
   }
 
   executeClose(): void {
+    if (this.cerrandoMes) return;
+    this.cerrandoMes = true;
     this.showConfirm = false;
     this.isLoading = true;
-    this.closeService.executeClose(this.userId, this.currentYear, this.currentMonth).subscribe(() => {
-      this.isClosed = true;
-      this.closeSuccess = true;
-      this.isLoading = false;
-      this.snapshots = this.closeService.list(this.userId);
+    this.closeService.executeClose(this.userId, this.currentYear, this.currentMonth).subscribe({
+      next: () => {
+        this.cerrandoMes = false;
+        this.isClosed = true;
+        this.closeSuccess = true;
+        this.isLoading = false;
+        this.snapshots = this.closeService.list(this.userId);
+      },
+      error: () => {
+        this.cerrandoMes = false;
+        this.isLoading = false;
+      },
     });
   }
 
   reopenMonth(): void {
+    if (this.reabriendoMes) return;
+    this.reabriendoMes = true;
     this.showReopenConfirm = false;
     this.isLoading = true;
-    this.closeService.reopenMonth(this.userId, this.currentYear, this.currentMonth).subscribe(() => {
-      this.isClosed = false;
-      this.closeSuccess = false;
-      this.loadState();
+    this.closeService.reopenMonth(this.userId, this.currentYear, this.currentMonth).subscribe({
+      next: () => {
+        this.reabriendoMes = false;
+        this.isClosed = false;
+        this.closeSuccess = false;
+        this.loadState();
+      },
+      error: () => {
+        this.reabriendoMes = false;
+        this.isLoading = false;
+      },
     });
   }
 

@@ -102,7 +102,8 @@
 
       <div class="flex gap-3">
         <input [(ngModel)]="customCategoryName" class="app-input" placeholder="Ej: Freelance" />
-        <button (click)="addCustomCategory()" class="app-secondary-button">Guardar</button>
+        <button (click)="addCustomCategory()" [disabled]="guardandoCategoriaIngreso"
+          class="app-secondary-button disabled:opacity-40 disabled:cursor-not-allowed">Guardar</button>
       </div>
 
       <div class="mt-4 flex flex-wrap gap-2">
@@ -114,7 +115,7 @@
       <div class="mt-4 space-y-2" *ngIf="customCategories.length > 0">
         <div *ngFor="let categoria of customCategories" class="flex items-center justify-between rounded-2xl border border-gray-200 px-3 py-2">
           <span class="text-sm font-medium text-slate-700">{{ categoria }}</span>
-          <button (click)="removeCustomCategory(categoria)" [disabled]="isCustomCategoryInUse(categoria)"
+          <button (click)="removeCustomCategory(categoria)" [disabled]="isCustomCategoryInUse(categoria) || eliminandoCategoriaIngreso"
             class="text-sm font-semibold text-rose-600 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
             {{ isCustomCategoryInUse(categoria) ? 'En uso' : 'Eliminar' }}
           </button>
@@ -132,7 +133,7 @@
       ${{ formatCurrency(cuadreDescuadre) }}
     </span>
   </p>
-  <button (click)="openTransactionModal()" [disabled]="cuadreDescuadre >= 0"
+  <button (click)="openTransactionModal()" [disabled]="cuadreDescuadre >= 0 || registrandoMovimientoIngreso"
     class="app-accent-button disabled:opacity-50 disabled:cursor-not-allowed">
     Asignar
   </button>
@@ -176,7 +177,8 @@
 
     <div class="flex justify-end gap-2">
       <button (click)="closeModalW()" class="app-secondary-button">Cancelar</button>
-      <button (click)="addAccountW()" class="app-primary-button">Agregar</button>
+      <button (click)="addAccountW()" [disabled]="agregandoCuentaRapidaIngreso"
+        class="app-primary-button disabled:opacity-40 disabled:cursor-not-allowed">Agregar</button>
     </div>
 </app-modal-shell>
 
@@ -190,8 +192,10 @@
 
     <div class="flex justify-end gap-2">
       <button (click)="closeAddValueModal()" class="app-secondary-button animate-fadeIn">Cancelar</button>
-      <button (click)="applyValue('subtract')" class="app-primary-button animate-fadeIn">Restar</button>
-      <button (click)="applyValue('add')" class="app-success-button animate-fadeIn">Sumar</button>
+      <button (click)="applyValue('subtract')" [disabled]="aplicandoValorIngreso"
+        class="app-primary-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">Restar</button>
+      <button (click)="applyValue('add')" [disabled]="aplicandoValorIngreso"
+        class="app-success-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">Sumar</button>
     </div>
 </app-modal-shell>
 
@@ -214,7 +218,8 @@
 
     <div class="flex justify-end gap-2">
       <button (click)="closeEditModal()" class="app-secondary-button animate-fadeIn">Cancelar</button>
-      <button (click)="saveEditedIncome()" class="app-primary-button animate-fadeIn">Guardar</button>
+      <button (click)="saveEditedIncome()" [disabled]="guardandoEdicionIngreso"
+        class="app-primary-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">Guardar</button>
     </div>
 </app-modal-shell>
 
@@ -228,7 +233,8 @@
     </p>
     <div class="flex justify-center gap-2">
       <button (click)="closeDeleteModal()" class="app-secondary-button animate-fadeIn">Cancelar</button>
-      <button (click)="confirmDeleteIncome()" class="app-warning-button animate-fadeIn">
+      <button (click)="confirmDeleteIncome()" [disabled]="eliminandoIngreso"
+        class="app-warning-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">
         Eliminar
       </button>
     </div>
@@ -274,7 +280,8 @@
 
     <!-- Botones -->
     <div class="flex justify-end gap-2 animate-fadeIn">
-      <button (click)="confirmTransaction()" class="app-primary-button hover:bg-green-600">
+      <button (click)="confirmTransaction()" [disabled]="registrandoMovimientoIngreso"
+        class="app-primary-button hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed">
         Transferir
       </button>
       <button (click)="closeTransactionModal()" class="app-secondary-button bg-gray-300 hover:bg-gray-400">

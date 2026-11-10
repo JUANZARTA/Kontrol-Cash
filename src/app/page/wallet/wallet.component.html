@@ -89,7 +89,8 @@
 
     <div class="flex justify-end gap-2">
       <button (click)="closeModal()" class="app-secondary-button">Cancelar</button>
-      <button (click)="addAccount()" class="app-primary-button">Agregar</button>
+      <button (click)="addAccount()" [disabled]="guardandoCuenta"
+        class="app-primary-button disabled:opacity-50 disabled:cursor-not-allowed">Agregar</button>
     </div>
 </app-modal-shell>
 
@@ -103,8 +104,10 @@
 
     <div class="flex justify-end gap-2">
       <button (click)="closeAddValueModal()" class="app-secondary-button">Cancelar</button>
-      <button (click)="applyValue('subtract')" class="app-primary-button">Restar</button>
-      <button (click)="applyValue('add')" class="app-success-button">Sumar</button>
+      <button (click)="applyValue('subtract')" [disabled]="aplicandoValorCuenta"
+        class="app-primary-button disabled:opacity-50 disabled:cursor-not-allowed">Restar</button>
+      <button (click)="applyValue('add')" [disabled]="aplicandoValorCuenta"
+        class="app-success-button disabled:opacity-50 disabled:cursor-not-allowed">Sumar</button>
     </div>
 </app-modal-shell>
 
@@ -122,7 +125,8 @@
 
     <div class="flex justify-end gap-2">
       <button (click)="closeEditModal()" class="app-secondary-button">Cancelar</button>
-      <button (click)="saveEditedAccount()" class="app-primary-button">Guardar</button>
+      <button (click)="saveEditedAccount()" [disabled]="guardandoEdicionCuenta"
+        class="app-primary-button disabled:opacity-50 disabled:cursor-not-allowed">Guardar</button>
     </div>
 </app-modal-shell>
 
@@ -185,7 +189,8 @@
       <button (click)="closeTransactionModal()" class="app-secondary-button bg-white">
         Cancelar
       </button>
-      <button (click)="confirmTransaction()" class="app-primary-button hover:bg-sky-800">
+      <button (click)="confirmTransaction()" [disabled]="registrandoMovimientoCuenta"
+        class="app-primary-button hover:bg-sky-800 disabled:opacity-50 disabled:cursor-not-allowed">
         Aceptar
       </button>
     </div>

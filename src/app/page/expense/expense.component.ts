@@ -140,6 +140,20 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   editedId: string | null = null;
   movementAttachments: Record<string, MovementAttachment[]> = {};
 
+  // Guards de reentrancia (evitan doble-click / doble submit disparando escrituras duplicadas)
+  guardandoGasto: boolean = false;
+  guardandoValorAplicado: boolean = false;
+  guardandoEdicionGasto: boolean = false;
+  eliminandoGasto: boolean = false;
+  eliminandoSeleccionados: boolean = false;
+  guardandoCategoria: boolean = false;
+  eliminandoCategoria: boolean = false;
+  guardandoPagoFijo: boolean = false;
+  importandoEscaneo: boolean = false;
+  guardandoSubgasto: boolean = false;
+  guardandoEdicionSubgasto: boolean = false;
+  eliminandoSubgasto: boolean = false;
+
   readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
 
   currentYear: string = '';
@@ -295,6 +309,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   addCustomCategory() {
+    if (this.guardandoCategoria) return;
+
     const category = this.customCategoryName.trim();
     if (!category) return;
 
@@ -309,16 +325,34 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       (value) => !this.defaultCategorias.includes(value)
     );
 
-    this.plannerService.saveCustomCategories(this.userId, 'expense', updatedCategories).subscribe(() => {
-      this.customCategoryName = '';
-      this.loadPlannerConfig();
+    this.guardandoCategoria = true;
+    this.plannerService.saveCustomCategories(this.userId, 'expense', updatedCategories).subscribe({
+      next: () => {
+        this.customCategoryName = '';
+        this.loadPlannerConfig();
+        this.guardandoCategoria = false;
+      },
+      error: (err) => {
+        console.error('Error al guardar categoría:', err);
+        this.guardandoCategoria = false;
+      },
     });
   }
 
   removeCustomCategory(category: string) {
+    if (this.eliminandoCategoria) return;
+    this.eliminandoCategoria = true;
+
     const updatedCategories = this.customCategories.filter((item) => item !== category);
-    this.plannerService.saveCustomCategories(this.userId, 'expense', updatedCategories).subscribe(() => {
-      this.loadPlannerConfig();
+    this.plannerService.saveCustomCategories(this.userId, 'expense', updatedCategories).subscribe({
+      next: () => {
+        this.loadPlannerConfig();
+        this.eliminandoCategoria = false;
+      },
+      error: (err) => {
+        console.error('Error al eliminar categoría:', err);
+        this.eliminandoCategoria = false;
+      },
     });
   }
 
@@ -349,6 +383,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   addExpense() {
+    if (this.guardandoGasto) return;
+
     if (!this.newExpense.descripcion || !this.newExpense.categoria) {
       this.showToast('Por favor completa todos los campos.');
       return;
@@ -359,6 +395,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       this.showToast('Selecciona una billetera para descontar el gasto.');
       return;
     }
+
+    this.guardandoGasto = true;
 
     const expenseToAdd = {
       ...this.newExpense,
@@ -405,13 +443,17 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
                     this.loadExpenses();
                     this.loadWallets(); // recargar billeteras
                     this.closeModal();
+                    this.guardandoGasto = false;
                   },
-                  error: (err) =>
-                    console.error('Error al actualizar billetera:', err),
+                  error: (err) => {
+                    console.error('Error al actualizar billetera:', err);
+                    this.guardandoGasto = false;
+                  },
                 });
             } else {
               this.loadExpenses();
               this.closeModal();
+              this.guardandoGasto = false;
             }
           } else {
             if (this.newExpense.valor > 0 && isDescuadre) {
@@ -419,9 +461,13 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
             }
             this.loadExpenses();
             this.closeModal();
+            this.guardandoGasto = false;
           }
         },
-        error: (err) => console.error('Error al agregar gasto:', err),
+        error: (err) => {
+          console.error('Error al agregar gasto:', err);
+          this.guardandoGasto = false;
+        },
       });
   }
 
@@ -459,6 +505,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   applyValue(action: 'add' | 'subtract'): void {
+    if (this.guardandoValorAplicado) return;
+
     this.lastAction = action;
     if (!this.selectedExpenseId) return;
 
@@ -500,6 +548,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       expense.valor -= valueToApply;
     }
 
+    this.guardandoValorAplicado = true;
+
     const finishExpenseUpdate = () => {
       this.expenseService
         .updateExpense(
@@ -520,8 +570,12 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
             this.loadExpenses();
             this.loadWallets();
             this.closeAddValueModal();
+            this.guardandoValorAplicado = false;
           },
-          error: (err) => console.error('Error al actualizar gasto:', err),
+          error: (err) => {
+            console.error('Error al actualizar gasto:', err);
+            this.guardandoValorAplicado = false;
+          },
         });
     };
 
@@ -542,7 +596,10 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
         )
         .subscribe({
           next: finishExpenseUpdate,
-          error: (err) => console.error('Error al actualizar billetera:', err),
+          error: (err) => {
+            console.error('Error al actualizar billetera:', err);
+            this.guardandoValorAplicado = false;
+          },
         });
     } else {
       finishExpenseUpdate();
@@ -579,7 +636,9 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   saveEditedExpense() {
+    if (this.guardandoEdicionGasto) return;
     if (!this.editedId) return;
+    this.guardandoEdicionGasto = true;
 
     // Si el gasto tiene subgastos, el valor no se toca desde acá: lo maneja
     // syncParentValorFromSubExpenses() cuando se agrega/edita/elimina un subgasto.
@@ -601,9 +660,11 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadExpenses();
           this.closeEditModal();
+          this.guardandoEdicionGasto = false;
         },
         error: (err) => {
           console.error('Error al editar gasto:', err);
+          this.guardandoEdicionGasto = false;
         },
       });
   }
@@ -622,7 +683,9 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   confirmDeleteExpense() {
+    if (this.eliminandoGasto) return;
     if (!this.expenseToDeleteId) return;
+    this.eliminandoGasto = true;
 
     this.expenseService
       .deleteExpense(
@@ -636,9 +699,11 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
           this.removeAllAttachments(this.expenseToDeleteId as string);
           this.loadExpenses();
           this.closeDeleteModal();
+          this.eliminandoGasto = false;
         },
         error: (err) => {
           console.error('Error al eliminar gasto:', err);
+          this.eliminandoGasto = false;
         },
       });
   }
@@ -856,6 +921,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   confirmPayFijo(): void {
+    if (this.guardandoPagoFijo) return;
     if (!this.payFijoExpense || !this.selectedWalletForFijo) return;
 
     const expense = this.payFijoExpense;
@@ -868,6 +934,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       this.showToast('Saldo insuficiente en la billetera seleccionada.');
       return;
     }
+
+    this.guardandoPagoFijo = true;
 
     this.walletService.registrarMovimiento(
       this.userId, this.currentYear, this.currentMonth, account.id,
@@ -885,11 +953,18 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
               this.closePayFijoModal();
               this.loadExpenses();
               this.showToast(`$${this.formatCurrency(monto)} descontados de ${account.tipo}.`);
+              this.guardandoPagoFijo = false;
             },
-            error: err => console.error('Error al actualizar gasto fijo:', err),
+            error: err => {
+              console.error('Error al actualizar gasto fijo:', err);
+              this.guardandoPagoFijo = false;
+            },
           });
         },
-        error: err => console.error('Error al actualizar billetera:', err),
+        error: err => {
+          console.error('Error al actualizar billetera:', err);
+          this.guardandoPagoFijo = false;
+        },
       });
   }
 
@@ -941,6 +1016,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   importScannedItems(): void {
+    if (this.importandoEscaneo) return;
+
     const ops = Array.from(this.selectedScanItems).map((i) => {
       const item = this.scannedItems[i];
       const expense = new Expense(
@@ -954,10 +1031,18 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
 
     if (ops.length === 0) return;
 
-    forkJoin(ops).subscribe(() => {
-      this.closeScanModal();
-      this.loadExpenses();
-      this.showToast(`${ops.length} gasto(s) importados como estimación.`);
+    this.importandoEscaneo = true;
+    forkJoin(ops).subscribe({
+      next: () => {
+        this.closeScanModal();
+        this.loadExpenses();
+        this.showToast(`${ops.length} gasto(s) importados como estimación.`);
+        this.importandoEscaneo = false;
+      },
+      error: (err) => {
+        console.error('Error al importar ítems escaneados:', err);
+        this.importandoEscaneo = false;
+      },
     });
   }
 
@@ -987,12 +1072,22 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   confirmBulkDelete(): void {
+    if (this.eliminandoSeleccionados) return;
+    this.eliminandoSeleccionados = true;
+
     const ids = Array.from(this.selectedIds);
     const ops = ids.map(id => this.expenseService.deleteExpense(this.userId, this.currentYear, this.currentMonth, id));
-    forkJoin(ops).subscribe(() => {
-      this.selectedIds.clear();
-      this.showBulkDeleteConfirm = false;
-      this.loadExpenses();
+    forkJoin(ops).subscribe({
+      next: () => {
+        this.selectedIds.clear();
+        this.showBulkDeleteConfirm = false;
+        this.loadExpenses();
+        this.eliminandoSeleccionados = false;
+      },
+      error: (err) => {
+        console.error('Error al eliminar gastos seleccionados:', err);
+        this.eliminandoSeleccionados = false;
+      },
     });
   }
 
@@ -1098,6 +1193,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   addSubExpense(): void {
+    if (this.guardandoSubgasto) return;
     if (!this.subExpensesParent) return;
 
     const nombre = this.newSubExpense.nombre.trim();
@@ -1120,23 +1216,38 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.guardandoSubgasto = true;
+
     const parentId = this.subExpensesParent.id;
     const sub = new SubExpense(nombre, valor, isDescuadre ? undefined : wallet!.id);
 
     const afterWallet = () => {
       this.subExpenseService
         .addSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, sub)
-        .subscribe(() => {
-          this.newSubExpense = { nombre: '', valor: 0, walletId: '' };
-          this.loadWallets();
-          this.loadSubExpenses(() => this.syncParentValorFromSubExpenses());
+        .subscribe({
+          next: () => {
+            this.newSubExpense = { nombre: '', valor: 0, walletId: '' };
+            this.loadWallets();
+            this.loadSubExpenses(() => this.syncParentValorFromSubExpenses());
+            this.guardandoSubgasto = false;
+          },
+          error: (err) => {
+            console.error('Error al agregar subgasto:', err);
+            this.guardandoSubgasto = false;
+          },
         });
     };
 
     if (wallet) {
       this.walletService
         .registrarMovimiento(this.userId, this.currentYear, this.currentMonth, wallet.id, wallet, -valor, 'gasto', `Subgasto: ${nombre} (${this.subExpensesParent.descripcion})`, parentId)
-        .subscribe(afterWallet);
+        .subscribe({
+          next: afterWallet,
+          error: (err) => {
+            console.error('Error al descontar billetera para subgasto:', err);
+            this.guardandoSubgasto = false;
+          },
+        });
     } else {
       afterWallet();
     }
@@ -1152,6 +1263,7 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
   }
 
   saveEditedSubExpense(): void {
+    if (this.guardandoEdicionSubgasto) return;
     if (!this.subExpensesParent || !this.editingSubExpenseId) return;
     const original = this.subExpenses.find((s) => s.id === this.editingSubExpenseId);
     if (!original) return;
@@ -1174,6 +1286,8 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.guardandoEdicionSubgasto = true;
+
     const applyWalletDelta = (): Observable<number | null> => {
       if (!wallet || delta === 0) return of(null);
       return this.walletService.registrarMovimiento(
@@ -1182,20 +1296,35 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       );
     };
 
-    applyWalletDelta().subscribe(() => {
-      const updated = new SubExpense(nombre, valor, original.walletId);
-      this.subExpenseService
-        .updateSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, original.id, updated)
-        .subscribe(() => {
-          this.editingSubExpenseId = null;
-          this.loadWallets();
-          this.loadSubExpenses(() => this.syncParentValorFromSubExpenses());
-        });
+    applyWalletDelta().subscribe({
+      next: () => {
+        const updated = new SubExpense(nombre, valor, original.walletId);
+        this.subExpenseService
+          .updateSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, original.id, updated)
+          .subscribe({
+            next: () => {
+              this.editingSubExpenseId = null;
+              this.loadWallets();
+              this.loadSubExpenses(() => this.syncParentValorFromSubExpenses());
+              this.guardandoEdicionSubgasto = false;
+            },
+            error: (err) => {
+              console.error('Error al editar subgasto:', err);
+              this.guardandoEdicionSubgasto = false;
+            },
+          });
+      },
+      error: (err) => {
+        console.error('Error al ajustar billetera de subgasto:', err);
+        this.guardandoEdicionSubgasto = false;
+      },
     });
   }
 
   deleteSubExpense(sub: SubExpenseWithId): void {
+    if (this.eliminandoSubgasto) return;
     if (!this.subExpensesParent) return;
+    this.eliminandoSubgasto = true;
     const parentId = this.subExpensesParent.id;
 
     const refund = (): Observable<number | null> => {
@@ -1208,13 +1337,26 @@ export default class ExpenseComponent implements OnInit, OnDestroy {
       );
     };
 
-    refund().subscribe(() => {
-      this.subExpenseService
-        .deleteSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, sub.id)
-        .subscribe(() => {
-          this.loadWallets();
-          this.loadSubExpenses(() => this.syncParentValorFromSubExpenses());
-        });
+    refund().subscribe({
+      next: () => {
+        this.subExpenseService
+          .deleteSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, sub.id)
+          .subscribe({
+            next: () => {
+              this.loadWallets();
+              this.loadSubExpenses(() => this.syncParentValorFromSubExpenses());
+              this.eliminandoSubgasto = false;
+            },
+            error: (err) => {
+              console.error('Error al eliminar subgasto:', err);
+              this.eliminandoSubgasto = false;
+            },
+          });
+      },
+      error: (err) => {
+        console.error('Error al reembolsar billetera de subgasto:', err);
+        this.eliminandoSubgasto = false;
+      },
     });
   }
 }

@@ -63,7 +63,7 @@
 
       <div class="grid gap-3 md:grid-cols-[0.8fr_auto]">
         <input type="text" [value]="formatCurrencyInput(selectedPiggybank.metaAhorro || 0)" (input)="onValueInput($event, 'goal')" class="app-input" placeholder="Meta de ahorro" />
-        <button (click)="savePiggybankGoal()" class="app-primary-button">Guardar meta</button>
+        <button (click)="savePiggybankGoal()" [disabled]="guardandoMeta" class="app-primary-button disabled:opacity-40 disabled:cursor-not-allowed">Guardar meta</button>
       </div>
 
       <div class="mt-4 piggy-progress-track">
@@ -120,7 +120,7 @@
 
   <div class="flex justify-end gap-2">
     <button (click)="closePiggybankModal()" class="app-secondary-button">Cancelar</button>
-    <button (click)="addPiggybank()" class="app-primary-button">Crear</button>
+    <button (click)="addPiggybank()" [disabled]="guardandoAlcancia" class="app-primary-button disabled:opacity-40 disabled:cursor-not-allowed">Crear</button>
   </div>
 </app-modal-shell>
 
@@ -136,7 +136,7 @@
 
   <div class="flex justify-end gap-2">
     <button (click)="closeEditPiggybankModal()" class="app-secondary-button">Cancelar</button>
-    <button (click)="saveEditedPiggybank()" class="app-primary-button">Guardar</button>
+    <button (click)="saveEditedPiggybank()" [disabled]="guardandoEdicionAlcancia" class="app-primary-button disabled:opacity-40 disabled:cursor-not-allowed">Guardar</button>
   </div>
 </app-modal-shell>
 
@@ -149,8 +149,8 @@
 
   <div class="flex justify-end gap-2">
     <button (click)="closeMovementModal()" class="app-secondary-button">Cancelar</button>
-    <button (click)="addMovement('subtract')" class="app-primary-button">Restar</button>
-    <button (click)="addMovement('add')" class="app-success-button">Sumar</button>
+    <button (click)="addMovement('subtract')" [disabled]="guardandoMovimiento" class="app-primary-button disabled:opacity-40 disabled:cursor-not-allowed">Restar</button>
+    <button (click)="addMovement('add')" [disabled]="guardandoMovimiento" class="app-success-button disabled:opacity-40 disabled:cursor-not-allowed">Sumar</button>
   </div>
 </app-modal-shell>
 
@@ -161,7 +161,7 @@
   <input type="text" [value]="formatCurrencyInput(editedMovement.valor || 0)" (input)="onValueInput($event, 'movementEdit')" class="app-input mb-4" />
   <div class="flex justify-end gap-2">
     <button (click)="closeEditMovementModal()" class="app-secondary-button">Cancelar</button>
-    <button (click)="saveEditedMovement()" class="app-primary-button">Guardar</button>
+    <button (click)="saveEditedMovement()" [disabled]="guardandoEdicionMovimiento" class="app-primary-button disabled:opacity-40 disabled:cursor-not-allowed">Guardar</button>
   </div>
 </app-modal-shell>
 
@@ -171,8 +171,8 @@
 
   <div class="flex justify-end gap-2">
     <button (click)="closeAdjustMovementModal()" class="app-secondary-button">Cancelar</button>
-    <button (click)="applyAdjustMovement('subtract')" class="app-primary-button">Restar</button>
-    <button (click)="applyAdjustMovement('add')" class="app-success-button">Sumar</button>
+    <button (click)="applyAdjustMovement('subtract')" [disabled]="ajustandoMovimiento" class="app-primary-button disabled:opacity-40 disabled:cursor-not-allowed">Restar</button>
+    <button (click)="applyAdjustMovement('add')" [disabled]="ajustandoMovimiento" class="app-success-button disabled:opacity-40 disabled:cursor-not-allowed">Sumar</button>
   </div>
 </app-modal-shell>
 

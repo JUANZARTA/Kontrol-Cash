@@ -145,7 +145,8 @@
       <button (click)="closeModal()" class="app-secondary-button animate-fadeIn">
         Cancelar
       </button>
-      <button (click)="addLoan()" class="app-primary-button animate-fadeIn">
+      <button (click)="addLoan()" [disabled]="guardandoPrestamo"
+        class="app-primary-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">
         Agregar
       </button>
     </div>
@@ -163,10 +164,12 @@
       <button (click)="closeAddValueModal()" class="app-secondary-button animate-fadeIn">
         Cancelar
       </button>
-      <button (click)="applyValue('subtract')" class="app-primary-button animate-fadeIn">
+      <button (click)="applyValue('subtract')" [disabled]="guardandoValorPrestamo"
+        class="app-primary-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">
         Restar
       </button>
-      <button (click)="applyValue('add')" class="app-success-button animate-fadeIn">
+      <button (click)="applyValue('add')" [disabled]="guardandoValorPrestamo"
+        class="app-success-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">
         Sumar
       </button>
     </div>
@@ -197,7 +200,8 @@
       <button (click)="closeEditModal()" class="app-secondary-button animate-fadeIn">
         Cancelar
       </button>
-      <button (click)="saveEditedLoan()" class="app-primary-button animate-fadeIn">
+      <button (click)="saveEditedLoan()" [disabled]="guardandoEdicionPrestamo"
+        class="app-primary-button animate-fadeIn disabled:opacity-40 disabled:cursor-not-allowed">
         Guardar
       </button>
     </div>
@@ -234,10 +238,10 @@
 
   <div class="flex justify-end gap-2 mt-4">
     <button (click)="showReturnWalletModal = false; deleteLoanById(loanToDeleteId!)"
-      class="app-secondary-button text-xs">
+      [disabled]="eliminandoPrestamo" class="app-secondary-button text-xs disabled:opacity-50">
       Eliminar sin devolver
     </button>
-    <button (click)="confirmReturnAndDelete()" [disabled]="!selectedReturnWallet"
+    <button (click)="confirmReturnAndDelete()" [disabled]="!selectedReturnWallet || eliminandoPrestamo"
       class="app-primary-button disabled:opacity-50">
       Devolver y eliminar
     </button>
@@ -268,7 +272,7 @@
 
   <div class="flex justify-end gap-2 mt-4">
     <button (click)="closePaymentModal()" class="app-secondary-button">Cancelar</button>
-    <button (click)="confirmLoanPayment()" [disabled]="!selectedPaymentWallet"
+    <button (click)="confirmLoanPayment()" [disabled]="!selectedPaymentWallet || pagandoPrestamo"
       class="app-success-button disabled:opacity-50">
       Confirmar
     </button>
@@ -303,7 +307,8 @@
               Pagar
             </button>
             <button *ngIf="n === getCuotasPagadas(cuotasModalTarget!)"
-              (click)="undoCuotaFromModal(cuotasModalTarget!)" class="text-orange-600 text-xs underline">
+              (click)="undoCuotaFromModal(cuotasModalTarget!)" [disabled]="deshaciendoCuotaPrestamo"
+              class="text-orange-600 text-xs underline disabled:opacity-40 disabled:cursor-not-allowed">
               Deshacer
             </button>
           </td>

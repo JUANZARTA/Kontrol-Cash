@@ -76,6 +76,12 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
   payInvoice: InvoiceWithId | null = null;
   selectedWalletForPayment: string = '';
 
+  // Guards de reentrancia (evitan doble submit)
+  guardandoFactura: boolean = false;
+  guardandoEdicionFactura: boolean = false;
+  eliminandoFactura: boolean = false;
+  pagandoFactura: boolean = false;
+
   readonly userId = JSON.parse(localStorage.getItem('user') || '{}').localId;
   currentYear = '';
   currentMonth = '';
@@ -225,6 +231,8 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
       alert('Completa todos los campos');
       return;
     }
+    if (this.guardandoFactura) return;
+    this.guardandoFactura = true;
 
     // Establecer estado inicial según la fecha
     const today = new Date();
@@ -244,10 +252,14 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
+          this.guardandoFactura = false;
           this.loadAllData();
           this.closeAddInvoiceModal();
         },
-        error: (err) => console.error('[POST] Error al agregar factura:', err),
+        error: (err) => {
+          this.guardandoFactura = false;
+          console.error('[POST] Error al agregar factura:', err);
+        },
       });
   }
 
@@ -269,6 +281,8 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
 
   saveEditedInvoice() {
     if (!this.editedInvoiceId) return;
+    if (this.guardandoEdicionFactura) return;
+    this.guardandoEdicionFactura = true;
 
     // Recalcular estado según la nueva fecha
     const today = new Date();
@@ -289,10 +303,14 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
+          this.guardandoEdicionFactura = false;
           this.loadAllData();
           this.closeEditInvoiceModal();
         },
-        error: (err) => console.error('[PUT] Error al editar factura:', err),
+        error: (err) => {
+          this.guardandoEdicionFactura = false;
+          console.error('[PUT] Error al editar factura:', err);
+        },
       });
   }
 
@@ -311,8 +329,14 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
 
   confirmDeleteInvoice() {
     if (!this.invoiceToDeleteId) return;
+    if (this.eliminandoFactura) return;
+    this.eliminandoFactura = true;
+
     const invoice = this.invoices.find((i) => i.id === this.invoiceToDeleteId);
-    if (!invoice) return;
+    if (!invoice) {
+      this.eliminandoFactura = false;
+      return;
+    }
 
     // 1️⃣ Obtener todos los gastos del mes
     this.expenseService
@@ -342,11 +366,15 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
             .then(() => {
               this.deleteInvoiceById(invoice.id);
             })
-            .catch((err) =>
-              console.error('[DELETE] Error al eliminar gastos asociados:', err)
-            );
+            .catch((err) => {
+              this.eliminandoFactura = false;
+              console.error('[DELETE] Error al eliminar gastos asociados:', err);
+            });
         },
-        error: (err) => console.error('[GET] Error al obtener gastos:', err),
+        error: (err) => {
+          this.eliminandoFactura = false;
+          console.error('[GET] Error al obtener gastos:', err);
+        },
       });
   }
 
@@ -361,11 +389,14 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
+          this.eliminandoFactura = false;
           this.loadAllData();
           this.closeDeleteInvoiceModal();
         },
-        error: (err) =>
-          console.error('[DELETE] Error al eliminar factura:', err),
+        error: (err) => {
+          this.eliminandoFactura = false;
+          console.error('[DELETE] Error al eliminar factura:', err);
+        },
       });
   }
 
@@ -387,6 +418,7 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
 
   confirmPayInvoice() {
     if (!this.payInvoice || !this.selectedWalletForPayment) return;
+    if (this.pagandoFactura) return;
 
     const account = this.wallet.find(
       (w) => w.id === this.selectedWalletForPayment
@@ -397,6 +429,8 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
       alert('Saldo insuficiente');
       return;
     }
+
+    this.pagandoFactura = true;
 
     // 1️⃣ Restar de la cartera
     this.walletService
@@ -448,12 +482,19 @@ export default class InvoiceComponent implements OnInit, OnDestroy {
             .subscribe({
               next: () => {
                 // 5️⃣ Cerrar modal y recargar datos
+                this.pagandoFactura = false;
                 this.closePayInvoiceModal();
                 this.loadAllData();
               },
-              error: (err) =>
-                console.error('[PUT] Error al actualizar factura pagada:', err),
+              error: (err) => {
+                this.pagandoFactura = false;
+                console.error('[PUT] Error al actualizar factura pagada:', err);
+              },
             });
+        },
+        error: (err: any) => {
+          this.pagandoFactura = false;
+          console.error('[POST] Error al registrar gasto de factura:', err);
         },
       });
   }

@@ -155,6 +155,23 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   editedPumpId: string | null = null;
   pumpToDeleteId: string | null = null;
 
+  // Guards de reentrancia (evitan doble-click / doble submit disparando escrituras duplicadas)
+  guardandoBomba: boolean = false;
+  guardandoEdicionBomba: boolean = false;
+  eliminandoBomba: boolean = false;
+  guardandoTanqueo: boolean = false;
+  guardandoEdicionTanqueo: boolean = false;
+  eliminandoTanqueo: boolean = false;
+  eliminandoSeleccionados: boolean = false;
+  guardandoGastoVehiculo: boolean = false;
+  guardandoEdicionGastoVehiculo: boolean = false;
+  eliminandoGastoVehiculo: boolean = false;
+  guardandoValorGastoVehiculo: boolean = false;
+  guardandoSubgastoVehiculo: boolean = false;
+  guardandoEdicionSubgastoVehiculo: boolean = false;
+  eliminandoSubgastoVehiculo: boolean = false;
+  guardandoEstimacion: boolean = false;
+
   ngOnInit(): void {
     this.dateSub = this.dateService.selectedDate$.subscribe((date) => {
       if (date.year && date.month) {
@@ -267,6 +284,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   closeVehicleExpModal(): void { this.isVehicleExpModalOpen = false; }
 
   addVehicleExpense(): void {
+    if (this.guardandoGastoVehiculo) return;
     if (!this.newVehicleExp.descripcion.trim() || this.newVehicleExp.valor <= 0) {
       alert('Completa descripción y valor.');
       return;
@@ -285,17 +303,26 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       alert('Saldo insuficiente en la billetera seleccionada.');
       return;
     }
+    this.guardandoGastoVehiculo = true;
+
     const expense = new Expense(this.newVehicleExp.descripcion, 'Vehículo', this.newVehicleExp.valor, this.newVehicleExp.estimacion);
-    this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe((res: any) => {
-      if (wallet) {
-        this.walletService.registrarMovimiento(
-          this.userId, this.currentYear, this.currentMonth, wallet.id,
-          wallet, -this.newVehicleExp.valor, 'vehiculo', `Gasto de vehículo: ${this.newVehicleExp.descripcion}`,
-          res?.name || res?.id
-        ).subscribe(() => this.loadWallets());
-      }
-      this.closeVehicleExpModal();
-      this.loadGasolinaAndVehicleExpenses();
+    this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe({
+      next: (res: any) => {
+        if (wallet) {
+          this.walletService.registrarMovimiento(
+            this.userId, this.currentYear, this.currentMonth, wallet.id,
+            wallet, -this.newVehicleExp.valor, 'vehiculo', `Gasto de vehículo: ${this.newVehicleExp.descripcion}`,
+            res?.name || res?.id
+          ).subscribe(() => this.loadWallets());
+        }
+        this.closeVehicleExpModal();
+        this.loadGasolinaAndVehicleExpenses();
+        this.guardandoGastoVehiculo = false;
+      },
+      error: (err) => {
+        console.error('Error al agregar gasto de vehículo:', err);
+        this.guardandoGastoVehiculo = false;
+      },
     });
   }
 
@@ -314,6 +341,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   applyVehicleExpValue(action: 'add' | 'subtract'): void {
+    if (this.guardandoValorGastoVehiculo) return;
     if (!this.vehicleExpAddValTarget || this.vehicleExpAddVal <= 0) return;
     if (!this.selectedWalletForVehicleExpAdd) {
       alert('Selecciona una billetera para descontar el gasto.');
@@ -335,19 +363,28 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       ? exp.valor + this.vehicleExpAddVal
       : Math.max(0, exp.valor - this.vehicleExpAddVal);
 
+    this.guardandoValorGastoVehiculo = true;
+
     const updated = new Expense(exp.descripcion, exp.categoria, newValor, exp.estimacion);
-    this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, exp.id, updated).subscribe(() => {
-      if (wallet) {
-        const delta = action === 'add' ? -this.vehicleExpAddVal : this.vehicleExpAddVal;
-        this.walletService.registrarMovimiento(
-          this.userId, this.currentYear, this.currentMonth, wallet.id,
-          wallet, delta, 'vehiculo',
-          action === 'add' ? `Gasto adicional de vehículo: ${exp.descripcion}` : `Ajuste de vehículo: ${exp.descripcion}`,
-          exp.id
-        ).subscribe(() => this.loadWallets());
-      }
-      this.closeVehicleExpAddValModal();
-      this.loadGasolinaAndVehicleExpenses();
+    this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, exp.id, updated).subscribe({
+      next: () => {
+        if (wallet) {
+          const delta = action === 'add' ? -this.vehicleExpAddVal : this.vehicleExpAddVal;
+          this.walletService.registrarMovimiento(
+            this.userId, this.currentYear, this.currentMonth, wallet.id,
+            wallet, delta, 'vehiculo',
+            action === 'add' ? `Gasto adicional de vehículo: ${exp.descripcion}` : `Ajuste de vehículo: ${exp.descripcion}`,
+            exp.id
+          ).subscribe(() => this.loadWallets());
+        }
+        this.closeVehicleExpAddValModal();
+        this.loadGasolinaAndVehicleExpenses();
+        this.guardandoValorGastoVehiculo = false;
+      },
+      error: (err) => {
+        console.error('Error al actualizar valor de gasto de vehículo:', err);
+        this.guardandoValorGastoVehiculo = false;
+      },
     });
   }
 
@@ -361,11 +398,20 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   closeVehicleExpEditModal(): void { this.isVehicleExpEditModalOpen = false; this.editedVehicleExp = null; }
 
   saveVehicleExpense(): void {
+    if (this.guardandoEdicionGastoVehiculo) return;
     if (!this.editedVehicleExp) return;
+    this.guardandoEdicionGastoVehiculo = true;
     const { id, ...data } = this.editedVehicleExp;
-    this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, id, data as Expense).subscribe(() => {
-      this.closeVehicleExpEditModal();
-      this.loadGasolinaAndVehicleExpenses();
+    this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, id, data as Expense).subscribe({
+      next: () => {
+        this.closeVehicleExpEditModal();
+        this.loadGasolinaAndVehicleExpenses();
+        this.guardandoEdicionGastoVehiculo = false;
+      },
+      error: (err) => {
+        console.error('Error al editar gasto de vehículo:', err);
+        this.guardandoEdicionGastoVehiculo = false;
+      },
     });
   }
 
@@ -373,10 +419,19 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   closeVehicleExpDeleteModal(): void { this.vehicleExpToDeleteId = null; this.isVehicleExpDeleteModalOpen = false; }
 
   confirmDeleteVehicleExp(): void {
+    if (this.eliminandoGastoVehiculo) return;
     if (!this.vehicleExpToDeleteId) return;
-    this.expenseService.deleteExpense(this.userId, this.currentYear, this.currentMonth, this.vehicleExpToDeleteId).subscribe(() => {
-      this.closeVehicleExpDeleteModal();
-      this.loadGasolinaAndVehicleExpenses();
+    this.eliminandoGastoVehiculo = true;
+    this.expenseService.deleteExpense(this.userId, this.currentYear, this.currentMonth, this.vehicleExpToDeleteId).subscribe({
+      next: () => {
+        this.closeVehicleExpDeleteModal();
+        this.loadGasolinaAndVehicleExpenses();
+        this.eliminandoGastoVehiculo = false;
+      },
+      error: (err) => {
+        console.error('Error al eliminar gasto de vehículo:', err);
+        this.eliminandoGastoVehiculo = false;
+      },
     });
   }
 
@@ -451,6 +506,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   addVehicleSubExpense(): void {
+    if (this.guardandoSubgastoVehiculo) return;
     if (!this.vehicleSubExpensesParent) return;
 
     const nombre = this.newVehicleSubExpense.nombre.trim();
@@ -473,23 +529,38 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       return;
     }
 
+    this.guardandoSubgastoVehiculo = true;
+
     const parentId = this.vehicleSubExpensesParent.id;
     const sub = new SubExpense(nombre, valor, isDescuadre ? undefined : wallet!.id);
 
     const afterWallet = () => {
       this.subExpenseService
         .addSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, sub)
-        .subscribe(() => {
-          this.newVehicleSubExpense = { nombre: '', valor: 0, walletId: '' };
-          this.loadWallets();
-          this.loadVehicleSubExpenses(() => this.syncVehicleExpParentValorFromSubExpenses());
+        .subscribe({
+          next: () => {
+            this.newVehicleSubExpense = { nombre: '', valor: 0, walletId: '' };
+            this.loadWallets();
+            this.loadVehicleSubExpenses(() => this.syncVehicleExpParentValorFromSubExpenses());
+            this.guardandoSubgastoVehiculo = false;
+          },
+          error: (err) => {
+            console.error('Error al agregar subgasto de vehículo:', err);
+            this.guardandoSubgastoVehiculo = false;
+          },
         });
     };
 
     if (wallet) {
       this.walletService
         .registrarMovimiento(this.userId, this.currentYear, this.currentMonth, wallet.id, wallet, -valor, 'vehiculo', `Subgasto: ${nombre} (${this.vehicleSubExpensesParent.descripcion})`, parentId)
-        .subscribe(afterWallet);
+        .subscribe({
+          next: afterWallet,
+          error: (err) => {
+            console.error('Error al descontar billetera para subgasto de vehículo:', err);
+            this.guardandoSubgastoVehiculo = false;
+          },
+        });
     } else {
       afterWallet();
     }
@@ -505,6 +576,7 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   saveEditedVehicleSubExpense(): void {
+    if (this.guardandoEdicionSubgastoVehiculo) return;
     if (!this.vehicleSubExpensesParent || !this.editingVehicleSubExpenseId) return;
     const original = this.vehicleSubExpenses.find((s) => s.id === this.editingVehicleSubExpenseId);
     if (!original) return;
@@ -527,6 +599,8 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       return;
     }
 
+    this.guardandoEdicionSubgastoVehiculo = true;
+
     const applyWalletDelta = (): Observable<number | null> => {
       if (!wallet || delta === 0) return of(null);
       return this.walletService.registrarMovimiento(
@@ -535,20 +609,35 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       );
     };
 
-    applyWalletDelta().subscribe(() => {
-      const updated = new SubExpense(nombre, valor, original.walletId);
-      this.subExpenseService
-        .updateSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, original.id, updated)
-        .subscribe(() => {
-          this.editingVehicleSubExpenseId = null;
-          this.loadWallets();
-          this.loadVehicleSubExpenses(() => this.syncVehicleExpParentValorFromSubExpenses());
-        });
+    applyWalletDelta().subscribe({
+      next: () => {
+        const updated = new SubExpense(nombre, valor, original.walletId);
+        this.subExpenseService
+          .updateSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, original.id, updated)
+          .subscribe({
+            next: () => {
+              this.editingVehicleSubExpenseId = null;
+              this.loadWallets();
+              this.loadVehicleSubExpenses(() => this.syncVehicleExpParentValorFromSubExpenses());
+              this.guardandoEdicionSubgastoVehiculo = false;
+            },
+            error: (err) => {
+              console.error('Error al editar subgasto de vehículo:', err);
+              this.guardandoEdicionSubgastoVehiculo = false;
+            },
+          });
+      },
+      error: (err) => {
+        console.error('Error al ajustar billetera de subgasto de vehículo:', err);
+        this.guardandoEdicionSubgastoVehiculo = false;
+      },
     });
   }
 
   deleteVehicleSubExpense(sub: SubExpenseWithId): void {
+    if (this.eliminandoSubgastoVehiculo) return;
     if (!this.vehicleSubExpensesParent) return;
+    this.eliminandoSubgastoVehiculo = true;
     const parentId = this.vehicleSubExpensesParent.id;
 
     const refund = (): Observable<number | null> => {
@@ -561,13 +650,26 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       );
     };
 
-    refund().subscribe(() => {
-      this.subExpenseService
-        .deleteSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, sub.id)
-        .subscribe(() => {
-          this.loadWallets();
-          this.loadVehicleSubExpenses(() => this.syncVehicleExpParentValorFromSubExpenses());
-        });
+    refund().subscribe({
+      next: () => {
+        this.subExpenseService
+          .deleteSubExpense(this.userId, this.currentYear, this.currentMonth, parentId, sub.id)
+          .subscribe({
+            next: () => {
+              this.loadWallets();
+              this.loadVehicleSubExpenses(() => this.syncVehicleExpParentValorFromSubExpenses());
+              this.eliminandoSubgastoVehiculo = false;
+            },
+            error: (err) => {
+              console.error('Error al eliminar subgasto de vehículo:', err);
+              this.eliminandoSubgastoVehiculo = false;
+            },
+          });
+      },
+      error: (err) => {
+        console.error('Error al reembolsar billetera de subgasto de vehículo:', err);
+        this.eliminandoSubgastoVehiculo = false;
+      },
     });
   }
 
@@ -579,31 +681,51 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   closeEstimacionModal(): void { this.isEstimacionModalOpen = false; }
 
   saveEstimacion(): void {
+    if (this.guardandoEstimacion) return;
     if (this.newEstimacion <= 0) return;
+    this.guardandoEstimacion = true;
     this.gasolinaEstimacion = this.newEstimacion;
 
-    this.vehicleService.getGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth).subscribe(existingId => {
-      if (existingId) {
-        // Actualiza solo la estimación del gasto existente
-        const total = this.entries.reduce((sum, e) => sum + (e.monto || 0), 0);
-        const expense = new Expense('Gasolina', 'Vehículo',total, this.gasolinaEstimacion);
-        this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, existingId, expense).subscribe();
-      } else {
-        // Crea el gasto con valor=0 y la estimación definida
-        const expense = new Expense('Gasolina', 'Vehículo',0, this.gasolinaEstimacion);
-        this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe((res: any) => {
-          const newId = res?.name;
-          if (newId) {
-            this.vehicleService.setGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth, newId).subscribe();
-          }
-        });
-      }
+    this.vehicleService.getGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth).subscribe({
+      next: (existingId) => {
+        if (existingId) {
+          // Actualiza solo la estimación del gasto existente
+          const total = this.entries.reduce((sum, e) => sum + (e.monto || 0), 0);
+          const expense = new Expense('Gasolina', 'Vehículo',total, this.gasolinaEstimacion);
+          this.expenseService.updateExpense(this.userId, this.currentYear, this.currentMonth, existingId, expense).subscribe({
+            next: () => { this.guardandoEstimacion = false; },
+            error: (err) => { console.error('Error al actualizar estimación:', err); this.guardandoEstimacion = false; },
+          });
+        } else {
+          // Crea el gasto con valor=0 y la estimación definida
+          const expense = new Expense('Gasolina', 'Vehículo',0, this.gasolinaEstimacion);
+          this.expenseService.addExpense(this.userId, this.currentYear, this.currentMonth, expense).subscribe({
+            next: (res: any) => {
+              const newId = res?.name;
+              if (newId) {
+                this.vehicleService.setGasolinaExpenseId(this.userId, this.currentYear, this.currentMonth, newId).subscribe({
+                  next: () => { this.guardandoEstimacion = false; },
+                  error: (err) => { console.error('Error al guardar id de gasolina:', err); this.guardandoEstimacion = false; },
+                });
+              } else {
+                this.guardandoEstimacion = false;
+              }
+            },
+            error: (err) => { console.error('Error al crear gasto de estimación:', err); this.guardandoEstimacion = false; },
+          });
+        }
+      },
+      error: (err) => {
+        console.error('Error al obtener id de gasolina:', err);
+        this.guardandoEstimacion = false;
+      },
     });
 
     this.closeEstimacionModal();
   }
 
   addEntry(): void {
+    if (this.guardandoTanqueo) return;
     if (!this.newEntry.fecha || this.newEntry.kilometraje <= 0 || this.newEntry.monto <= 0) {
       alert('Completa todos los campos con valores válidos.');
       return;
@@ -647,22 +769,38 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
       walletId: this.selectedWalletId,
     };
 
-    this.vehicleService.addFuelEntry(this.userId, this.currentYear, this.currentMonth, payload).subscribe((res: any) => {
-      if (!selectedWallet) {
-        this.closeAddModal();
-        this.reloadAndSync();
-        this.loadWallets();
-        return;
-      }
-      this.walletService.registrarMovimiento(
-        this.userId, this.currentYear, this.currentMonth, selectedWallet.id,
-        selectedWallet, -this.newEntry.monto, 'vehiculo', `Tanqueo: ${selectedPump.nombre}`,
-        res?.name || res?.id
-      ).subscribe(() => {
-        this.closeAddModal();
-        this.reloadAndSync();
-        this.loadWallets();
-      });
+    this.guardandoTanqueo = true;
+
+    this.vehicleService.addFuelEntry(this.userId, this.currentYear, this.currentMonth, payload).subscribe({
+      next: (res: any) => {
+        if (!selectedWallet) {
+          this.closeAddModal();
+          this.reloadAndSync();
+          this.loadWallets();
+          this.guardandoTanqueo = false;
+          return;
+        }
+        this.walletService.registrarMovimiento(
+          this.userId, this.currentYear, this.currentMonth, selectedWallet.id,
+          selectedWallet, -this.newEntry.monto, 'vehiculo', `Tanqueo: ${selectedPump.nombre}`,
+          res?.name || res?.id
+        ).subscribe({
+          next: () => {
+            this.closeAddModal();
+            this.reloadAndSync();
+            this.loadWallets();
+            this.guardandoTanqueo = false;
+          },
+          error: (err) => {
+            console.error('Error al descontar billetera del tanqueo:', err);
+            this.guardandoTanqueo = false;
+          },
+        });
+      },
+      error: (err) => {
+        console.error('Error al agregar tanqueo:', err);
+        this.guardandoTanqueo = false;
+      },
     });
   }
 
@@ -714,13 +852,22 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   closePumpModal(): void { this.isPumpModalOpen = false; }
 
   addPump(): void {
+    if (this.guardandoBomba) return;
     if (!this.newPump.nombre.trim() || this.newPump.precioGalon <= 0) {
       alert('Completa nombre y precio por galón válidos.');
       return;
     }
-    this.vehicleService.addFuelPump(this.userId, this.newPump).subscribe(() => {
-      this.closePumpModal();
-      this.loadPumps();
+    this.guardandoBomba = true;
+    this.vehicleService.addFuelPump(this.userId, this.newPump).subscribe({
+      next: () => {
+        this.closePumpModal();
+        this.loadPumps();
+        this.guardandoBomba = false;
+      },
+      error: (err) => {
+        console.error('Error al agregar bomba:', err);
+        this.guardandoBomba = false;
+      },
     });
   }
 
@@ -735,10 +882,19 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   closePumpEditModal(): void { this.isPumpEditModalOpen = false; this.editedPumpId = null; }
 
   saveEditedPump(): void {
+    if (this.guardandoEdicionBomba) return;
     if (!this.editedPumpId) return;
-    this.vehicleService.updateFuelPump(this.userId, this.editedPumpId, this.editedPump).subscribe(() => {
-      this.closePumpEditModal();
-      this.loadPumps();
+    this.guardandoEdicionBomba = true;
+    this.vehicleService.updateFuelPump(this.userId, this.editedPumpId, this.editedPump).subscribe({
+      next: () => {
+        this.closePumpEditModal();
+        this.loadPumps();
+        this.guardandoEdicionBomba = false;
+      },
+      error: (err) => {
+        console.error('Error al editar bomba:', err);
+        this.guardandoEdicionBomba = false;
+      },
     });
   }
 
@@ -746,10 +902,19 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   closePumpDeleteModal(): void { this.pumpToDeleteId = null; this.isPumpDeleteModalOpen = false; }
 
   confirmDeletePump(): void {
+    if (this.eliminandoBomba) return;
     if (!this.pumpToDeleteId) return;
-    this.vehicleService.deleteFuelPump(this.userId, this.pumpToDeleteId).subscribe(() => {
-      this.closePumpDeleteModal();
-      this.loadPumps();
+    this.eliminandoBomba = true;
+    this.vehicleService.deleteFuelPump(this.userId, this.pumpToDeleteId).subscribe({
+      next: () => {
+        this.closePumpDeleteModal();
+        this.loadPumps();
+        this.eliminandoBomba = false;
+      },
+      error: (err) => {
+        console.error('Error al eliminar bomba:', err);
+        this.eliminandoBomba = false;
+      },
     });
   }
 
@@ -764,10 +929,19 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   closeEditModal(): void { this.isEditModalOpen = false; this.editedId = null; }
 
   saveEditedEntry(): void {
+    if (this.guardandoEdicionTanqueo) return;
     if (!this.editedId) return;
-    this.vehicleService.updateFuelEntry(this.userId, this.currentYear, this.currentMonth, this.editedId, this.editedEntry).subscribe(() => {
-      this.closeEditModal();
-      this.reloadAndSync();
+    this.guardandoEdicionTanqueo = true;
+    this.vehicleService.updateFuelEntry(this.userId, this.currentYear, this.currentMonth, this.editedId, this.editedEntry).subscribe({
+      next: () => {
+        this.closeEditModal();
+        this.reloadAndSync();
+        this.guardandoEdicionTanqueo = false;
+      },
+      error: (err) => {
+        console.error('Error al editar tanqueo:', err);
+        this.guardandoEdicionTanqueo = false;
+      },
     });
   }
 
@@ -780,10 +954,19 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   closeDeleteModal(): void { this.entryToDeleteId = null; this.isDeleteModalOpen = false; }
 
   confirmDelete(): void {
+    if (this.eliminandoTanqueo) return;
     if (!this.entryToDeleteId) return;
-    this.vehicleService.deleteFuelEntry(this.userId, this.currentYear, this.currentMonth, this.entryToDeleteId).subscribe(() => {
-      this.closeDeleteModal();
-      this.reloadAndSync();
+    this.eliminandoTanqueo = true;
+    this.vehicleService.deleteFuelEntry(this.userId, this.currentYear, this.currentMonth, this.entryToDeleteId).subscribe({
+      next: () => {
+        this.closeDeleteModal();
+        this.reloadAndSync();
+        this.eliminandoTanqueo = false;
+      },
+      error: (err) => {
+        console.error('Error al eliminar tanqueo:', err);
+        this.eliminandoTanqueo = false;
+      },
     });
   }
 
@@ -819,12 +1002,21 @@ export default class VehicleComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   confirmBulkDelete(): void {
+    if (this.eliminandoSeleccionados) return;
+    this.eliminandoSeleccionados = true;
     const ids = Array.from(this.selectedIds);
     const ops = ids.map(id => this.vehicleService.deleteFuelEntry(this.userId, this.currentYear, this.currentMonth, id));
-    forkJoin(ops).subscribe(() => {
-      this.selectedIds.clear();
-      this.showBulkDeleteConfirm = false;
-      this.reloadAndSync();
+    forkJoin(ops).subscribe({
+      next: () => {
+        this.selectedIds.clear();
+        this.showBulkDeleteConfirm = false;
+        this.reloadAndSync();
+        this.eliminandoSeleccionados = false;
+      },
+      error: (err) => {
+        console.error('Error al eliminar tanqueos seleccionados:', err);
+        this.eliminandoSeleccionados = false;
+      },
     });
   }
 
